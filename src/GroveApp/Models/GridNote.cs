@@ -10,31 +10,40 @@ namespace GroveApp.Models
         SlateBlue
     }
 
-    public class GridNote
+    /// <summary>
+    /// Represents an authored Note placement on the spatial Grid.
+    /// Strictly adheres to cell-quantized square geometry (n x n cells) and authored fill palette (ADR-010).
+    /// </summary>
+    public class GridNote : GridContentItem
     {
-        public string Id { get; set; } = Guid.NewGuid().ToString("N");
-        public int CellX { get; set; }
-        public int CellY { get; set; }
-        public int SizeCells { get; set; } = 1; // Footprint: SizeCells x SizeCells
+        public override ContentKind Kind => ContentKind.Note;
+        public override float Mass => 1.0f;
+
+        public int SizeCells
+        {
+            get => CellWidth;
+            set
+            {
+                int val = Math.Max(1, value);
+                CellWidth = val;
+                CellHeight = val;
+            }
+        }
+
         public string Text { get; set; } = "";
         public NoteColor Color { get; set; } = NoteColor.Violet;
-        public bool IsSelected { get; set; }
-        public bool IsHovered { get; set; }
-        public bool IsAnchored { get; set; }
 
-        public GridNote(int cellX, int cellY, string text = "", NoteColor color = NoteColor.Violet, bool isAnchored = false)
+        public GridNote(int cellX, int cellY, string text = "", NoteColor color = NoteColor.Violet, bool isAnchored = false, int layerId = 0)
+            : base(cellX, cellY, 1, 1, isAnchored, layerId)
         {
-            CellX = cellX;
-            CellY = cellY;
             Text = text;
             Color = color;
-            IsAnchored = isAnchored;
             RecalculateFootprint();
         }
 
         public void RecalculateFootprint()
         {
-            // Solve footprint n x n per Note.md geometry:
+            // Solve footprint n x n per Note.md & ADR-010 geometry:
             // n=1 box holds up to ~100 chars, n=2 holds up to ~280 chars, n=3 for larger prose.
             int charCount = Text.Length;
             if (charCount > 280)
@@ -45,7 +54,7 @@ namespace GroveApp.Models
                 SizeCells = 1;
         }
 
-        // Color Hex Values per Grove Design System (Color.md & Tokens.md)
+        // Color Hex Values per Grove Design System (Color.md & Tokens.md & ADR-010)
         public string FillHex => Color switch
         {
             NoteColor.Violet => DesignSystem.Colors.NoteVioletHex,

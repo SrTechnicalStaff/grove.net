@@ -8,27 +8,27 @@ namespace GroveApp.DesignSystem
     public static class Colors
     {
         // Core Hex Values
-        public const string BaseHex = "#0E0E10";
-        public const string GridMinHex = "#161618";
-        public const string SurfaceRaisedHex = "#1C1C20";
-        public const string GridMajHex = "#242428";
-        public const string InkHex = "#EAEAEA";
-        public const string PaperHex = "#F5F5F5";
-        public const string PaperInkHex = "#1A1A1A";
+        public const string BaseHex = "#0E0E10";            // --c-base
+        public const string GridMinHex = "#161618";         // --c-grid-min
+        public const string SurfaceRaisedHex = "#1C1C20";   // --c-surface-raised
+        public const string GridMajHex = "#242428";         // --c-grid-maj
+        public const string InkHex = "#EAEAEA";             // --c-text
+        public const string PaperHex = "#F5F5F5";           // --c-paper
+        public const string PaperInkHex = "#1A1A1A";        // --c-paper-ink
 
         // Grid Lines Hex Values
-        public const string GridMajorLineHex = "#1F1F22"; // Major grid line (#1F1F22)
-        public const string GridMinorLineHex = "#151517"; // Minor grid line subdivision (#151517)
+        public const string GridMajorLineHex = "#242428";  // Major grid line (--c-grid-maj #242428)
+        public const string GridMinorLineHex = "#161618";  // Minor grid line (--c-grid-min #161618)
         public const string ContainmentEdgeHex = "#6E6E6A"; // 1px inset containment edge (#6E6E6A)
-        public const string HudSlateBorderHex = "#2D2D2A"; // Slate border (#2D2D2A)
+        public const string HudSlateBorderHex = "#2D2D2A";  // Slate border (#2D2D2A)
 
         // Signal Hex Values
-        public const string SelectHex = "#96B6F8";   // RGB: 150, 182, 248 --signal-interaction
-        public const string InvalidHex = "#E2625C";  // RGB: 226, 98, 92   --signal-refusal
-        public const string MarqueeHex = "#E8B964";  // RGB: 232, 185, 100 --signal-active-work
-        public const string AnchorHex = "#9E8CEA";   // RGB: 158, 140, 234 --signal-authored-context
+        public const string SelectHex = "#96B6F8";   // RGB: 150, 182, 248 --signal-interaction / --c-select
+        public const string InvalidHex = "#E2625C";  // RGB: 226, 98, 92   --signal-refusal / --c-invalid
+        public const string MarqueeHex = "#E8B964";  // RGB: 232, 185, 100 --signal-active-work / --c-marquee
+        public const string AnchorHex = "#9E8CEA";   // RGB: 158, 140, 234 --signal-authored-context / --c-anchor
 
-        // Authored Note Colors (Fill & Field)
+        // Authored Note Colors (Fill & Presence Field)
         public const string NoteVioletHex = "#6E62A6";       // --c-note-violet (RGB: 110, 98, 166)
         public const string NoteVioletFieldHex = "#6E62A6";  // --c-note-violet-field (casts own fill)
         public const string NoteClayHex = "#B0524E";         // --c-note-clay (RGB: 176, 82, 78)
@@ -38,16 +38,16 @@ namespace GroveApp.DesignSystem
         public const string NoteTextHex = "#F4F4F2";         // Text on authored note fill
 
         // Role Hues & Border Aliases
-        public const string ToolFillHex = "#B3A9E0";
-        public const string ToolBorderHex = "#5B5288";
-        public const string ViewFillHex = "#9BB6E0";
-        public const string ViewBorderHex = "#3F5F8A";
-        public const string LayerFillHex = "#E2A6C6";
-        public const string LayerBorderHex = "#8A3F63";
-        public const string EditFillHex = "#E0A9A3";
-        public const string EditBorderHex = "#7A3F3A";
-        public const string SlateFillHex = "#CDB8D8";
-        public const string SlateBorderHex = "#6B5A78";
+        public const string ToolFillHex = "#B3A9E0";    // --k-tool
+        public const string ToolBorderHex = "#5B5288";  // --k-tool-b
+        public const string ViewFillHex = "#9BB6E0";    // --k-view
+        public const string ViewBorderHex = "#3F5F8A";  // --k-view-b
+        public const string LayerFillHex = "#E2A6C6";   // --k-layer
+        public const string LayerBorderHex = "#8A3F63"; // --k-layer-b
+        public const string EditFillHex = "#E0A9A3";    // --k-edit
+        public const string EditBorderHex = "#7A3F3A";  // --k-edit-b
+        public const string SlateFillHex = "#CDB8D8";   // --k-slate
+        public const string SlateBorderHex = "#6B5A78"; // --k-slate-b
 
         // Explicit Role Token Aliases
         public const string KEditBorderHex = EditBorderHex;    // --k-edit-b (#7A3F3A)
@@ -69,8 +69,8 @@ namespace GroveApp.DesignSystem
         public const string SignalAuthoredContextHex = AnchorHex;
 
         // Grid Lines
-        public const string GridMinorInkHex = GridMinorLineHex; // --grid-minor-ink (#151517)
-        public const string GridMajorInkHex = GridMajorLineHex; // --grid-major-ink (#1F1F22)
+        public const string GridMinorInkHex = GridMinorLineHex; // --grid-minor-ink (#161618)
+        public const string GridMajorInkHex = GridMajorLineHex; // --grid-major-ink (#242428)
 
         // Avalonia Color Structs
         public static Color BaseColor => Color.Parse(BaseHex);
@@ -96,14 +96,15 @@ namespace GroveApp.DesignSystem
         public static Color CSlate => Color.Parse(CSlateHex);
         public static Color CPaperInk => Color.Parse(CPaperInkHex);
 
-        public static Color EdgeOnColor => Color.FromArgb((byte)(255 * 0.12), 255, 255, 255); // --edge-on-color
-        public static Color InkPrimary => Color.FromArgb((byte)(255 * Tokens.InkPrimary), 234, 234, 234); // --ink-primary
-        public static Color InkSecondary => Color.FromArgb((byte)(255 * Tokens.InkSecondary), 234, 234, 234); // --ink-secondary
-        public static Color InkTertiary => Color.FromArgb((byte)(255 * Tokens.InkTertiary), 234, 234, 234); // --ink-tertiary
-        public static Color InkFaint => Color.FromArgb((byte)(255 * Tokens.InkFaint), 234, 234, 234); // --ink-faint
-        public static Color InkEdge => Color.FromArgb((byte)(255 * Tokens.InkEdge), 234, 234, 234); // --ink-edge
-        public static Color InkHairline => Color.FromArgb((byte)(255 * Tokens.InkHairline), 234, 234, 234); // --ink-hairline
-        public static Color InkQuiet => Color.FromArgb((byte)(255 * Tokens.InkQuiet), 234, 234, 234); // --ink-quiet
+        public static Color EdgeOnColor => Color.FromArgb((byte)(255 * 0.12), 255, 255, 255); // --edge-on-color (255 255 255 @ 0.12)
+        public static Color InkPrimary => Color.FromArgb((byte)(255 * Tokens.InkPrimary), 234, 234, 234); // --ink-primary (0.82)
+        public static Color InkSecondary => Color.FromArgb((byte)(255 * Tokens.InkSecondary), 234, 234, 234); // --ink-secondary (0.62)
+        public static Color InkTertiary => Color.FromArgb((byte)(255 * Tokens.InkTertiary), 234, 234, 234); // --ink-tertiary (0.51)
+        public static Color InkFaint => Color.FromArgb((byte)(255 * Tokens.InkFaint), 234, 234, 234); // --ink-faint (0.30)
+        public static Color InkEdge => Color.FromArgb((byte)(255 * Tokens.InkEdge), 234, 234, 234); // --ink-edge (0.16)
+        public static Color InkHairline => Color.FromArgb((byte)(255 * Tokens.InkHairline), 234, 234, 234); // --ink-hairline (0.10)
+        public static Color InkQuiet => Color.FromArgb((byte)(255 * Tokens.InkQuiet), 234, 234, 234); // --ink-quiet (0.22)
+        public static Color EdgeOnPage => Color.FromArgb((byte)(255 * Tokens.PaperEdge), 26, 26, 26); // --edge-on-page
 
         // Avalonia Brushes
         public static IBrush SurfaceGridBrush => new SolidColorBrush(SurfaceGrid);
@@ -139,6 +140,7 @@ namespace GroveApp.DesignSystem
         public static IBrush EdgeQuietBrush => new SolidColorBrush(InkEdge);
         public static IBrush EdgeFoundBrush => new SolidColorBrush(InkQuiet);
         public static IBrush EdgeOnColorBrush => new SolidColorBrush(EdgeOnColor);
+        public static IBrush EdgeOnPageBrush => new SolidColorBrush(EdgeOnPage);
 
         public static IBrush GridMinorInkBrush => new SolidColorBrush(Color.Parse(GridMinorInkHex));
         public static IBrush GridMajorInkBrush => new SolidColorBrush(Color.Parse(GridMajorInkHex));

@@ -88,7 +88,7 @@ namespace GroveApp
             TxtCellCoord.Text = $"CELL: ({CanvasControl.CursorCellX}, {CanvasControl.CursorCellY})";
             int zoomPercent = (int)Math.Round(CanvasControl.Zoom * 100);
             TxtZoom.Text = $"ZOOM: {zoomPercent}%";
-            TxtNoteCount.Text = $"NOTES: {CanvasControl.Notes.Count}";
+            TxtNoteCount.Text = $"ITEMS: {CanvasControl.Items.Count}";
             int metadataCount = CanvasControl.FieldEngine.GetTotalMetadataSourcesCount();
             TxtLedgerCount.Text = $"LEDGER METADATA: {metadataCount}";
         }
@@ -137,10 +137,10 @@ namespace GroveApp
         private void OnEmptyCellDoubleClicked(int cellX, int cellY)
         {
             var newNote = new GridNote(cellX, cellY, "New Note", NoteColor.Violet);
-            CanvasControl.Notes.Add(newNote);
-            CanvasControl.DeselectAllNotes();
+            CanvasControl.Items.Add(newNote);
+            CanvasControl.DeselectAllItems();
             newNote.IsSelected = true;
-            CanvasControl.SelectedNote = newNote;
+            CanvasControl.SelectedItem = newNote;
             CanvasControl.InvalidateVisual();
             OpenLocalEditorForNote(newNote);
         }
@@ -172,10 +172,10 @@ namespace GroveApp
         {
             // Arm & place Quick Note on Grid Plane at current cell cursor
             var newNote = new GridNote(CanvasControl.CursorCellX, CanvasControl.CursorCellY, item.Text, NoteColor.Violet, isAnchored: true);
-            CanvasControl.Notes.Add(newNote);
-            CanvasControl.DeselectAllNotes();
+            CanvasControl.Items.Add(newNote);
+            CanvasControl.DeselectAllItems();
             newNote.IsSelected = true;
-            CanvasControl.SelectedNote = newNote;
+            CanvasControl.SelectedItem = newNote;
             item.IsAnchored = true;
             CanvasControl.InvalidateVisual();
             CanvasControl.Focus();

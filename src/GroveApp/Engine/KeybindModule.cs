@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Input;
 using GroveApp.Controls;
@@ -9,8 +10,9 @@ namespace GroveApp.Engine
 {
     /// <summary>
     /// Deep engine module for context-aware keybindings across Grove v9 Spatial Desktop.
-    /// Handles Spacebar (open/multi-select queue), Ctrl+Enter (commit), Ctrl+E (WYSIWYG toggle),
-    /// Tab/Ctrl+Tab (tab cycle), N (Quick Note), A (Toggle Anchor), Del/Backspace (Delete), Esc (Dismiss/Deselect).
+    /// Handles Spacebar (open/multi-select queue), Ctrl+C (Copy), Ctrl+V (Paste),
+    /// Ctrl+Enter (commit), Ctrl+E (WYSIWYG toggle), Tab/Ctrl+Tab (tab cycle),
+    /// N (Quick Note), A (Toggle Anchor), Del/Backspace (Delete), Esc (Dismiss/Deselect).
     /// </summary>
     public class KeybindModule
     {
@@ -97,13 +99,49 @@ namespace GroveApp.Engine
             LocalEditorOverlay localEditor,
             QuickNoteOverlay quickNote)
         {
+            // Ctrl + C: Copy selected items to native clipboard (ADR-014)
+            if (e.Key == Key.C && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+            {
+                var selectedItems = canvas.GetSelectedItems();
+                if (selectedItems.Count > 0)
+                {
+                    _ = canvas.ClipboardService.CopyItemsAsync(selectedItems);
+                    e.Handled = true;
+                    return true;
+                }
+            }
+
+            // Ctrl + V: Paste items from native clipboard at cell cursor (ADR-014)
+            if (e.Key == Key.V && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+            {
+                _ = Task.Run(async () =>
+                {
+                    var pasted = await canvas.ClipboardService.PasteItemsAsync(new CellCoordinate(canvas.CursorCellX, canvas.CursorCellY));
+                    if (pasted.Count > 0)
+                    {
+                        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                        {
+                            canvas.DeselectAllItems();
+                            foreach (var item in pasted)
+                            {
+                                canvas.Items.Add(item);
+                                item.IsSelected = true;
+                            }
+                            canvas.SelectedItem = pasted[^1];
+                            canvas.InvalidateVisual();
+                        });
+                    }
+                });
+                e.Handled = true;
+                return true;
+            }
+
             // Spacebar: Open Local Editor on selected Note(s) or note under cursor
             if (e.Key == Key.Space)
             {
                 var selectedNotes = canvas.GetSelectedNotes();
                 if (selectedNotes.Count >= 2)
                 {
-                    // Multi-selection queue in Local Editor
                     Rect primaryBounds = canvas.GetNoteScreenBounds(selectedNotes[0]);
                     localEditor.OpenForNotes(selectedNotes, primaryBounds, canvas.Bounds.Size);
                     e.Handled = true;
@@ -118,13 +156,12 @@ namespace GroveApp.Engine
                 }
                 else
                 {
-                    // No selection: check note under grid cursor
                     GridNote? cursorNote = canvas.FindNoteAtCell(canvas.CursorCellX, canvas.CursorCellY);
                     if (cursorNote != null)
                     {
-                        canvas.DeselectAllNotes();
+                        canvas.DeselectAllItems();
                         cursorNote.IsSelected = true;
-                        canvas.SelectedNote = cursorNote;
+                        canvas.SelectedItem = cursorNote;
                         canvas.InvalidateVisual();
 
                         Rect bounds = canvas.GetNoteScreenBounds(cursorNote);
@@ -146,12 +183,12 @@ namespace GroveApp.Engine
             // A: Toggle Anchor
             if (e.Key == Key.A)
             {
-                var selectedNotes = canvas.GetSelectedNotes();
-                if (selectedNotes.Count > 0)
+                var selectedItems = canvas.GetSelectedItems();
+                if (selectedItems.Count > 0)
                 {
-                    foreach (var note in selectedNotes)
+                    foreach (var item in selectedItems)
                     {
-                        note.IsAnchored = !note.IsAnchored;
+                        item.IsAnchored = !item.IsAnchored;
                     }
                     canvas.InvalidateVisual();
                     e.Handled = true;
@@ -159,17 +196,17 @@ namespace GroveApp.Engine
                 }
             }
 
-            // Del / Backspace: Delete selected note(s)
+            // Del / Backspace: Delete selected item(s)
             if (e.Key == Key.Delete || e.Key == Key.Back)
             {
-                var selectedNotes = canvas.GetSelectedNotes();
-                if (selectedNotes.Count > 0)
+                var selectedItems = canvas.GetSelectedItems();
+                if (selectedItems.Count > 0)
                 {
-                    foreach (var note in selectedNotes)
+                    foreach (var item in selectedItems)
                     {
-                        canvas.Notes.Remove(note);
+                        canvas.Items.Remove(item);
                     }
-                    canvas.SelectedNote = null;
+                    canvas.SelectedItem = null;
                     canvas.InvalidateVisual();
                     e.Handled = true;
                     return true;
@@ -179,10 +216,10 @@ namespace GroveApp.Engine
             // Esc: Clear selection
             if (e.Key == Key.Escape)
             {
-                var selectedNotes = canvas.GetSelectedNotes();
-                if (selectedNotes.Count > 0 || canvas.SelectedNote != null)
+                var selectedItems = canvas.GetSelectedItems();
+                if (selectedItems.Count > 0 || canvas.SelectedItem != null)
                 {
-                    canvas.DeselectAllNotes();
+                    canvas.DeselectAllItems();
                     canvas.InvalidateVisual();
                     e.Handled = true;
                     return true;

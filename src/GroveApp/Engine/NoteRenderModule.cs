@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-
+using System.Linq;
 using Avalonia;
 using Avalonia.Media;
 using GroveApp.DesignSystem;
@@ -11,11 +11,52 @@ using Colors = GroveApp.DesignSystem.Colors;
 namespace GroveApp.Engine
 {
     /// <summary>
-    /// Engine module for rendering notes matching docs/design_catalogue/src/grid-plane/02-note.html
-    /// and Note.md specifications exactly.
+    /// Engine module for rendering Notes, Documents, and Images on the spatial Grid.
+    /// Strictly enforces ADR-010, ADR-011, ADR-012 physical geometry and styling rules.
     /// </summary>
     public class NoteRenderModule
     {
+        public void RenderContentItems(
+            DrawingContext context,
+            Func<Point, Point> worldToScreen,
+            double cellSize,
+            double zoom,
+            int minCellX,
+            int maxCellX,
+            int minCellY,
+            int maxCellY,
+            IEnumerable<GridContentItem> items,
+            GridContentItem? selectedItem,
+            GridContentItem? hoveredItem)
+        {
+            double projectedCellSize = cellSize * zoom;
+
+            foreach (var item in items)
+            {
+                if (item.CellX + item.CellWidth < minCellX || item.CellX > maxCellX ||
+                    item.CellY + item.CellHeight < minCellY || item.CellY > maxCellY)
+                {
+                    continue;
+                }
+
+                bool isSelected = item.IsSelected || item == selectedItem;
+                bool isHovered = item.IsHovered || item == hoveredItem;
+
+                if (item is GridNote note)
+                {
+                    RenderNote(context, worldToScreen, cellSize, zoom, projectedCellSize, note, isSelected, isHovered);
+                }
+                else if (item is GridDocument doc)
+                {
+                    RenderDocument(context, worldToScreen, cellSize, zoom, doc, isSelected, isHovered);
+                }
+                else if (item is GridImage img)
+                {
+                    RenderImage(context, worldToScreen, cellSize, zoom, img, isSelected, isHovered);
+                }
+            }
+        }
+
         public void RenderNotes(
             DrawingContext context,
             Func<Point, Point> worldToScreen,
@@ -29,41 +70,205 @@ namespace GroveApp.Engine
             GridNote? selectedNote,
             GridNote? hoveredNote)
         {
-            double projectedCellSize = cellSize * zoom;
+            RenderContentItems(context, worldToScreen, cellSize, zoom, minCellX, maxCellX, minCellY, maxCellY, notes, selectedNote, hoveredNote);
+        }
 
-            foreach (var note in notes)
+        private void RenderNote(
+            DrawingContext context,
+            Func<Point, Point> worldToScreen,
+            double cellSize,
+            double zoom,
+            double projectedCellSize,
+            GridNote note,
+            bool isSelected,
+            bool isHovered)
+        {
+            Point startScreen = worldToScreen(new Point(note.CellX * cellSize, note.CellY * cellSize));
+            Point endScreen = worldToScreen(new Point((note.CellX + note.SizeCells) * cellSize, (note.CellY + note.SizeCells) * cellSize));
+
+            double rectW = endScreen.X - startScreen.X;
+            double rectH = endScreen.Y - startScreen.Y;
+            Rect noteRect = new Rect(startScreen.X, startScreen.Y, rectW, rectH);
+
+            if (projectedCellSize < Tokens.TierStandinPromote) // < 28px: Stand-in Tier
             {
-                if (note.CellX + note.SizeCells < minCellX || note.CellX > maxCellX ||
-                    note.CellY + note.SizeCells < minCellY || note.CellY > maxCellY)
-                {
-                    continue;
-                }
+                RenderStandInTier(context, note, noteRect, zoom, isSelected);
+            }
+            else if (projectedCellSize < Tokens.TierDetailPromote) // 28px <= size < 72px: Stepped Tier
+            {
+                RenderSteppedTier(context, note, noteRect, zoom, isSelected);
+            }
+            else // >= 72px: Working Tier
+            {
+                RenderWorkingTier(context, note, noteRect, zoom, isSelected, isHovered);
+            }
+        }
 
-                Point startScreen = worldToScreen(new Point(note.CellX * cellSize, note.CellY * cellSize));
-                Point endScreen = worldToScreen(new Point((note.CellX + note.SizeCells) * cellSize, (note.CellY + note.SizeCells) * cellSize));
+        public void RenderDocument(
+            DrawingContext context,
+            Func<Point, Point> worldToScreen,
+            double cellSize,
+            double zoom,
+            GridDocument doc,
+            bool isSelected,
+            bool isHovered)
+        {
+            Point startScreen = worldToScreen(new Point(doc.CellX * cellSize, doc.CellY * cellSize));
+            Point endScreen = worldToScreen(new Point((doc.CellX + doc.CellWidth) * cellSize, (doc.CellY + doc.CellHeight) * cellSize));
 
-                double rectW = endScreen.X - startScreen.X;
-                double rectH = endScreen.Y - startScreen.Y;
-                Rect noteRect = new Rect(startScreen.X, startScreen.Y, rectW, rectH);
+            double rectW = endScreen.X - startScreen.X;
+            double rectH = endScreen.Y - startScreen.Y;
+            Rect docRect = new Rect(startScreen.X, startScreen.Y, rectW, rectH);
 
-                bool isSelected = note.IsSelected || note == selectedNote;
-                bool isHovered = note.IsHovered || note == hoveredNote;
+            // 1. Paper Fill (--surface-page #F5F5F5)
+            context.FillRectangle(Colors.SurfacePageBrush, docRect);
 
-                // -------------------------------------------------------------
-                // Distance Tier Representation Logic (Note.md)
-                // -------------------------------------------------------------
-                if (projectedCellSize < Tokens.TierStandinPromote) // < 28px: Stand-in Tier
+            // 2. Page Texture (Rules at 44px minor / 220px major)
+            RenderPageTexture(context, docRect, zoom);
+
+            // 3. 1px Inset Edge (--paper-edge)
+            var edgePen = new Pen(new SolidColorBrush(Color.FromArgb(25, 26, 26, 26)), 1.0);
+            context.DrawRectangle(null, edgePen, docRect.Deflate(0.5));
+
+            // 4. Multi-Column Reflow Rendering
+            if (doc.AstDocument != null)
+            {
+                var layout = DocumentReflowEngine.Reflow(doc.AstDocument, doc.CellWidth, doc.CellHeight, doc.CurrentPage);
+                using (context.PushTransform(Matrix.CreateScale(zoom, zoom) * Matrix.CreateTranslation(docRect.X, docRect.Y)))
                 {
-                    RenderStandInTier(context, note, noteRect, zoom, isSelected);
+                    var textBrush = Colors.PaperInkBrush;
+                    var typeface = new Typeface("Inter", FontStyle.Normal, FontWeight.Regular);
+
+                    foreach (var slice in layout.Slices)
+                    {
+                        double yCursor = slice.Y;
+                        for (int b = slice.StartBlockIndex; b <= slice.EndBlockIndex && b < doc.AstDocument.Blocks.Count; b++)
+                        {
+                            var block = doc.AstDocument.Blocks[b];
+                            if (block is HeadingBlock heading)
+                            {
+                                var fmt = new FormattedText(
+                                    heading.Text,
+                                    CultureInfo.CurrentCulture,
+                                    FlowDirection.LeftToRight,
+                                    new Typeface("Inter", FontStyle.Normal, FontWeight.Bold),
+                                    18.0,
+                                    textBrush)
+                                {
+                                    MaxTextWidth = slice.Width
+                                };
+                                context.DrawText(fmt, new Point(slice.X, yCursor));
+                                yCursor += fmt.Height + 8.0;
+                            }
+                            else if (block is ParagraphBlock para)
+                            {
+                                string text = string.Join("", para.Inlines.Select(i => i switch
+                                {
+                                    TextRunInline t => t.Text,
+                                    FormattedInline f => f.Text,
+                                    _ => ""
+                                }));
+
+                                var fmt = new FormattedText(
+                                    text,
+                                    CultureInfo.CurrentCulture,
+                                    FlowDirection.LeftToRight,
+                                    typeface,
+                                    15.0,
+                                    textBrush)
+                                {
+                                    MaxTextWidth = slice.Width,
+                                    LineHeight = DocumentReflowEngine.LineHeightPx
+                                };
+
+                                context.DrawText(fmt, new Point(slice.X, yCursor));
+                                yCursor += fmt.Height + 12.0;
+                            }
+                        }
+                    }
                 }
-                else if (projectedCellSize < Tokens.TierDetailPromote) // 28px <= size < 72px: Stepped Tier
-                {
-                    RenderSteppedTier(context, note, noteRect, zoom, isSelected);
-                }
-                else // >= 72px: Working Tier
-                {
-                    RenderWorkingTier(context, note, noteRect, zoom, isSelected, isHovered);
-                }
+            }
+
+            // 5. Selection Ring
+            if (isSelected)
+            {
+                Rect selRect = docRect.Inflate(3.0 * zoom);
+                var selectionPen = new Pen(Colors.SignalInteractionBrush, Tokens.StrokeState * Math.Max(0.8, zoom));
+                context.DrawRectangle(null, selectionPen, selRect);
+            }
+        }
+
+        private void RenderPageTexture(DrawingContext context, Rect rect, double zoom)
+        {
+            var minorPen = new Pen(new SolidColorBrush(Color.FromArgb(13, 26, 26, 26)), 1.0);
+            var majorPen = new Pen(new SolidColorBrush(Color.FromArgb(20, 26, 26, 26)), 1.0);
+
+            for (double x = 44.0 * zoom; x < rect.Width; x += 44.0 * zoom)
+            {
+                var pen = (Math.Abs((x / zoom) % 220.0) < 0.01) ? majorPen : minorPen;
+                context.DrawLine(pen, new Point(rect.X + x, rect.Y), new Point(rect.X + x, rect.Y + rect.Height));
+            }
+
+            for (double y = 44.0 * zoom; y < rect.Height; y += 44.0 * zoom)
+            {
+                var pen = (Math.Abs((y / zoom) % 220.0) < 0.01) ? majorPen : minorPen;
+                context.DrawLine(pen, new Point(rect.X, rect.Y + y), new Point(rect.X + rect.Width, rect.Y + y));
+            }
+        }
+
+        public void RenderImage(
+            DrawingContext context,
+            Func<Point, Point> worldToScreen,
+            double cellSize,
+            double zoom,
+            GridImage img,
+            bool isSelected,
+            bool isHovered)
+        {
+            Point startScreen = worldToScreen(new Point(img.CellX * cellSize, img.CellY * cellSize));
+            Point endScreen = worldToScreen(new Point((img.CellX + img.CellWidth) * cellSize, (img.CellY + img.CellHeight) * cellSize));
+
+            double rectW = endScreen.X - startScreen.X;
+            double rectH = endScreen.Y - startScreen.Y;
+            Rect imgRect = new Rect(startScreen.X, startScreen.Y, rectW, rectH);
+
+            if (img.LoadedBitmap != null)
+            {
+                context.DrawImage(img.LoadedBitmap, new Rect(0, 0, img.LoadedBitmap.Size.Width, img.LoadedBitmap.Size.Height), imgRect);
+            }
+            else
+            {
+                context.FillRectangle(Colors.SurfaceNestedBrush, imgRect);
+            }
+
+            // 1px Quiet Edge (--edge-quiet)
+            var edgePen = new Pen(Colors.EdgeQuietBrush, 1.0);
+            context.DrawRectangle(null, edgePen, imgRect.Deflate(0.5));
+
+            // GIF Badge
+            if (img.IsAnimatedGif)
+            {
+                double badgeX = imgRect.Right - 32.0 * zoom;
+                double badgeY = imgRect.Top + 8.0 * zoom;
+                Rect bgRect = new Rect(badgeX, badgeY, 24 * zoom, 14 * zoom);
+                context.FillRectangle(new SolidColorBrush(Color.FromArgb(200, 14, 14, 16)), bgRect);
+
+                var fmt = new FormattedText(
+                    "GIF",
+                    CultureInfo.CurrentCulture,
+                    FlowDirection.LeftToRight,
+                    new Typeface("JetBrains Mono", FontStyle.Normal, FontWeight.Bold),
+                    Typography.SizeMicro * zoom,
+                    Brushes.White);
+                context.DrawText(fmt, new Point(badgeX + 2 * zoom, badgeY + 1 * zoom));
+            }
+
+            // Selection Ring
+            if (isSelected)
+            {
+                Rect selRect = imgRect.Inflate(3.0 * zoom);
+                var selectionPen = new Pen(Colors.SignalInteractionBrush, Tokens.StrokeState * Math.Max(0.8, zoom));
+                context.DrawRectangle(null, selectionPen, selRect);
             }
         }
 
@@ -75,15 +280,12 @@ namespace GroveApp.Engine
             bool isSelected,
             bool isHovered)
         {
-            // 1. Authored Fill (Opaque flat fill: Violet #6E62A6, Clay #B0524E, Slate Blue #4E6E9C)
             var fillBrush = new SolidColorBrush(Color.Parse(note.FillHex));
             context.FillRectangle(fillBrush, noteRect);
 
-            // 2. 1px Inset Containment Edge in #6E6E6A / --edge-on-color
             var insetEdgePen = new Pen(Colors.ContainmentEdgeBrush, Tokens.StrokeContainment);
             context.DrawRectangle(null, insetEdgePen, noteRect.Deflate(0.5));
 
-            // 3. Selection Outline (2px --signal-interaction #96B6F8 offset by 3px per Shape.md)
             if (isSelected)
             {
                 Rect selRect = noteRect.Inflate(3.0 * zoom);
@@ -91,13 +293,11 @@ namespace GroveApp.Engine
                 context.DrawRectangle(null, selectionPen, selRect);
             }
 
-            // 4. Anchor Ribbon (Tab notched at foot, filled #9E8CEA)
             if (note.IsAnchored)
             {
                 RenderAnchorRibbon(context, noteRect, zoom);
             }
 
-            // 5. Rich Text Block (#F4F4F2 ink, formatted via RichTextEngine: bold, italic, code, headings, bullets, colors)
             if (!string.IsNullOrEmpty(note.Text))
             {
                 double padTop = Tokens.SpaceMd;
@@ -123,7 +323,6 @@ namespace GroveApp.Engine
                 }
             }
 
-            // 6. Focus / Selection Resize Affordance Corner
             if (isHovered || isSelected)
             {
                 RenderResizeCorner(context, noteRect, zoom);
@@ -137,7 +336,6 @@ namespace GroveApp.Engine
             double zoom,
             bool isSelected)
         {
-            // Stepped Tier: Drops inset containment edge and edit affordances, keeps authored fill and full text set at --t-body
             var fillBrush = new SolidColorBrush(Color.Parse(note.FillHex));
             context.FillRectangle(fillBrush, noteRect);
 
@@ -186,7 +384,6 @@ namespace GroveApp.Engine
             double zoom,
             bool isSelected)
         {
-            // Stand-in Tier: Authored fill block, 1px inset edge, and kind-coded written lines mark
             var fillBrush = new SolidColorBrush(Color.Parse(note.FillHex));
             context.FillRectangle(fillBrush, noteRect);
 
@@ -200,7 +397,6 @@ namespace GroveApp.Engine
                 context.DrawRectangle(null, selectionPen, selRect);
             }
 
-            // Kind-coded written lines mark: 3 light horizontal strokes in --ink-primary
             var markPen = new Pen(Colors.TextPrimaryBrush, Math.Max(1.0, 2.0 * zoom));
             double stroke1Y = noteRect.Y + noteRect.Height * 0.26;
             double stroke2Y = noteRect.Y + noteRect.Height * 0.46;
@@ -214,9 +410,6 @@ namespace GroveApp.Engine
 
         private void RenderAnchorRibbon(DrawingContext context, Rect noteRect, double zoom)
         {
-            // Anchor ribbon tab geometry per Marks.md:
-            // 12px x 22px tab, left edge inset 16px (--sp-md) from Note left edge,
-            // hanging 5px above top edge and 17px down over head.
             double ribbonW = 12.0 * Math.Max(0.7, zoom);
             double ribbonH = 22.0 * Math.Max(0.7, zoom);
             double leftInset = 16.0 * Math.Max(0.7, zoom);
@@ -231,7 +424,7 @@ namespace GroveApp.Engine
                 ctx.BeginFigure(new Point(rx, ry), true);
                 ctx.LineTo(new Point(rx + ribbonW, ry));
                 ctx.LineTo(new Point(rx + ribbonW, ry + ribbonH));
-                ctx.LineTo(new Point(rx + ribbonW / 2.0, ry + ribbonH * 0.72)); // Shallow V notch
+                ctx.LineTo(new Point(rx + ribbonW / 2.0, ry + ribbonH * 0.72));
                 ctx.LineTo(new Point(rx, ry + ribbonH));
                 ctx.EndFigure(true);
             }
@@ -239,12 +432,8 @@ namespace GroveApp.Engine
             context.DrawGeometry(Colors.SignalAuthoredContextBrush, null, geom);
         }
 
-
-
         private void RenderResizeCorner(DrawingContext context, Rect noteRect, double zoom)
         {
-            // Resize Corner per Marks.md:
-            // 18x18px target at bottom-right corner, two 10px arms of 2px weight meeting at corner.
             double scale = Math.Max(0.7, zoom);
             double armLen = 10.0 * scale;
             double strokeW = Tokens.StrokeState * scale;

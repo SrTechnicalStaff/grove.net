@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -12,10 +14,15 @@ using Colors = GroveApp.DesignSystem.Colors;
 
 namespace GroveApp.Controls
 {
+    /// <summary>
+    /// Plane 0: Spatial Grid Canvas Control (ADR-001, ADR-004).
+    /// Continuous 2D spatial canvas rendering Notes, Documents, and Images.
+    /// Strictly references normative Grove Design System tokens.
+    /// </summary>
     public class GridCanvasControl : Control
     {
-        public const double CellSize = Tokens.GridCell;
-        public const double MinorCellSize = Tokens.MinorCellSize;
+        public const double CellSize = Tokens.GridCell; // 220.0px
+        public const double MinorCellSize = Tokens.MinorCellSize; // 44.0px
 
         // Engine Modules
         private readonly FieldLedgerModule _fieldLedgerModule = new();
@@ -23,6 +30,10 @@ namespace GroveApp.Controls
         private readonly CursorRenderModule _cursorRenderModule = new();
         private readonly GridLineModule _gridLineModule = new();
         public FieldLedgerEngine FieldEngine { get; } = new FieldLedgerEngine();
+
+        // System Handlers (ADR-013 & ADR-014)
+        public ExternalDragDropHandler DragDropHandler { get; private set; }
+        public NativeClipboardService ClipboardService { get; private set; }
 
         // Camera Module & State
         public CameraModule Camera { get; } = new CameraModule();
@@ -80,10 +91,23 @@ namespace GroveApp.Controls
         private int _lastCursorCellX = int.MinValue;
         private int _lastCursorCellY = int.MinValue;
 
-        // Content & Selection
-        public List<GridNote> Notes { get; } = new();
-        public GridNote? SelectedNote { get; set; }
-        public GridNote? HoveredNote { get; set; }
+        // Content & Selection (GridContentItem Base Model)
+        public List<GridContentItem> Items { get; } = new();
+        public GridContentItem? SelectedItem { get; set; }
+        public GridContentItem? HoveredItem { get; set; }
+
+        // Backwards compatibility aliases for GridNote
+        public List<GridNote> Notes => Items.OfType<GridNote>().ToList();
+        public GridNote? SelectedNote
+        {
+            get => SelectedItem as GridNote;
+            set => SelectedItem = value;
+        }
+        public GridNote? HoveredNote
+        {
+            get => HoveredItem as GridNote;
+            set => HoveredItem = value;
+        }
 
         // Active Tool State
         public string ActiveTool { get; set; } = "SELECT"; // SELECT, NOTE, ANCHOR, PAN
@@ -99,17 +123,18 @@ namespace GroveApp.Controls
         private Point _marqueeStartWorld;
         private Point _marqueeCurrentWorld;
 
-        // Drag & Drop Note Movement State
-        private bool _isDraggingNote;
-        private GridNote? _draggedNote;
+        // Drag & Drop Movement State
+        private bool _isDraggingItem;
+        private GridContentItem? _draggedItem;
         private int _dragOffsetCellX;
         private int _dragOffsetCellY;
 
-        // Native GPU VSync Render Loop State (Unlocks 120Hz, 144Hz, 165Hz, 240Hz Native Refresh Rate Sync)
+        // Native GPU VSync Render Loop State
         private TopLevel? _topLevel;
         private bool _isAnimationFrameRequested;
 
         // Events
+        public event Action<GridContentItem>? ItemSelected;
         public event Action<GridNote>? NoteSelected;
         public event Action<GridNote>? NoteDoubleClicked;
         public event Action<int, int>? EmptyCellDoubleClicked;
@@ -120,20 +145,39 @@ namespace GroveApp.Controls
             ClipToBounds = true;
             Focusable = true;
 
+            DragDropHandler = new ExternalDragDropHandler(
+                (origin, w, h) => IsRegionFree(origin, w, h),
+                async (newItem) =>
+                {
+                    Items.Add(newItem);
+                    DeselectAllItems();
+                    newItem.IsSelected = true;
+                    SelectedItem = newItem;
+                    InvalidateVisual();
+                    await Task.CompletedTask;
+                }
+            );
+
+            ClipboardService = new NativeClipboardService(() => TopLevel.GetTopLevel(this)?.Clipboard);
+
             SeedSampleData();
         }
 
         private void SeedSampleData()
         {
-            Notes.Add(new GridNote(0, 0, "# Field Ledger\n\n> Spatial grid canvas with **high-DPI** subpixel typography.\n\n- Inline `code` & <u>underline</u> & <del>strikethrough</del>\n- H<sub>2</sub>O and E=mc<sup>2</sup> formulas\n- <span style=\"color:#96B6F8\">HTML Color</span> & [Markdown Gold](#E8B964) & <mark>mark highlight</mark>", NoteColor.Violet, isAnchored: true));
-            Notes.Add(new GridNote(3, 1, "## Code Engine Parity\n\n```cs\npublic class GridEngine {\n    public string Name { get; set; } = \"Grove\";\n    public bool IsActive() => true;\n}\n```\n\n[Grove Architecture](https://grove.net)", NoteColor.Clay));
-            Notes.Add(new GridNote(-2, 3, "### Spacetime Grid\n\n1. **Zero** global overhead\n2. [Primary signal](#E8B964) status\n3. <i>Crisp</i> Inter & Consolas", NoteColor.SlateBlue));
+            Items.Add(new GridNote(0, 0, "# Field Ledger\n\n> Spatial grid canvas with **high-DPI** subpixel typography.\n\n- Inline `code` & <u>underline</u> & <del>strikethrough</del>\n- H<sub>2</sub>O and E=mc<sup>2</sup> formulas", NoteColor.Violet, isAnchored: true));
+            Items.Add(new GridNote(3, 1, "## Code Engine Parity\n\n```cs\npublic class GridEngine {\n    public string Name { get; set; } = \"Grove\";\n    public bool IsActive() => true;\n}\n```", NoteColor.Clay));
+            Items.Add(new GridNote(-2, 3, "### Spacetime Grid\n\n1. **Zero** global overhead\n2. [Primary signal](#E8B964) status\n3. <i>Crisp</i> Inter & Consolas", NoteColor.SlateBlue));
+            Items.Add(new GridDocument(-4, -1, 2, 2, "Architecture Manifesto", "# Grove Architectural Principles\n\nContinuous spatial grid plane acting as Plane 0. Enforces physical paper proportions, whole-cell integral footprints, deterministic page texture rules, and multi-column AST text pagination."));
         }
 
         protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
         {
             base.OnAttachedToVisualTree(e);
             _topLevel = TopLevel.GetTopLevel(this);
+
+            DragDropHandler.Attach(this, () => new Point(CameraX, CameraY), () => Zoom);
+
             RequestNextAnimationFrame();
         }
 
@@ -157,15 +201,13 @@ namespace GroveApp.Controls
         {
             _isAnimationFrameRequested = false;
 
-            // Decay spent cell trail physics & update interactive state
             bool needsRedraw = _cursorRenderModule.DecayTrail(SpentCells);
 
-            if (needsRedraw || SpentCells.Count > 0 || _isPanning || _isMarqueeSelecting || _isDraggingNote)
+            if (needsRedraw || SpentCells.Count > 0 || _isPanning || _isMarqueeSelecting || _isDraggingItem)
             {
                 InvalidateVisual();
             }
 
-            // Sync with native monitor refresh rate (120Hz, 144Hz, 165Hz, 240Hz display sync)
             RequestNextAnimationFrame();
         }
 
@@ -184,6 +226,19 @@ namespace GroveApp.Controls
             Point screenTopLeft = Camera.WorldToScreen(worldTopLeft);
             double sizePx = note.SizeCells * CellSize * Camera.Zoom;
             return new Rect(screenTopLeft.X, screenTopLeft.Y, sizePx, sizePx);
+        }
+
+        public bool IsRegionFree(CellCoordinate origin, int width, int height, GridContentItem? ignoreItem = null)
+        {
+            foreach (var item in Items)
+            {
+                if (item == ignoreItem) continue;
+                if (item.Intersects(origin.X, origin.Y, width, height))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         // Pointer Events
@@ -208,11 +263,16 @@ namespace GroveApp.Controls
                 return;
             }
 
-            // Handle Drag & Drop Note Movement
-            if (_isDraggingNote && _draggedNote != null)
+            // Handle Drag & Drop Item Movement
+            if (_isDraggingItem && _draggedItem != null)
             {
-                _draggedNote.CellX = cx - _dragOffsetCellX;
-                _draggedNote.CellY = cy - _dragOffsetCellY;
+                int targetX = cx - _dragOffsetCellX;
+                int targetY = cy - _dragOffsetCellY;
+                if (IsRegionFree(new CellCoordinate(targetX, targetY), _draggedItem.CellWidth, _draggedItem.CellHeight, _draggedItem))
+                {
+                    _draggedItem.CellX = targetX;
+                    _draggedItem.CellY = targetY;
+                }
                 InvalidateVisual();
                 return;
             }
@@ -235,12 +295,12 @@ namespace GroveApp.Controls
             }
 
             // Hover Detection
-            GridNote? newHover = FindNoteAtCell(cx, cy);
-            if (newHover != HoveredNote)
+            GridContentItem? newHover = FindItemAtCell(cx, cy);
+            if (newHover != HoveredItem)
             {
-                if (HoveredNote != null) HoveredNote.IsHovered = false;
-                HoveredNote = newHover;
-                if (HoveredNote != null) HoveredNote.IsHovered = true;
+                if (HoveredItem != null) HoveredItem.IsHovered = false;
+                HoveredItem = newHover;
+                if (HoveredItem != null) HoveredItem.IsHovered = true;
             }
 
             InvalidateVisual();
@@ -268,16 +328,16 @@ namespace GroveApp.Controls
             {
                 Point clickWorld = ScreenToWorld(e.GetPosition(this));
                 var (cx, cy) = WorldToCell(clickWorld);
-                GridNote? hitNote = FindNoteAtCell(cx, cy);
+                GridContentItem? hitItem = FindItemAtCell(cx, cy);
 
-                if (hitNote != null)
+                if (hitItem != null)
                 {
-                    _isDraggingNote = true;
-                    _draggedNote = hitNote;
-                    _dragOffsetCellX = cx - hitNote.CellX;
-                    _dragOffsetCellY = cy - hitNote.CellY;
+                    _isDraggingItem = true;
+                    _draggedItem = hitItem;
+                    _dragOffsetCellX = cx - hitItem.CellX;
+                    _dragOffsetCellY = cy - hitItem.CellY;
 
-                    SelectNote(hitNote);
+                    SelectItem(hitItem);
                 }
                 else
                 {
@@ -285,7 +345,7 @@ namespace GroveApp.Controls
                     _marqueeStartWorld = clickWorld;
                     _marqueeCurrentWorld = clickWorld;
 
-                    DeselectAllNotes();
+                    DeselectAllItems();
                 }
 
                 InvalidateVisual();
@@ -300,10 +360,10 @@ namespace GroveApp.Controls
                 _isPanning = false;
                 e.Handled = true;
             }
-            if (_isDraggingNote)
+            if (_isDraggingItem)
             {
-                _isDraggingNote = false;
-                _draggedNote = null;
+                _isDraggingItem = false;
+                _draggedItem = null;
                 e.Handled = true;
             }
             if (_isMarqueeSelecting)
@@ -328,62 +388,85 @@ namespace GroveApp.Controls
         public void HandleDoubleClick(Point pt)
         {
             var (cx, cy) = WorldToCell(ScreenToWorld(pt));
-            GridNote? hitNote = FindNoteAtCell(cx, cy);
+            GridContentItem? hitItem = FindItemAtCell(cx, cy);
 
-            if (hitNote != null)
+            if (hitItem is GridNote hitNote)
             {
                 NoteDoubleClicked?.Invoke(hitNote);
             }
-            else
+            else if (hitItem == null)
             {
                 EmptyCellDoubleClicked?.Invoke(cx, cy);
             }
         }
 
-        public GridNote? FindNoteAtCell(int cx, int cy)
+        public GridContentItem? FindItemAtCell(int cx, int cy)
         {
-            foreach (var note in Notes)
+            foreach (var item in Items)
             {
-                if (cx >= note.CellX && cx < note.CellX + note.SizeCells &&
-                    cy >= note.CellY && cy < note.CellY + note.SizeCells)
+                if (item.ContainsCell(cx, cy))
                 {
-                    return note;
+                    return item;
                 }
             }
             return null;
         }
 
-        public List<GridNote> GetSelectedNotes()
+        public GridNote? FindNoteAtCell(int cx, int cy)
         {
-            var list = new List<GridNote>();
-            foreach (var note in Notes)
+            return FindItemAtCell(cx, cy) as GridNote;
+        }
+
+        public List<GridContentItem> GetSelectedItems()
+        {
+            var list = new List<GridContentItem>();
+            foreach (var item in Items)
             {
-                if (note.IsSelected)
+                if (item.IsSelected)
                 {
-                    list.Add(note);
+                    list.Add(item);
                 }
             }
-            if (list.Count == 0 && SelectedNote != null)
+            if (list.Count == 0 && SelectedItem != null)
             {
-                SelectedNote.IsSelected = true;
-                list.Add(SelectedNote);
+                SelectedItem.IsSelected = true;
+                list.Add(SelectedItem);
             }
             return list;
         }
 
+        public List<GridNote> GetSelectedNotes()
+        {
+            return GetSelectedItems().OfType<GridNote>().ToList();
+        }
+
+        private void SelectItem(GridContentItem item)
+        {
+            DeselectAllItems();
+            SelectedItem = item;
+            SelectedItem.IsSelected = true;
+            ItemSelected?.Invoke(SelectedItem);
+            if (item is GridNote note)
+            {
+                NoteSelected?.Invoke(note);
+            }
+        }
+
         private void SelectNote(GridNote note)
         {
-            DeselectAllNotes();
-            SelectedNote = note;
-            SelectedNote.IsSelected = true;
-            NoteSelected?.Invoke(SelectedNote);
+            SelectItem(note);
+        }
+
+        public void DeselectAllItems()
+        {
+            if (SelectedItem != null) SelectedItem.IsSelected = false;
+            SelectedItem = null;
+            foreach (var item in Items) item.IsSelected = false;
         }
 
         public void DeselectAllNotes()
         {
-            if (SelectedNote != null) SelectedNote.IsSelected = false;
-            SelectedNote = null;
-            foreach (var n in Notes) n.IsSelected = false;
+            DeselectAllItems();
         }
 
         private void UpdateMarqueeSelection()
@@ -396,7 +479,6 @@ namespace GroveApp.Controls
             int minCY = Math.Min(startCY, currCY);
             int maxCY = Math.Max(startCY, currCY);
 
-            // Cell-aligned rectangle in world coordinates
             double minWorldX = minCX * CellSize;
             double minWorldY = minCY * CellSize;
             double maxWorldX = (maxCX + 1) * CellSize;
@@ -404,17 +486,17 @@ namespace GroveApp.Controls
 
             Rect cellAlignedMarqueeWorld = new Rect(minWorldX, minWorldY, maxWorldX - minWorldX, maxWorldY - minWorldY);
 
-            GridNote? lastSelected = null;
-            foreach (var note in Notes)
+            GridContentItem? lastSelected = null;
+            foreach (var item in Items)
             {
-                Rect noteWorldRect = new Rect(note.CellX * CellSize, note.CellY * CellSize, note.SizeCells * CellSize, note.SizeCells * CellSize);
-                note.IsSelected = cellAlignedMarqueeWorld.Intersects(noteWorldRect);
-                if (note.IsSelected)
+                Rect itemWorldRect = new Rect(item.CellX * CellSize, item.CellY * CellSize, item.CellWidth * CellSize, item.CellHeight * CellSize);
+                item.IsSelected = cellAlignedMarqueeWorld.Intersects(itemWorldRect);
+                if (item.IsSelected)
                 {
-                    lastSelected = note;
+                    lastSelected = item;
                 }
             }
-            SelectedNote = lastSelected;
+            SelectedItem = lastSelected;
         }
 
         // Field Ledger Engine Spatial Lookups
@@ -443,13 +525,13 @@ namespace GroveApp.Controls
             // 2. Grid Line Module: Major 220px, Minor 44px Subdivisions & LOD Fading
             _gridLineModule.RenderGridLines(context, WorldToScreen, CellSize, Zoom, minCellX, maxCellX, minCellY, maxCellY);
 
-            // 3. Note Render Module: Authored Fills, Containment Edge, Padding & Affordances
-            _noteRenderModule.RenderNotes(context, WorldToScreen, CellSize, Zoom, minCellX, maxCellX, minCellY, maxCellY, Notes, SelectedNote, HoveredNote);
+            // 3. Note & Content Render Module: Authored Fills, Containment Edge, Padding & Affordances
+            _noteRenderModule.RenderContentItems(context, WorldToScreen, CellSize, Zoom, minCellX, maxCellX, minCellY, maxCellY, Items, SelectedItem, HoveredItem);
 
             // 4. Cursor Render Module: Spent Cell Decay Trail Physics
             _cursorRenderModule.RenderSpentTrail(context, WorldToScreen, CellSize, Zoom, SpentCells);
 
-            // 5. Cursor Render Module: Grid Cursor Head, 13.2% Fill & Inset 2px Ring
+            // 5. Cursor Render Module: Grid Cursor Head, 22% Fill & Inset 2px Ring
             GridNote? targetNote = FindNoteAtCell(CursorCellX, CursorCellY);
             _cursorRenderModule.RenderGridCursor(context, WorldToScreen, CellSize, Zoom, CursorCellX, CursorCellY, targetNote);
 
