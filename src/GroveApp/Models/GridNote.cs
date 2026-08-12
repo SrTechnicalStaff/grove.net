@@ -41,21 +41,21 @@ namespace GroveApp.Models
                 SizeCells = 1;
         }
 
-        // Color Hex Values per Grove Design System (Note.md & Color.md)
+        // Color Hex Values per Grove Design System (Color.md & Tokens.md)
         public string FillHex => Color switch
         {
-            NoteColor.Violet => "#3D2B56",
-            NoteColor.Clay => "#5C3A29",
-            NoteColor.SlateBlue => "#273B4A",
-            _ => "#3D2B56"
+            NoteColor.Violet => DesignSystem.Colors.NoteVioletHex,
+            NoteColor.Clay => DesignSystem.Colors.NoteClayHex,
+            NoteColor.SlateBlue => DesignSystem.Colors.NoteSlateBlueHex,
+            _ => DesignSystem.Colors.NoteVioletHex
         };
 
         public string FieldHueHex => Color switch
         {
-            NoteColor.Violet => "#6B46C1",
-            NoteColor.Clay => "#C05621",
-            NoteColor.SlateBlue => "#3182CE",
-            _ => "#6B46C1"
+            NoteColor.Violet => DesignSystem.Colors.NoteVioletFieldHex,
+            NoteColor.Clay => DesignSystem.Colors.NoteClayFieldHex,
+            NoteColor.SlateBlue => DesignSystem.Colors.NoteSlateBlueFieldHex,
+            _ => DesignSystem.Colors.NoteVioletFieldHex
         };
     }
 }

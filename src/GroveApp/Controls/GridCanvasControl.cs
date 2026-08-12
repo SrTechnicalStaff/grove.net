@@ -1,20 +1,21 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Threading;
+using GroveApp.DesignSystem;
 using GroveApp.Models;
+using Colors = GroveApp.DesignSystem.Colors;
 
 namespace GroveApp.Controls
 {
     public class GridCanvasControl : Control
     {
-        public const double CellSize = 220.0;
-        public const double MinorCellSize = 44.0;
+        public const double CellSize = Tokens.GridCell;
+        public const double MinorCellSize = Tokens.MinorCellSize;
 
         // Camera State
         public double CameraX { get; set; } = 100.0;
@@ -89,11 +90,11 @@ namespace GroveApp.Controls
         {
             bool needsRedraw = false;
 
-            // Decay spent trail energy (18-step decay curve)
+            // Decay spent trail energy using design system token parameters
             for (int i = SpentCells.Count - 1; i >= 0; i--)
             {
-                SpentCells[i].Energy -= 0.055;
-                if (SpentCells[i].Energy <= 0.0)
+                SpentCells[i].Energy *= Tokens.CursorTrailDecay;
+                if (SpentCells[i].Energy <= Tokens.CursorTrailMin)
                 {
                     SpentCells.RemoveAt(i);
                 }
@@ -347,10 +348,11 @@ namespace GroveApp.Controls
         // Field Ledger Matrix Calculations (Gravitational Field Inheritance per cell)
         private Color CalculateCellFieldColor(int cx, int cy)
         {
-            // Base spacetime canvas ground color (#0C0C0B -> RGB: 12, 12, 11)
-            double r = 12.0;
-            double g = 12.0;
-            double b = 11.0;
+            // Base spacetime canvas ground color (--surface-grid / --c-base #0E0E10)
+            Color baseColor = Colors.SurfaceGrid;
+            double r = baseColor.R;
+            double g = baseColor.G;
+            double b = baseColor.B;
 
             // Sum gravitational field energy vectors from all placed notes
             foreach (var note in Notes)
@@ -366,11 +368,10 @@ namespace GroveApp.Controls
 
                 double distSq = dx * dx + dy * dy;
 
-                // Field ledger gravity equation: FieldWeight = Mass / (1 + 0.4 * distSq)
-                double mass = 0.35; // Mass intensity
+                // Field ledger gravity equation: FieldWeight = FieldGain / (1 + 0.4 * distSq)
+                double mass = Tokens.FieldGain; // --field-gain (0.22)
                 double fieldWeight = mass / (1.0 + 0.4 * distSq);
 
-                // Note field color RGB
                 Color noteFieldColor = Color.Parse(note.FieldHueHex);
 
                 r += noteFieldColor.R * fieldWeight;
@@ -385,7 +386,7 @@ namespace GroveApp.Controls
             return Color.FromRgb(finalR, finalG, finalB);
         }
 
-        // High-Frequency 60 FPS Render Pipeline
+        // High-Frequency Render Pipeline
         public override void Render(DrawingContext context)
         {
             base.Render(context);
@@ -400,7 +401,7 @@ namespace GroveApp.Controls
             int minCellY = (int)Math.Floor((-CameraY) / (CellSize * Zoom)) - 1;
             int maxCellY = (int)Math.Ceiling((h - CameraY) / (CellSize * Zoom)) + 1;
 
-            // 1. Field Ledger Grid Canvas: Each cell box's background color IS derived from its field ledger vector!
+            // 1. Field Ledger Grid Canvas
             RenderFieldLedgerGridCanvas(context, minCellX, maxCellX, minCellY, maxCellY);
 
             // 2. Grid Lines (Major 220px & Minor 44px)
@@ -409,7 +410,7 @@ namespace GroveApp.Controls
             // 3. Placed Notes
             RenderNotes(context, minCellX, maxCellX, minCellY, maxCellY);
 
-            // 4. Spent Cell Decay Trail (Grid Cursor Tail Physics)
+            // 4. Spent Cell Decay Trail
             RenderCursorTrail(context);
 
             // 5. Grid Cursor Head & Inset Ring
@@ -421,7 +422,6 @@ namespace GroveApp.Controls
 
         private void RenderFieldLedgerGridCanvas(DrawingContext context, int minX, int maxX, int minY, int maxY)
         {
-            // Evaluate Field Ledger color for every cell in viewport
             for (int cx = minX; cx <= maxX; cx++)
             {
                 for (int cy = minY; cy <= maxY; cy++)
@@ -439,19 +439,19 @@ namespace GroveApp.Controls
 
         private void RenderGridLines(DrawingContext context, int minX, int maxX, int minY, int maxY)
         {
-            var majorPen = new Pen(new SolidColorBrush(Color.Parse("#1E1E1C")), 1.0);
-            var minorPen = new Pen(new SolidColorBrush(Color.Parse("#141412")), 1.0);
+            var majorPen = new Pen(Colors.GridMajorInkBrush, Tokens.StrokeHairline);
+            var minorPen = new Pen(Colors.GridMinorInkBrush, Tokens.StrokeHairline);
 
             if (Zoom >= 0.45)
             {
-                int minMinorX = minX * 5;
-                int maxMinorX = maxX * 5;
-                int minMinorY = minY * 5;
-                int maxMinorY = maxY * 5;
+                int minMinorX = minX * Tokens.GridSubdivisions;
+                int maxMinorX = maxX * Tokens.GridSubdivisions;
+                int minMinorY = minY * Tokens.GridSubdivisions;
+                int maxMinorY = maxY * Tokens.GridSubdivisions;
 
                 for (int mx = minMinorX; mx <= maxMinorX; mx++)
                 {
-                    if (mx % 5 == 0) continue;
+                    if (mx % Tokens.GridSubdivisions == 0) continue;
                     double wx = mx * MinorCellSize;
                     Point p1 = WorldToScreen(new Point(wx, minY * CellSize));
                     Point p2 = WorldToScreen(new Point(wx, maxY * CellSize));
@@ -460,7 +460,7 @@ namespace GroveApp.Controls
 
                 for (int my = minMinorY; my <= maxMinorY; my++)
                 {
-                    if (my % 5 == 0) continue;
+                    if (my % Tokens.GridSubdivisions == 0) continue;
                     double wy = my * MinorCellSize;
                     Point p1 = WorldToScreen(new Point(minX * CellSize, wy));
                     Point p2 = WorldToScreen(new Point(maxX * CellSize, wy));
@@ -487,9 +487,9 @@ namespace GroveApp.Controls
 
         private void RenderNotes(DrawingContext context, int minX, int maxX, int minY, int maxY)
         {
-            var textInkBrush = new SolidColorBrush(Color.Parse("#F4F4F2"));
-            var insetEdgePen = new Pen(new SolidColorBrush(Color.Parse("#6E6E6A")), 1.0);
-            var selectionPen = new Pen(new SolidColorBrush(Color.Parse("#4D90FE")), 2.0);
+            var textInkBrush = Colors.NoteTextBrush;
+            var insetEdgePen = new Pen(Colors.EdgeQuietBrush, Tokens.StrokeContainment);
+            var selectionPen = new Pen(Colors.SignalInteractionBrush, Tokens.StrokeState);
 
             foreach (var note in Notes)
             {
@@ -513,7 +513,7 @@ namespace GroveApp.Controls
                 // Inset Containment Edge
                 context.DrawRectangle(null, insetEdgePen, noteRect.Deflate(0.5));
 
-                // Selection Outline (2px #4D90FE offset by 3px)
+                // Selection Outline (2px --signal-interaction offset by 3px per Shape.md)
                 if (note.IsSelected)
                 {
                     Rect selRect = noteRect.Inflate(3.0 * Zoom);
@@ -523,42 +523,42 @@ namespace GroveApp.Controls
                 // Render Text Block inside Note
                 if (!string.IsNullOrEmpty(note.Text) && Zoom >= 0.3)
                 {
-                    double fontSize = Math.Max(10, 14.0 * Zoom);
+                    double fontSize = Math.Max(10, Typography.SizeBody * Zoom);
                     var formattedText = new FormattedText(
                         note.Text,
                         CultureInfo.CurrentCulture,
                         FlowDirection.LeftToRight,
-                        new Typeface("Inter, Segoe UI, sans-serif", FontStyle.Normal, FontWeight.Normal),
+                        new Typeface(Typography.UiFamily, FontStyle.Normal, Typography.WeightNoteText),
                         fontSize,
                         textInkBrush
                     )
                     {
-                        MaxTextWidth = Math.Max(10, rectW - 30 * Zoom),
-                        MaxTextHeight = Math.Max(10, rectH - 32 * Zoom)
+                        MaxTextWidth = Math.Max(10, rectW - Tokens.SpaceXl * Zoom),
+                        MaxTextHeight = Math.Max(10, rectH - Tokens.SpaceXl * Zoom)
                     };
 
-                    Point textPos = new Point(startScreen.X + 15 * Zoom, startScreen.Y + 16 * Zoom);
+                    Point textPos = new Point(startScreen.X + Tokens.SpaceMd * Zoom, startScreen.Y + Tokens.SpaceMd * Zoom);
                     context.DrawText(formattedText, textPos);
                 }
 
-                // Render Edit Affordance Pill on Hover
+                // Render Edit Affordance Pill on Hover (Chrome affordance uses --r-sm)
                 if (note.IsHovered && Zoom >= 0.5)
                 {
-                    Rect pillRect = new Rect(startScreen.X + rectW - 48 * Zoom, startScreen.Y + 8 * Zoom, 40 * Zoom, 18 * Zoom);
-                    var pillBg = new SolidColorBrush(Color.Parse("#1A1A18"));
-                    var pillPen = new Pen(new SolidColorBrush(Color.Parse("#F4F4F2")), 1.0);
-                    context.FillRectangle(pillBg, pillRect, 3);
-                    context.DrawRectangle(null, pillPen, pillRect, 3);
+                    Rect pillRect = new Rect(startScreen.X + rectW - 48 * Zoom, startScreen.Y + Tokens.SpaceSm * Zoom, 40 * Zoom, 18 * Zoom);
+                    var pillBg = Colors.SurfaceChromeBrush;
+                    var pillPen = new Pen(Colors.EdgeQuietBrush, Tokens.StrokeHairline);
+                    context.FillRectangle(pillBg, pillRect, (float)Tokens.RadiusSm);
+                    context.DrawRectangle(null, pillPen, pillRect, (float)Tokens.RadiusSm);
 
                     var pillText = new FormattedText(
                         "EDIT",
                         CultureInfo.CurrentCulture,
                         FlowDirection.LeftToRight,
-                        new Typeface("Consolas, monospace", FontStyle.Normal, FontWeight.Bold),
-                        Math.Max(8, 9.0 * Zoom),
+                        new Typeface(Typography.MonoFamily, FontStyle.Normal, Typography.WeightMono),
+                        Math.Max(8, Typography.SizeMicro * Zoom),
                         textInkBrush
                     );
-                    context.DrawText(pillText, new Point(pillRect.X + 8 * Zoom, pillRect.Y + 3 * Zoom));
+                    context.DrawText(pillText, new Point(pillRect.X + Tokens.SpaceSm * Zoom, pillRect.Y + 3 * Zoom));
                 }
             }
         }
@@ -572,8 +572,8 @@ namespace GroveApp.Controls
                 double sizeScreen = CellSize * Zoom;
 
                 Rect cellRect = new Rect(startScreen.X, startScreen.Y, sizeScreen, sizeScreen);
-                byte alpha = (byte)(255 * 0.132 * spent.Energy);
-                var trailBrush = new SolidColorBrush(Color.FromArgb(alpha, 244, 244, 242));
+                byte alpha = (byte)(255 * Tokens.InkQuiet * spent.Energy);
+                var trailBrush = new SolidColorBrush(Color.FromArgb(alpha, Colors.NoteText.R, Colors.NoteText.G, Colors.NoteText.B));
                 context.FillRectangle(trailBrush, cellRect);
             }
         }
@@ -596,10 +596,10 @@ namespace GroveApp.Controls
             double curH = endScreen.Y - startScreen.Y;
             Rect cursorRect = new Rect(startScreen.X, startScreen.Y, curW, curH);
 
-            var headFillBrush = new SolidColorBrush(Color.FromArgb(34, 244, 244, 242));
+            var headFillBrush = new SolidColorBrush(Color.FromArgb((byte)(255 * Tokens.CursorFillGain), Colors.NoteText.R, Colors.NoteText.G, Colors.NoteText.B));
             context.FillRectangle(headFillBrush, cursorRect);
 
-            var ringPen = new Pen(new SolidColorBrush(Color.FromArgb(204, 244, 244, 242)), 2.0);
+            var ringPen = new Pen(new SolidColorBrush(Color.FromArgb((byte)(255 * Tokens.CursorRingInk), Colors.NoteText.R, Colors.NoteText.G, Colors.NoteText.B)), Tokens.StrokeCursorRing);
             context.DrawRectangle(null, ringPen, cursorRect.Deflate(1.0));
         }
 
@@ -617,8 +617,9 @@ namespace GroveApp.Controls
 
             Rect marqueeRect = new Rect(x, y, w, h);
 
-            var fillBrush = new SolidColorBrush(Color.FromArgb(26, 77, 144, 254)); // 10% opacity blue
-            var borderPen = new Pen(new SolidColorBrush(Color.Parse("#4D90FE")), 1.5, new DashStyle(new double[] { 4, 4 }, 0));
+            Color marqueeColor = Colors.SignalActiveWork;
+            var fillBrush = new SolidColorBrush(Color.FromArgb((byte)(255 * 0.10), marqueeColor.R, marqueeColor.G, marqueeColor.B));
+            var borderPen = new Pen(Colors.SignalActiveWorkBrush, Tokens.FieldPerimeterWidth, new DashStyle(new double[] { 4, 4 }, 0));
 
             context.FillRectangle(fillBrush, marqueeRect);
             context.DrawRectangle(null, borderPen, marqueeRect);

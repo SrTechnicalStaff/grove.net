@@ -1,11 +1,12 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="clr-namespace:GroveApp.Controls"
+        xmlns:ds="clr-namespace:GroveApp.DesignSystem"
         x:Class="GroveApp.MainWindow"
         Title="Grove v9 — Spatial Grid Desktop Engine"
         Width="1280" Height="800"
         WindowStartupLocation="CenterScreen"
-        Background="#0C0C0B">
+        Background="{x:Static ds:Colors.SurfaceGridHex}">
 
     <Grid>
         <!-- PLANE 0: Infinite Spatial Grid Canvas -->
@@ -13,69 +14,69 @@
 
         <!-- PLANE 2: HUD Operation Bar (Floating Top Overlay) -->
         <Border HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,16,0,0"
-                Background="#1A1A18" BorderBrush="#2D2D2A" BorderThickness="1" CornerRadius="8"
+                Background="{x:Static ds:Colors.SurfaceChromeHex}" BorderBrush="{x:Static ds:Colors.GridMajorInkHex}" BorderThickness="1" CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
                 Padding="8,6" BoxShadow="0 4 16 #80000000">
             <StackPanel Orientation="Horizontal" Spacing="8">
                 <!-- Add Note Button -->
-                <Button Name="BtnAddNote" Click="BtnAddNote_Click" Background="#3D2B56" Foreground="#F4F4F2"
-                        BorderBrush="#6E6E6A" BorderThickness="1" CornerRadius="4" Padding="12,6" FontWeight="SemiBold">
+                <Button Name="BtnAddNote" Click="BtnAddNote_Click" Background="{x:Static ds:Colors.NoteVioletHex}" Foreground="{x:Static ds:Colors.NoteTextHex}"
+                        BorderBrush="{x:Static ds:Colors.GridMajorInkHex}" BorderThickness="1" CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}" Padding="12,6" FontWeight="SemiBold">
                     + Add Note
                 </Button>
 
                 <!-- Color Selection Group -->
-                <Border Width="1" Height="20" Background="#2D2D2A" Margin="4,0" />
+                <Border Width="1" Height="20" Background="{x:Static ds:Colors.GridMajorInkHex}" Margin="4,0" />
 
-                <Button Name="BtnColorViolet" Click="BtnColorViolet_Click" Background="#3D2B56" Width="24" Height="24"
-                        CornerRadius="12" BorderBrush="#F4F4F2" BorderThickness="1" ToolTip.Tip="Violet (Key 2)" />
-                <Button Name="BtnColorClay" Click="BtnColorClay_Click" Background="#5C3A29" Width="24" Height="24"
-                        CornerRadius="12" BorderBrush="#F4F4F2" BorderThickness="1" ToolTip.Tip="Clay (Key 3)" />
-                <Button Name="BtnColorSlateBlue" Click="BtnColorSlateBlue_Click" Background="#273B4A" Width="24" Height="24"
-                        CornerRadius="12" BorderBrush="#F4F4F2" BorderThickness="1" ToolTip.Tip="Slate Blue (Key 4)" />
+                <Button Name="BtnColorViolet" Click="BtnColorViolet_Click" Background="{x:Static ds:Colors.NoteVioletHex}" Width="24" Height="24"
+                        CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}" BorderBrush="{x:Static ds:Colors.NoteTextHex}" BorderThickness="1" ToolTip.Tip="Violet (Key 2)" />
+                <Button Name="BtnColorClay" Click="BtnColorClay_Click" Background="{x:Static ds:Colors.NoteClayHex}" Width="24" Height="24"
+                        CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}" BorderBrush="{x:Static ds:Colors.NoteTextHex}" BorderThickness="1" ToolTip.Tip="Clay (Key 3)" />
+                <Button Name="BtnColorSlateBlue" Click="BtnColorSlateBlue_Click" Background="{x:Static ds:Colors.NoteSlateBlueHex}" Width="24" Height="24"
+                        CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}" BorderBrush="{x:Static ds:Colors.NoteTextHex}" BorderThickness="1" ToolTip.Tip="Slate Blue (Key 4)" />
 
-                <Border Width="1" Height="20" Background="#2D2D2A" Margin="4,0" />
+                <Border Width="1" Height="20" Background="{x:Static ds:Colors.GridMajorInkHex}" Margin="4,0" />
 
                 <!-- Zoom Controls -->
-                <Button Name="BtnZoomIn" Click="BtnZoomIn_Click" Background="#222220" Foreground="#F4F4F2"
-                        BorderBrush="#3D3D3A" BorderThickness="1" CornerRadius="4" Padding="10,4">+</Button>
-                <Button Name="BtnZoomOut" Click="BtnZoomOut_Click" Background="#222220" Foreground="#F4F4F2"
-                        BorderBrush="#3D3D3A" BorderThickness="1" CornerRadius="4" Padding="10,4">−</Button>
-                <Button Name="BtnResetCamera" Click="BtnResetCamera_Click" Background="#222220" Foreground="#F4F4F2"
-                        BorderBrush="#3D3D3A" BorderThickness="1" CornerRadius="4" Padding="10,4">Reset</Button>
+                <Button Name="BtnZoomIn" Click="BtnZoomIn_Click" Background="{x:Static ds:Colors.SurfaceChromeHex}" Foreground="{x:Static ds:Colors.NoteTextHex}"
+                        BorderBrush="{x:Static ds:Colors.GridMajorInkHex}" BorderThickness="1" CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}" Padding="10,4">+</Button>
+                <Button Name="BtnZoomOut" Click="BtnZoomOut_Click" Background="{x:Static ds:Colors.SurfaceChromeHex}" Foreground="{x:Static ds:Colors.NoteTextHex}"
+                        BorderBrush="{x:Static ds:Colors.GridMajorInkHex}" BorderThickness="1" CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}" Padding="10,4">−</Button>
+                <Button Name="BtnResetCamera" Click="BtnResetCamera_Click" Background="{x:Static ds:Colors.SurfaceChromeHex}" Foreground="{x:Static ds:Colors.NoteTextHex}"
+                        BorderBrush="{x:Static ds:Colors.GridMajorInkHex}" BorderThickness="1" CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}" Padding="10,4">Reset</Button>
 
-                <Border Width="1" Height="20" Background="#2D2D2A" Margin="4,0" />
+                <Border Width="1" Height="20" Background="{x:Static ds:Colors.GridMajorInkHex}" Margin="4,0" />
 
                 <!-- Delete Note Button -->
-                <Button Name="BtnDelete" Click="BtnDelete_Click" Background="#222220" Foreground="#E53E3E"
-                        BorderBrush="#3D3D3A" BorderThickness="1" CornerRadius="4" Padding="10,4">Delete</Button>
+                <Button Name="BtnDelete" Click="BtnDelete_Click" Background="{x:Static ds:Colors.SurfaceChromeHex}" Foreground="{x:Static ds:Colors.SignalRefusalHex}"
+                        BorderBrush="{x:Static ds:Colors.GridMajorInkHex}" BorderThickness="1" CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}" Padding="10,4">Delete</Button>
             </StackPanel>
         </Border>
 
         <!-- PLANE 1: Floating In-Place Text Editor Overlay -->
         <Border Name="EditorOverlay" IsVisible="False"
-                Background="#1A1A18" BorderBrush="#4D90FE" BorderThickness="2" CornerRadius="4"
+                Background="{x:Static ds:Colors.SurfaceChromeHex}" BorderBrush="{x:Static ds:Colors.SignalInteractionHex}" BorderThickness="2" CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
                 Padding="12" BoxShadow="0 8 24 #A0000000" HorizontalAlignment="Left" VerticalAlignment="Top">
             <StackPanel Spacing="8">
-                <TextBlock Text="EDIT NOTE IN PLACE" FontFamily="Consolas, monospace" FontSize="10" FontWeight="Bold" Foreground="#4D90FE" LetterSpacing="1" />
+                <TextBlock Text="EDIT NOTE IN PLACE" FontFamily="{x:Static ds:Typography.FontFamilyMono}" FontSize="{x:Static ds:Typography.SizeLabel}" FontWeight="Bold" Foreground="{x:Static ds:Colors.SignalInteractionHex}" LetterSpacing="1" />
                 <TextBox Name="TxtEditor" Width="280" Height="100" AcceptsReturn="True" TextWrapping="Wrap"
-                         Background="#0C0C0B" Foreground="#F4F4F2" BorderBrush="#3D3D3A" BorderThickness="1"
-                         FontFamily="Inter, Segoe UI, sans-serif" FontSize="14" Padding="8" />
+                         Background="{x:Static ds:Colors.SurfaceGridHex}" Foreground="{x:Static ds:Colors.NoteTextHex}" BorderBrush="{x:Static ds:Colors.GridMajorInkHex}" BorderThickness="1"
+                         FontFamily="{x:Static ds:Typography.FontFamilyUi}" FontSize="{x:Static ds:Typography.SizeBody}" Padding="8" CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}" />
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
-                    <Button Name="BtnCancelEdit" Click="BtnCancelEdit_Click" Background="#222220" Foreground="#F4F4F2" CornerRadius="4" Padding="10,4">Cancel</Button>
-                    <Button Name="BtnSaveEdit" Click="BtnSaveEdit_Click" Background="#4D90FE" Foreground="#FFFFFF" CornerRadius="4" Padding="12,4" FontWeight="Bold">Commit (Ctrl+Enter)</Button>
+                    <Button Name="BtnCancelEdit" Click="BtnCancelEdit_Click" Background="{x:Static ds:Colors.SurfaceChromeHex}" Foreground="{x:Static ds:Colors.NoteTextHex}" CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}" Padding="10,4">Cancel</Button>
+                    <Button Name="BtnSaveEdit" Click="BtnSaveEdit_Click" Background="{x:Static ds:Colors.SignalInteractionHex}" Foreground="#FFFFFF" CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}" Padding="12,4" FontWeight="Bold">Commit (Ctrl+Enter)</Button>
                 </StackPanel>
             </StackPanel>
         </Border>
 
         <!-- Bottom HUD Status Bar -->
-        <Border HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Height="28" Background="#121210" BorderBrush="#1E1E1C" BorderThickness="0,1,0,0">
+        <Border HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Height="28" Background="{x:Static ds:Colors.SurfaceChromeHex}" BorderBrush="{x:Static ds:Colors.GridMajorInkHex}" BorderThickness="0,1,0,0">
             <Grid ColumnDefinitions="Auto, *, Auto" Margin="12,0">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
-                    <TextBlock Name="TxtCellCoord" Text="Cell: (0, 0)" Foreground="#8E8E8A" FontSize="11" FontFamily="Consolas, monospace" />
-                    <TextBlock Name="TxtZoom" Text="Zoom: 100%" Foreground="#8E8E8A" FontSize="11" FontFamily="Consolas, monospace" />
-                    <TextBlock Name="TxtNoteCount" Text="Notes: 3" Foreground="#8E8E8A" FontSize="11" FontFamily="Consolas, monospace" />
+                    <TextBlock Name="TxtCellCoord" Text="Cell: (0, 0)" Foreground="{x:Static ds:Colors.NoteTextHex}" FontSize="{x:Static ds:Typography.SizeLabel}" FontFamily="{x:Static ds:Typography.FontFamilyMono}" />
+                    <TextBlock Name="TxtZoom" Text="Zoom: 100%" Foreground="{x:Static ds:Colors.NoteTextHex}" FontSize="{x:Static ds:Typography.SizeLabel}" FontFamily="{x:Static ds:Typography.FontFamilyMono}" />
+                    <TextBlock Name="TxtNoteCount" Text="Notes: 3" Foreground="{x:Static ds:Colors.NoteTextHex}" FontSize="{x:Static ds:Typography.SizeLabel}" FontFamily="{x:Static ds:Typography.FontFamilyMono}" />
                 </StackPanel>
                 <TextBlock Grid.Column="2" Text="Middle / Right Click Drag to Pan • Scroll to Zoom • Double-Click to Place Note"
-                           Foreground="#6E6E6A" FontSize="11" VerticalAlignment="Center" FontFamily="Segoe UI, sans-serif" />
+                           Foreground="{x:Static ds:Colors.NoteTextHex}" FontSize="{x:Static ds:Typography.SizeLabel}" VerticalAlignment="Center" FontFamily="{x:Static ds:Typography.FontFamilyUi}" />
             </Grid>
         </Border>
     </Grid>
