@@ -91,9 +91,9 @@ namespace GroveApp.Controls
 
         private void SeedSampleData()
         {
-            Notes.Add(new GridNote(0, 0, "# Field Ledger\n\nEvery cell derives its aura field gravity with `gravity field` and [violet signal](#96B6F8).", NoteColor.Violet, isAnchored: true));
-            Notes.Add(new GridNote(3, 1, "## Marquee Mechanics\n\n- Drag notes across cells\n- Sweep a **marquee** box\n- Edit with *immediate response*", NoteColor.Clay));
-            Notes.Add(new GridNote(-2, 3, "# Spacetime Grid\n\nCell energy accumulates from `content` presence.\n- **Zero** global overhead\n- [Primary signal](#E8B964) status", NoteColor.SlateBlue));
+            Notes.Add(new GridNote(0, 0, "# Field Ledger\n\n> Spatial grid canvas with **high-DPI** subpixel typography.\n\n- Inline `code` & <u>underline</u> & <del>strikethrough</del>\n- H<sub>2</sub>O and E=mc<sup>2</sup> formulas\n- <span style=\"color:#96B6F8\">HTML Color</span> & [Markdown Gold](#E8B964) & <mark>mark highlight</mark>", NoteColor.Violet, isAnchored: true));
+            Notes.Add(new GridNote(3, 1, "## Code Engine Parity\n\n```cs\npublic class GridEngine {\n    public string Name { get; set; } = \"Grove\";\n    public bool IsActive() => true;\n}\n```\n\n[Grove Architecture](https://grove.net)", NoteColor.Clay));
+            Notes.Add(new GridNote(-2, 3, "### Spacetime Grid\n\n1. **Zero** global overhead\n2. [Primary signal](#E8B964) status\n3. <i>Crisp</i> Inter & Consolas", NoteColor.SlateBlue));
         }
 
         private void OnAnimationTick(object? sender, EventArgs e)
