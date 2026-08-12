@@ -120,10 +120,9 @@ namespace GroveApp.Engine
                 RichTextEngine.Render(context, textPos, layout);
             }
 
-            // 6. Hover / Focus Edit Affordance Pill (Top-Right inset 8px, EDIT uppercase mono)
+            // 6. Focus / Selection Resize Affordance Corner
             if (isHovered || isSelected)
             {
-                RenderEditAffordance(context, noteRect, zoom);
                 RenderResizeCorner(context, noteRect, zoom);
             }
         }
@@ -234,37 +233,7 @@ namespace GroveApp.Engine
             context.DrawGeometry(Colors.SignalAuthoredContextBrush, null, geom);
         }
 
-        private void RenderEditAffordance(DrawingContext context, Rect noteRect, double zoom)
-        {
-            // Edit Affordance Pill per Note.md & Marks.md:
-            // Inset --sp-sm (8px) from top & right edges; fill #161618 at 0.72; 1px border #F4F4F2 at 0.62 alpha;
-            // --r-sm (2px); label "EDIT" mono uppercase #F4F4F2, padding 4px 6px.
-            double scale = Math.Max(0.65, zoom);
-            double pillW = 44.0 * scale;
-            double pillH = 20.0 * scale;
-            double insetRight = 8.0 * scale;
-            double insetTop = 8.0 * scale;
 
-            Rect pillRect = new Rect(noteRect.X + noteRect.Width - insetRight - pillW, noteRect.Y + insetTop, pillW, pillH);
-
-            var pillBg = new SolidColorBrush(Color.FromArgb((byte)(255 * 0.72), 22, 22, 24));
-            var pillBorderPen = new Pen(new SolidColorBrush(Color.FromArgb((byte)(255 * Tokens.InkSecondary), 244, 244, 242)), Tokens.StrokeHairline);
-
-            context.FillRectangle(pillBg, pillRect, (float)(Tokens.RadiusSm * scale));
-            context.DrawRectangle(null, pillBorderPen, pillRect, (float)(Tokens.RadiusSm * scale));
-
-            var pillText = new FormattedText(
-                "EDIT",
-                CultureInfo.CurrentCulture,
-                FlowDirection.LeftToRight,
-                new Typeface(Typography.MonoFamily, FontStyle.Normal, Typography.WeightMono),
-                Math.Max(7.5, Typography.SizeMicro * scale),
-                Colors.NoteTextBrush
-            );
-
-            Point textPt = new Point(pillRect.X + 6.0 * scale, pillRect.Y + 3.0 * scale);
-            context.DrawText(pillText, textPt);
-        }
 
         private void RenderResizeCorner(DrawingContext context, Rect noteRect, double zoom)
         {

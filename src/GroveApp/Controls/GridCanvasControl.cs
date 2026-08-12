@@ -307,6 +307,24 @@ namespace GroveApp.Controls
             return null;
         }
 
+        public List<GridNote> GetSelectedNotes()
+        {
+            var list = new List<GridNote>();
+            foreach (var note in Notes)
+            {
+                if (note.IsSelected)
+                {
+                    list.Add(note);
+                }
+            }
+            if (list.Count == 0 && SelectedNote != null)
+            {
+                SelectedNote.IsSelected = true;
+                list.Add(SelectedNote);
+            }
+            return list;
+        }
+
         private void SelectNote(GridNote note)
         {
             DeselectAllNotes();
@@ -324,22 +342,33 @@ namespace GroveApp.Controls
 
         private void UpdateMarqueeSelection()
         {
-            double minX = Math.Min(_marqueeStartWorld.X, _marqueeCurrentWorld.X);
-            double maxX = Math.Max(_marqueeStartWorld.X, _marqueeCurrentWorld.X);
-            double minY = Math.Min(_marqueeStartWorld.Y, _marqueeCurrentWorld.Y);
-            double maxY = Math.Max(_marqueeStartWorld.Y, _marqueeCurrentWorld.Y);
+            var (startCX, startCY) = WorldToCell(_marqueeStartWorld);
+            var (currCX, currCY) = WorldToCell(_marqueeCurrentWorld);
 
-            Rect marqueeWorldRect = new Rect(minX, minY, maxX - minX, maxY - minY);
+            int minCX = Math.Min(startCX, currCX);
+            int maxCX = Math.Max(startCX, currCX);
+            int minCY = Math.Min(startCY, currCY);
+            int maxCY = Math.Max(startCY, currCY);
 
+            // Cell-aligned rectangle in world coordinates
+            double minWorldX = minCX * CellSize;
+            double minWorldY = minCY * CellSize;
+            double maxWorldX = (maxCX + 1) * CellSize;
+            double maxWorldY = (maxCY + 1) * CellSize;
+
+            Rect cellAlignedMarqueeWorld = new Rect(minWorldX, minWorldY, maxWorldX - minWorldX, maxWorldY - minWorldY);
+
+            GridNote? lastSelected = null;
             foreach (var note in Notes)
             {
                 Rect noteWorldRect = new Rect(note.CellX * CellSize, note.CellY * CellSize, note.SizeCells * CellSize, note.SizeCells * CellSize);
-                note.IsSelected = marqueeWorldRect.Intersects(noteWorldRect);
+                note.IsSelected = cellAlignedMarqueeWorld.Intersects(noteWorldRect);
                 if (note.IsSelected)
                 {
-                    SelectedNote = note;
+                    lastSelected = note;
                 }
             }
+            SelectedNote = lastSelected;
         }
 
         // High-Frequency Engine Pipeline Delegation
@@ -381,13 +410,21 @@ namespace GroveApp.Controls
         {
             if (!_isMarqueeSelecting) return;
 
-            Point startScreen = WorldToScreen(_marqueeStartWorld);
-            Point currentScreen = WorldToScreen(_marqueeCurrentWorld);
+            var (startCX, startCY) = WorldToCell(_marqueeStartWorld);
+            var (currCX, currCY) = WorldToCell(_marqueeCurrentWorld);
 
-            double x = Math.Min(startScreen.X, currentScreen.X);
-            double y = Math.Min(startScreen.Y, currentScreen.Y);
-            double w = Math.Abs(currentScreen.X - startScreen.X);
-            double h = Math.Abs(currentScreen.Y - startScreen.Y);
+            int minCX = Math.Min(startCX, currCX);
+            int maxCX = Math.Max(startCX, currCX);
+            int minCY = Math.Min(startCY, currCY);
+            int maxCY = Math.Max(startCY, currCY);
+
+            Point startScreen = WorldToScreen(new Point(minCX * CellSize, minCY * CellSize));
+            Point endScreen = WorldToScreen(new Point((maxCX + 1) * CellSize, (maxCY + 1) * CellSize));
+
+            double x = startScreen.X;
+            double y = startScreen.Y;
+            double w = endScreen.X - startScreen.X;
+            double h = endScreen.Y - startScreen.Y;
 
             Rect marqueeRect = new Rect(x, y, w, h);
 

@@ -55,6 +55,11 @@ namespace GroveApp.Controls
             }
         }
 
+        public void Close()
+        {
+            HandleEscape();
+        }
+
         private void OnQuickNoteKeyDown(object? sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)

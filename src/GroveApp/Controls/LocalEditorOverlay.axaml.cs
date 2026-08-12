@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -18,15 +20,40 @@ namespace GroveApp.Controls
         Above
     }
 
+    public class EditorTabItem
+    {
+        public GridNote Note { get; }
+        public string DraftText { get; set; }
+        public string OriginalText { get; set; }
+        public bool IsDirty => DraftText != OriginalText;
+
+        public EditorTabItem(GridNote note)
+        {
+            Note = note;
+            OriginalText = note.Text ?? string.Empty;
+            DraftText = OriginalText;
+        }
+    }
+
     public partial class LocalEditorOverlay : UserControl
     {
-        private GridNote? _targetNote;
-        private string _originalText = string.Empty;
+        private readonly List<EditorTabItem> _tabs = new();
+        private int _activeIndex = 0;
+        private bool _isWysiwygMode = true; // Default to WYSIWYG live rendering
         private AnchorSide _fixedSide = AnchorSide.Right;
-        private bool _isDirty;
 
-        public GridNote? TargetNote => _targetNote;
-        public bool IsDirty => _isDirty;
+        public GridNote? TargetNote => _tabs.Count > 0 && _activeIndex >= 0 && _activeIndex < _tabs.Count ? _tabs[_activeIndex].Note : null;
+        public bool IsDirty
+        {
+            get
+            {
+                foreach (var tab in _tabs)
+                {
+                    if (tab.IsDirty) return true;
+                }
+                return false;
+            }
+        }
 
         public event Action<GridNote, string>? SaveRequested;
         public event Action<GridNote, string>? EscalationRequested;
@@ -43,38 +70,155 @@ namespace GroveApp.Controls
 
         public void OpenForNote(GridNote note, Rect sourceScreenBounds, Size viewportSize)
         {
-            _targetNote = note;
-            _originalText = note.Text ?? string.Empty;
-            TxtDraft.Text = _originalText;
-            _isDirty = false;
+            OpenForNotes(new[] { note }, sourceScreenBounds, viewportSize);
+        }
+
+        public void OpenForNotes(IEnumerable<GridNote> notes, Rect primarySourceBounds, Size viewportSize)
+        {
+            _tabs.Clear();
+            foreach (var note in notes)
+            {
+                _tabs.Add(new EditorTabItem(note));
+            }
+            _activeIndex = 0;
 
             InlineConfirmRow.IsVisible = false;
-            RefusalRow.IsVisible = false;
-            TxtUnsaved.IsVisible = false;
 
-            // Run anchor procedure to select initial candidate side (Right, Left, Below, Above)
-            _fixedSide = ResolveAnchorSide(sourceScreenBounds, viewportSize);
-            UpdatePosition(sourceScreenBounds, viewportSize);
+            _fixedSide = ResolveAnchorSide(primarySourceBounds, viewportSize);
+            UpdatePosition(primarySourceBounds, viewportSize);
 
             IsVisible = true;
+            RefreshActiveTabUI();
             UpdateSaveButtonState();
+        }
 
-            // Focus draft field & set caret
-            TxtDraft.Focus();
-            TxtDraft.SelectionStart = TxtDraft.Text?.Length ?? 0;
-            TxtDraft.SelectionEnd = TxtDraft.SelectionStart;
+        public void SelectNextTab()
+        {
+            if (_tabs.Count <= 1) return;
+            SyncCurrentDraftToTab();
+            _activeIndex = (_activeIndex + 1) % _tabs.Count;
+            RefreshActiveTabUI();
+        }
+
+        public void SelectPreviousTab()
+        {
+            if (_tabs.Count <= 1) return;
+            SyncCurrentDraftToTab();
+            _activeIndex = (_activeIndex - 1 + _tabs.Count) % _tabs.Count;
+            RefreshActiveTabUI();
+        }
+
+        public void SelectTab(int index)
+        {
+            if (index < 0 || index >= _tabs.Count || index == _activeIndex) return;
+            SyncCurrentDraftToTab();
+            _activeIndex = index;
+            RefreshActiveTabUI();
+        }
+
+        private void SyncCurrentDraftToTab()
+        {
+            if (_activeIndex >= 0 && _activeIndex < _tabs.Count)
+            {
+                _tabs[_activeIndex].DraftText = TxtDraft.Text ?? string.Empty;
+            }
+        }
+
+        private void RefreshActiveTabUI()
+        {
+            RebuildTabStrip();
+
+            if (_activeIndex >= 0 && _activeIndex < _tabs.Count)
+            {
+                var tab = _tabs[_activeIndex];
+                TxtDraft.Text = tab.DraftText;
+                WysiwygPreview.Text = tab.DraftText;
+                TxtUnsavedBadge.IsVisible = tab.IsDirty;
+            }
+
+            UpdateModeUI();
+            UpdateSaveButtonState();
+        }
+
+        private void RebuildTabStrip()
+        {
+            TabStripPanel.Children.Clear();
+
+            for (int i = 0; i < _tabs.Count; i++)
+            {
+                int index = i;
+                var tab = _tabs[i];
+                bool isActive = (i == _activeIndex);
+
+                var tabButton = new Button
+                {
+                    Background = isActive ? new SolidColorBrush(Color.Parse("#242428")) : Brushes.Transparent,
+                    BorderBrush = isActive ? new SolidColorBrush(Color.Parse("#3A3A40")) : Brushes.Transparent,
+                    BorderThickness = new Thickness(1),
+                    CornerRadius = Tokens.CornerRadiusSm,
+                    Padding = new Thickness(10, 4),
+                    Margin = new Thickness(0, 0, 4, 0),
+                    VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+                };
+
+                string title = $"Note {i + 1}";
+                if (tab.IsDirty)
+                {
+                    title += " •";
+                }
+
+                var textBlock = new TextBlock
+                {
+                    Text = title,
+                    FontFamily = Typography.MonoFamily,
+                    FontSize = Typography.SizeLabel,
+                    FontWeight = isActive ? FontWeight.SemiBold : FontWeight.Normal,
+                    Foreground = isActive ? new SolidColorBrush(Color.Parse("#EAEAEA")) : Colors.TextSecondaryBrush
+                };
+
+                tabButton.Content = textBlock;
+                tabButton.Click += (s, e) => SelectTab(index);
+
+                TabStripPanel.Children.Add(tabButton);
+            }
+        }
+
+        public void ToggleWysiwygMode()
+        {
+            _isWysiwygMode = !_isWysiwygMode;
+            SyncCurrentDraftToTab();
+            UpdateModeUI();
+        }
+
+        private void UpdateModeUI()
+        {
+            if (_isWysiwygMode)
+            {
+                TxtDraft.IsVisible = false;
+                WysiwygScrollViewer.IsVisible = true;
+                WysiwygPreview.Text = TxtDraft.Text ?? string.Empty;
+                TxtModeLabel.Text = "WYSIWYG";
+                BtnModeToggle.Background = new SolidColorBrush(Color.Parse("#242428"));
+            }
+            else
+            {
+                WysiwygScrollViewer.IsVisible = false;
+                TxtDraft.IsVisible = true;
+                TxtModeLabel.Text = "RAW";
+                BtnModeToggle.Background = new SolidColorBrush(Color.Parse("#3A3A40"));
+                TxtDraft.Focus();
+            }
         }
 
         public void UpdatePosition(Rect sourceScreenBounds, Size viewportSize)
         {
-            const double gap = Tokens.SpaceMd; // 16px gap
-            const double margin = Tokens.SpaceMd; // 16px viewport margin
-            double frameWidth = 340.0;
-            double frameHeight = FrameBorder.Bounds.Height > 0 ? FrameBorder.Bounds.Height : 260.0;
+            const double gap = Tokens.SpaceMd;
+            const double margin = Tokens.SpaceMd;
+            double frameWidth = 580.0;
+            double frameHeight = FrameBorder.Bounds.Height > 0 ? FrameBorder.Bounds.Height : 380.0;
 
             Point pos = CalculateSidePosition(_fixedSide, sourceScreenBounds, frameWidth, frameHeight, gap);
 
-            // Frame follows source without scaling or re-flipping; clamp position if primary position went offscreen
             double clampedX = Math.Clamp(pos.X, margin, Math.Max(margin, viewportSize.Width - frameWidth - margin));
             double clampedY = Math.Clamp(pos.Y, margin, Math.Max(margin, viewportSize.Height - frameHeight - margin));
 
@@ -85,8 +229,8 @@ namespace GroveApp.Controls
         {
             const double gap = Tokens.SpaceMd;
             const double margin = Tokens.SpaceMd;
-            double frameWidth = 340.0;
-            double frameHeight = FrameBorder.Bounds.Height > 0 ? FrameBorder.Bounds.Height : 260.0;
+            double frameWidth = 580.0;
+            double frameHeight = FrameBorder.Bounds.Height > 0 ? FrameBorder.Bounds.Height : 380.0;
 
             AnchorSide[] candidateOrder = new[] { AnchorSide.Right, AnchorSide.Left, AnchorSide.Below, AnchorSide.Above };
 
@@ -102,7 +246,6 @@ namespace GroveApp.Controls
                 }
             }
 
-            // Fallback to 4th candidate (Above) when none fit
             return AnchorSide.Above;
         }
 
@@ -123,26 +266,34 @@ namespace GroveApp.Controls
 
         private void OnDraftTextChanged(object? sender, TextChangedEventArgs e)
         {
-            _isDirty = (TxtDraft.Text ?? string.Empty) != _originalText;
-            TxtUnsaved.IsVisible = _isDirty;
+            SyncCurrentDraftToTab();
+            if (_activeIndex >= 0 && _activeIndex < _tabs.Count)
+            {
+                var tab = _tabs[_activeIndex];
+                TxtUnsavedBadge.IsVisible = tab.IsDirty;
+                if (_isWysiwygMode)
+                {
+                    WysiwygPreview.Text = tab.DraftText;
+                }
+            }
+            RebuildTabStrip();
             UpdateSaveButtonState();
         }
 
         private void UpdateSaveButtonState()
         {
-            if (_isDirty)
+            bool dirty = IsDirty;
+            if (dirty)
             {
                 BtnSave.Background = Colors.SignalInteractionBrush;
                 BtnSave.Foreground = Colors.CPaperInkBrush;
                 BtnSave.BorderBrush = null;
-                BtnSave.BorderThickness = new Thickness(0);
             }
             else
             {
                 BtnSave.Background = Brushes.Transparent;
                 BtnSave.Foreground = Colors.TextUnavailableBrush;
                 BtnSave.BorderBrush = Colors.EdgeHairlineBrush;
-                BtnSave.BorderThickness = new Thickness(1);
             }
         }
 
@@ -153,6 +304,23 @@ namespace GroveApp.Controls
                 CommitSave();
                 e.Handled = true;
             }
+            else if (e.Key == Key.E && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+            {
+                ToggleWysiwygMode();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Tab)
+            {
+                if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+                {
+                    SelectPreviousTab();
+                }
+                else
+                {
+                    SelectNextTab();
+                }
+                e.Handled = true;
+            }
             else if (e.Key == Key.Escape)
             {
                 HandleEscape();
@@ -160,31 +328,28 @@ namespace GroveApp.Controls
             }
         }
 
-        private void CommitSave()
+        public void CommitSave()
         {
-            if (_targetNote != null && _isDirty)
+            SyncCurrentDraftToTab();
+            foreach (var tab in _tabs)
             {
-                string newText = TxtDraft.Text ?? string.Empty;
-                SaveRequested?.Invoke(_targetNote, newText);
-                CloseSelf();
+                if (tab.IsDirty)
+                {
+                    tab.Note.Text = tab.DraftText;
+                    tab.Note.RecalculateFootprint();
+                    SaveRequested?.Invoke(tab.Note, tab.DraftText);
+                }
             }
-            else if (!_isDirty)
-            {
-                CloseSelf();
-            }
+            CloseSelf();
         }
 
-        private void HandleEscape()
+        public void HandleEscape()
         {
             if (InlineConfirmRow.IsVisible)
             {
                 InlineConfirmRow.IsVisible = false;
             }
-            else if (RefusalRow.IsVisible)
-            {
-                RefusalRow.IsVisible = false;
-            }
-            else if (_isDirty)
+            else if (IsDirty)
             {
                 InlineConfirmRow.IsVisible = true;
             }
@@ -194,36 +359,29 @@ namespace GroveApp.Controls
             }
         }
 
-        private void CloseSelf()
+        public void CloseSelf()
         {
             IsVisible = false;
             InlineConfirmRow.IsVisible = false;
-            RefusalRow.IsVisible = false;
-            _targetNote = null;
+            _tabs.Clear();
+            _activeIndex = 0;
             Closed?.Invoke();
         }
 
+        private void BtnModeToggle_Click(object? sender, RoutedEventArgs e) => ToggleWysiwygMode();
         private void BtnCancel_Click(object? sender, RoutedEventArgs e) => HandleEscape();
         private void BtnSave_Click(object? sender, RoutedEventArgs e) => CommitSave();
         private void BtnKeepEditing_Click(object? sender, RoutedEventArgs e) => InlineConfirmRow.IsVisible = false;
-
         private void BtnDiscardConfirm_Click(object? sender, RoutedEventArgs e) => CloseSelf();
 
         private void BtnEscalate_Click(object? sender, RoutedEventArgs e)
         {
-            if (_targetNote != null)
+            SyncCurrentDraftToTab();
+            if (TargetNote != null && _activeIndex >= 0 && _activeIndex < _tabs.Count)
             {
-                EscalationRequested?.Invoke(_targetNote, TxtDraft.Text ?? string.Empty);
+                EscalationRequested?.Invoke(TargetNote, _tabs[_activeIndex].DraftText);
                 CloseSelf();
             }
-        }
-
-        private void BtnRefusalDismiss_Click(object? sender, RoutedEventArgs e) => RefusalRow.IsVisible = false;
-
-        private void BtnRefusalRetry_Click(object? sender, RoutedEventArgs e)
-        {
-            RefusalRow.IsVisible = false;
-            CommitSave();
         }
     }
 }
