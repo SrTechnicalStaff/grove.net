@@ -42,7 +42,7 @@ namespace GroveApp
                 PlaneCompositor.RegisterPlaneView(new ThreePlaneVisualCompositorContainer.ControlPlaneView(
                     view, VisualPlaneType.Plane1_InformationPlane, ThreePlaneVisualCompositorContainer.Plane1ZIndex));
             }
-            foreach (Control view in new Control[] { LayerManagerOverlay, ContextMenuOverlay, SpatialWatermark, PerformanceTracker })
+            foreach (Control view in new Control[] { LayerManagerOverlay, ContextMenuOverlay, SpatialWatermark, PerformanceTracker, NamedSlate })
             {
                 PlaneCompositor.RegisterPlaneView(new ThreePlaneVisualCompositorContainer.ControlPlaneView(
                     view, VisualPlaneType.Plane2_HUDPlane, ThreePlaneVisualCompositorContainer.Plane2ZIndex));
@@ -58,8 +58,8 @@ namespace GroveApp
 
             _focusRouter = new GlobalFocusPrecedenceRouter(
                 this,
-                () => NotepadEditor.IsVisible || QuickNote.IsVisible || DocumentEditor.IsVisible || ImageProperties.IsVisible || LayerManagerOverlay.IsVisible || ContextMenuOverlay.IsVisible,
-                () => !NotepadEditor.IsVisible && !QuickNote.IsVisible && !DocumentEditor.IsVisible && !ImageProperties.IsVisible && !LayerManagerOverlay.IsVisible && !ContextMenuOverlay.IsVisible,
+                () => NotepadEditor.IsVisible || QuickNote.IsVisible || DocumentEditor.IsVisible || ImageProperties.IsVisible || LayerManagerOverlay.IsVisible || ContextMenuOverlay.IsVisible || NamedSlate.IsVisible,
+                () => !NotepadEditor.IsVisible && !QuickNote.IsVisible && !DocumentEditor.IsVisible && !ImageProperties.IsVisible && !LayerManagerOverlay.IsVisible && !ContextMenuOverlay.IsVisible && !NamedSlate.IsVisible,
                 combination => _keybindModule.ProcessRoutedCombination(combination, this));
             Closed += (_, _) =>
             {
@@ -118,6 +118,8 @@ namespace GroveApp
             ImageProperties.Closed += OnOverlayClosed;
 
             LayerManagerOverlay.Closed += OnOverlayClosed;
+            NamedSlate.Closed += OnOverlayClosed;
+            NamedSlate.DocumentSaveRequested += OnNamedSlateDocumentSaveRequested;
 
             SizeChanged += (s, e) => UpdateNotepadEditorPosition();
 
@@ -268,17 +270,11 @@ namespace GroveApp
         {
             if (item is GridDocument document)
             {
-                DocumentEditor.OpenForDocument(
-                    document,
-                    CanvasControl.GetContentScreenBounds(document),
-                    Bounds.Size);
+                NamedSlate.OpenForDocument(document);
             }
             else if (item is GridImage image)
             {
-                ImageProperties.OpenForImage(
-                    image,
-                    CanvasControl.GetContentScreenBounds(image),
-                    Bounds.Size);
+                NamedSlate.OpenGallery(new[] { image });
             }
         }
 
@@ -315,6 +311,14 @@ namespace GroveApp
             CanvasControl.RefreshFieldLedger();
             CanvasControl.InvalidateVisual();
             CanvasControl.Focus();
+        }
+
+        private void OnNamedSlateDocumentSaveRequested(GridDocument document, string title, string rawText)
+        {
+            document.UpdateText(title, rawText);
+            CanvasControl.UpdateMemoryForItem(document);
+            CanvasControl.RefreshFieldLedger();
+            CanvasControl.InvalidateVisual();
         }
 
         private void OnQuickNoteSaveAndPlaceRequested(QuickNoteItem item)
@@ -383,10 +387,10 @@ namespace GroveApp
                     OpenNotepadEditorForNote(note);
                     break;
                 case "open" when target is GridDocument document:
-                    DocumentEditor.OpenForDocument(document, CanvasControl.GetContentScreenBounds(document), Bounds.Size);
+                    NamedSlate.OpenForDocument(document);
                     break;
                 case "open" when target is GridImage image:
-                    ImageProperties.OpenForImage(image, CanvasControl.GetContentScreenBounds(image), Bounds.Size);
+                    NamedSlate.OpenGallery(new[] { image });
                     break;
                 case "anchor" when target != null:
                     IReadOnlyList<GridContentItem> anchorTargets = CanvasControl.GetSelectedItems();
@@ -491,6 +495,16 @@ namespace GroveApp
                 if (e.Key == Key.Escape)
                 {
                     ImageProperties.Close();
+                    e.Handled = true;
+                }
+                return;
+            }
+
+            if (NamedSlate.IsVisible)
+            {
+                if (e.Key == Key.Escape)
+                {
+                    NamedSlate.Close();
                     e.Handled = true;
                 }
                 return;

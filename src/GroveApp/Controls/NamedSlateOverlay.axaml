@@ -1,0 +1,83 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ds="clr-namespace:GroveApp.DesignSystem"
+             x:Class="GroveApp.Controls.NamedSlateOverlay"
+             IsVisible="False"
+             IsHitTestVisible="True"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch"
+             Margin="16">
+    <Border Background="{x:Static ds:Colors.SurfaceChromeHex}"
+            BorderBrush="{x:Static ds:Colors.HudSlateBorderHex}"
+            BorderThickness="1"
+            CornerRadius="{x:Static ds:Tokens.CornerRadiusNone}"
+            Padding="16">
+        <Grid RowDefinitions="Auto,Auto,*">
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                <TextBlock x:Name="IdentityText"
+                           Foreground="{x:Static ds:Colors.TextPrimaryBrush}"
+                           FontFamily="{x:Static ds:Typography.FontFamilyUi}"
+                           FontSize="{x:Static ds:Typography.SizeTitleSmall}"
+                           FontWeight="Bold" />
+                <Button x:Name="CloseButton"
+                        Grid.Column="1"
+                        Content="Close"
+                        Padding="8,4"
+                        Background="{x:Static ds:Colors.SurfaceInteractiveHex}"
+                        BorderBrush="{x:Static ds:Colors.HudSlateBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="{x:Static ds:Tokens.CornerRadiusNone}"
+                        Foreground="{x:Static ds:Colors.TextPrimaryBrush}" />
+            </Grid>
+
+            <Grid Grid.Row="1"
+                  Margin="0,12,0,12"
+                  ColumnDefinitions="*,Auto"
+                  IsVisible="False"
+                  x:Name="ArchiveControls">
+                <TextBox x:Name="SearchBox"
+                         Watermark="Find a Memory"
+                         Background="{x:Static ds:Colors.SurfaceNestedBrush}"
+                         BorderBrush="{x:Static ds:Colors.HudSlateBorderBrush}"
+                         BorderThickness="1"
+                         Padding="8,5"
+                         Foreground="{x:Static ds:Colors.TextPrimaryBrush}" />
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            Spacing="8"
+                            Margin="12,0,0,0">
+                    <Button x:Name="AllFilterButton" Content="All" Padding="8,4" />
+                    <Button x:Name="NotesFilterButton" Content="Notes" Padding="8,4" />
+                    <Button x:Name="DocumentsFilterButton" Content="Documents" Padding="8,4" />
+                    <Button x:Name="ImagesFilterButton" Content="Images" Padding="8,4" />
+                </StackPanel>
+            </Grid>
+
+            <ScrollViewer Grid.Row="2"
+                          HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+                <Grid x:Name="ContentHost">
+                    <Grid x:Name="WritingPanel" IsVisible="False">
+                        <TextBox x:Name="WritingEditor"
+                                 Width="640"
+                                 MaxWidth="640"
+                                 HorizontalAlignment="Center"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 Background="{x:Static ds:Colors.SurfacePageBrush}"
+                                 Foreground="{x:Static ds:Colors.CPaperInkBrush}"
+                                 BorderThickness="0"
+                                 Padding="24"
+                                 FontFamily="{x:Static ds:Typography.FontFamilyUi}"
+                                 FontSize="{x:Static ds:Typography.SizeBody}" />
+                    </Grid>
+                    <WrapPanel x:Name="ArchivePanel"
+                               IsVisible="False"
+                               ItemWidth="220"
+                               ItemHeight="180"
+                               Orientation="Horizontal" />
+                </Grid>
+            </ScrollViewer>
+        </Grid>
+    </Border>
+</UserControl>
