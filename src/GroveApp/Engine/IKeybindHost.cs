@@ -28,6 +28,7 @@ public interface IKeybindHost
     void OpenNotepadForNotes(IReadOnlyList<GridNote> notes, Rect sourceBounds);
     void CloseQuickNote();
     void ToggleLayerManager();
+    void OpenContextMenuAtCursor();
     void ToggleLayerIsolation();
     bool ProcessLayerKeyDown(KeyEventArgs args);
 

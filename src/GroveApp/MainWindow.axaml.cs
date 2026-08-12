@@ -52,13 +52,14 @@ namespace GroveApp
             LayerManagerOverlay.BindLayerService(CanvasControl.LayerStack);
             ContextMenuOverlay.BindService(_contextMenuService);
             ContextMenuOverlay.CommandRequested += OnContextMenuCommandRequested;
+            _contextMenuService.ContextMenuStateChanged += OnContextMenuStateChanged;
             _watermarkBinding = new HudBindingAdapter(CanvasControl, CanvasControl.LayerStack);
             SpatialWatermark.Bind(_watermarkBinding);
 
             _focusRouter = new GlobalFocusPrecedenceRouter(
                 this,
-                () => NotepadEditor.IsVisible || QuickNote.IsVisible || DocumentEditor.IsVisible || ImageProperties.IsVisible || LayerManagerOverlay.IsVisible,
-                () => !NotepadEditor.IsVisible && !QuickNote.IsVisible && !DocumentEditor.IsVisible && !ImageProperties.IsVisible && !LayerManagerOverlay.IsVisible,
+                () => NotepadEditor.IsVisible || QuickNote.IsVisible || DocumentEditor.IsVisible || ImageProperties.IsVisible || LayerManagerOverlay.IsVisible || ContextMenuOverlay.IsVisible,
+                () => !NotepadEditor.IsVisible && !QuickNote.IsVisible && !DocumentEditor.IsVisible && !ImageProperties.IsVisible && !LayerManagerOverlay.IsVisible && !ContextMenuOverlay.IsVisible,
                 combination => _keybindModule.ProcessRoutedCombination(combination, this));
             Closed += (_, _) =>
             {
@@ -202,6 +203,14 @@ namespace GroveApp
                 CanvasControl.LayerStack.ActiveLayerId,
                 targetIds,
                 new ScreenSize(CanvasControl.Bounds.Width, CanvasControl.Bounds.Height));
+        }
+
+        private void OnContextMenuStateChanged(SpatialContextMenuModel? model)
+        {
+            if (model is null)
+            {
+                Dispatcher.UIThread.Post(() => CanvasControl.Focus());
+            }
         }
 
         private void OnPerformanceChanged(HudPerformanceSnapshot snapshot)
@@ -419,7 +428,31 @@ namespace GroveApp
                     }
                     CanvasControl.InvalidateVisual();
                     break;
+                case "grid-properties":
+                    CanvasControl.ToggleGridLines();
+                    break;
+                case "group-anchor":
+                    foreach (GridContentItem item in CanvasControl.GetSelectedItems())
+                    {
+                        item.IsAnchored = !item.IsAnchored;
+                    }
+                    CanvasControl.RefreshFieldLedger();
+                    CanvasControl.InvalidateVisual();
+                    break;
+                case "cut" when target is GridContentItem cutTarget:
+                    _ = CutContextMenuItemAsync(cutTarget);
+                    break;
             }
+
+            CanvasControl.Focus();
+        }
+
+        private async Task CutContextMenuItemAsync(GridContentItem item)
+        {
+            await CanvasControl.ClipboardService.CopyItemsAsync(new[] { item });
+            CanvasControl.RemoveItem(item);
+            CanvasControl.DeselectAllItems();
+            CanvasControl.Focus();
         }
 
         private async Task PasteContextMenuItemsAsync()
@@ -463,8 +496,21 @@ namespace GroveApp
                 return;
             }
 
+            if (_contextMenuService.ActiveMenu != null && e.Key != Key.Escape)
+            {
+                return;
+            }
+
             if (!e.Handled)
             {
+                if (e.Key == Key.Escape && _contextMenuService.ActiveMenu != null)
+                {
+                    _contextMenuService.CloseContextMenu();
+                    CanvasControl.Focus();
+                    e.Handled = true;
+                    return;
+                }
+
                 _keybindModule.ProcessKeyDown(e, this);
             }
         }
@@ -493,6 +539,12 @@ namespace GroveApp
 
         void IKeybindHost.CloseQuickNote() => QuickNote.Close();
         void IKeybindHost.ToggleLayerManager() => LayerManagerOverlay.Toggle();
+        void IKeybindHost.OpenContextMenuAtCursor()
+        {
+            Point screenPoint = CanvasControl.WorldToScreen(CanvasControl.CursorDescriptor.WorldOrigin);
+            OpenContextMenuAt(screenPoint);
+            Dispatcher.UIThread.Post(ContextMenuOverlay.FocusFirstCommand);
+        }
         void IKeybindHost.ToggleLayerIsolation() => CanvasControl.LayerActivation.ToggleIsolationMode();
         void IKeybindHost.ToggleGridLines() => CanvasControl.ToggleGridLines();
         void IKeybindHost.FrameAllContent() => CanvasControl.FrameAllContent();

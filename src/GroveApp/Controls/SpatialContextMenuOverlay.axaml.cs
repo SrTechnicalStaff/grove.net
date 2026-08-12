@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -35,6 +36,12 @@ public partial class SpatialContextMenuOverlay : UserControl
         _service.ContextMenuStateChanged += OnMenuStateChanged;
         _service.CommandRequested += OnCommandRequested;
         OnMenuStateChanged(_service.ActiveMenu);
+    }
+
+    public void FocusFirstCommand()
+    {
+        Button? firstButton = CommandsPanel.Children.OfType<Button>().FirstOrDefault();
+        firstButton?.Focus();
     }
 
     private void OnCommandRequested(ContextMenuCommandInvocation invocation)

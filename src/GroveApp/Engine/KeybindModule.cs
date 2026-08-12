@@ -142,6 +142,14 @@ namespace GroveApp.Engine
                 return true;
             }
 
+            if (e.Key == Key.Apps ||
+                (e.Key == Key.F10 && e.KeyModifiers.HasFlag(KeyModifiers.Shift)))
+            {
+                host.OpenContextMenuAtCursor();
+                e.Handled = true;
+                return true;
+            }
+
             // Spatial arming keys
             if (e.Key is Key.N or Key.D)
             {
