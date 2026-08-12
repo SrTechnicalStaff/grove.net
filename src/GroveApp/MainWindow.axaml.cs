@@ -35,9 +35,21 @@ namespace GroveApp
         public MainWindow()
         {
             InitializeComponent();
+            PlaneCompositor.RegisterPlaneView(new ThreePlaneVisualCompositorContainer.ControlPlaneView(
+                CanvasControl, VisualPlaneType.Plane0_SpatialGrid, ThreePlaneVisualCompositorContainer.Plane0ZIndex));
+            foreach (Control view in new Control[] { NotepadEditor, QuickNote, DocumentEditor, ImageProperties })
+            {
+                PlaneCompositor.RegisterPlaneView(new ThreePlaneVisualCompositorContainer.ControlPlaneView(
+                    view, VisualPlaneType.Plane1_InformationPlane, ThreePlaneVisualCompositorContainer.Plane1ZIndex));
+            }
+            foreach (Control view in new Control[] { LayerManagerOverlay, ContextMenuOverlay, SpatialWatermark, PerformanceTracker })
+            {
+                PlaneCompositor.RegisterPlaneView(new ThreePlaneVisualCompositorContainer.ControlPlaneView(
+                    view, VisualPlaneType.Plane2_HUDPlane, ThreePlaneVisualCompositorContainer.Plane2ZIndex));
+            }
             Opened += (_, _) => _backdropManager.Apply(this);
 
-            LayerSlate.BindLayerService(CanvasControl.LayerStack);
+            LayerManagerOverlay.BindLayerService(CanvasControl.LayerStack);
             ContextMenuOverlay.BindService(_contextMenuService);
             ContextMenuOverlay.CommandRequested += OnContextMenuCommandRequested;
             _watermarkBinding = new HudBindingAdapter(CanvasControl, CanvasControl.LayerStack);
@@ -45,8 +57,8 @@ namespace GroveApp
 
             _focusRouter = new GlobalFocusPrecedenceRouter(
                 this,
-                () => NotepadEditor.IsVisible || QuickNote.IsVisible || DocumentEditor.IsVisible || ImageProperties.IsVisible || LayerSlate.IsVisible,
-                () => !NotepadEditor.IsVisible && !QuickNote.IsVisible && !DocumentEditor.IsVisible && !ImageProperties.IsVisible && !LayerSlate.IsVisible,
+                () => NotepadEditor.IsVisible || QuickNote.IsVisible || DocumentEditor.IsVisible || ImageProperties.IsVisible || LayerManagerOverlay.IsVisible,
+                () => !NotepadEditor.IsVisible && !QuickNote.IsVisible && !DocumentEditor.IsVisible && !ImageProperties.IsVisible && !LayerManagerOverlay.IsVisible,
                 combination => _keybindModule.ProcessRoutedCombination(combination, this));
             Closed += (_, _) =>
             {
@@ -55,7 +67,6 @@ namespace GroveApp
                 _watermarkBinding?.Dispose();
             };
 
-            // Enable Windows 11 Mica / Acrylic backdrop materials where supported
             TransparencyLevelHint = new[]
             {
                 WindowTransparencyLevel.Mica,
@@ -64,8 +75,12 @@ namespace GroveApp
                 WindowTransparencyLevel.None
             };
 
-            // Enable FluentAvalonia Dark Titlebar & Extend Content Into Titlebar
-            TitleBar.ExtendsContentIntoTitleBar = true;
+            TitleBar.ExtendsContentIntoTitleBar = false;
+            TitleBar.Height = 40;
+            TitleBar.BackgroundColor = Colors.SurfaceChrome;
+            TitleBar.ForegroundColor = Colors.NoteText;
+            TitleBar.InactiveBackgroundColor = Colors.SurfaceChrome;
+            TitleBar.InactiveForegroundColor = Colors.TitleBarInactiveForeground;
             TitleBar.ButtonBackgroundColor = Colors.SurfaceChrome;
             TitleBar.ButtonForegroundColor = Colors.NoteText;
             TitleBar.ButtonHoverBackgroundColor = Colors.GridMaj;
@@ -75,23 +90,22 @@ namespace GroveApp
             TitleBar.ButtonInactiveBackgroundColor = Colors.SurfaceChrome;
             TitleBar.ButtonInactiveForegroundColor = Colors.TitleBarInactiveForeground;
 
-            // Wire GridCanvasControl events
             CanvasControl.NoteSelected += OnNoteSelected;
             CanvasControl.NoteDoubleClicked += OnNoteDoubleClicked;
             CanvasControl.ContentDoubleClicked += OnContentDoubleClicked;
             CanvasControl.EmptyCellDoubleClicked += OnEmptyCellDoubleClicked;
             CanvasControl.CameraChanged += OnCameraChanged;
             CanvasControl.ArmedItemPlaced += OnArmedItemPlaced;
+            CanvasControl.PerformanceChanged += OnPerformanceChanged;
 
-            // Handle Pointer Press on Canvas for Double Click detection
             CanvasControl.AddHandler(PointerPressedEvent, OnCanvasPointerPressed, RoutingStrategies.Tunnel);
             CanvasControl.AddHandler(PointerReleasedEvent, OnCanvasPointerReleased, RoutingStrategies.Tunnel);
             CanvasControl.AddHandler(PointerMovedEvent, OnCanvasPointerMoved, RoutingStrategies.Tunnel);
+            CanvasControl.RightClickTapped += OpenContextMenuAt;
 
             _contextLongPressTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
             _contextLongPressTimer.Tick += OnContextLongPressTimerTick;
 
-            // Wire Information Layer Overlays
             NotepadEditor.SaveRequested += OnNotepadEditorSaveRequested;
             NotepadEditor.Closed += OnOverlayClosed;
 
@@ -102,21 +116,13 @@ namespace GroveApp
             DocumentEditor.Closed += OnOverlayClosed;
             ImageProperties.Closed += OnOverlayClosed;
 
-            LayerSlate.Closed += OnOverlayClosed;
+            LayerManagerOverlay.Closed += OnOverlayClosed;
 
-            // Handle Window Resizing for Editor Overlay anchor update
             SizeChanged += (s, e) => UpdateNotepadEditorPosition();
 
-            // Handle Keyboard Input via KeybindModule
             KeyDown += OnWindowKeyDown;
+            KeyUp += OnWindowKeyUp;
 
-            // Update HUD status telemetry periodically
-            var timer = new Avalonia.Threading.DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(50)
-            };
-            timer.Tick += (s, e) => UpdateHudStatus();
-            timer.Start();
         }
 
         private void OnCanvasPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -130,13 +136,6 @@ namespace GroveApp
             if (_contextMenuService.ActiveMenu != null && !clickInfo.Properties.IsRightButtonPressed)
             {
                 _contextMenuService.ProcessPointerPressed(new ScreenPoint(screenPoint.X, screenPoint.Y));
-            }
-
-            if (clickInfo.Properties.IsRightButtonPressed)
-            {
-                OpenContextMenuAt(screenPoint);
-                e.Handled = true;
-                return;
             }
 
             if (clickInfo.Properties.IsLeftButtonPressed && e.ClickCount == 1)
@@ -189,8 +188,9 @@ namespace GroveApp
 
         private void OpenContextMenuAt(Point screenPoint)
         {
-            var cell = CanvasControl.WorldToCell(CanvasControl.ScreenToWorld(screenPoint));
-            var target = CanvasControl.FindItemAtCell(cell.cellX, cell.cellY);
+            CursorDescriptor cursor = CanvasControl.ResolveCursorDescriptorAtScreenPoint(screenPoint);
+            var cell = cursor.PlacementOriginCell;
+            var target = CanvasControl.FindItemAtCell(cell.X, cell.Y);
             IEnumerable<string> targetIds = target is null
                 ? Array.Empty<string>()
                 : CanvasControl.GetSelectedItems().Count > 1
@@ -198,20 +198,15 @@ namespace GroveApp
                     : new[] { target.Id };
             _contextMenuService.OpenContextMenuAt(
                 new ScreenPoint(screenPoint.X, screenPoint.Y),
-                new GroveApp.Models.Interaction.CellCoordinate(cell.cellX, cell.cellY),
+                new GroveApp.Models.Interaction.CellCoordinate(cell.X, cell.Y),
                 CanvasControl.LayerStack.ActiveLayerId,
                 targetIds,
                 new ScreenSize(CanvasControl.Bounds.Width, CanvasControl.Bounds.Height));
         }
 
-        private void UpdateHudStatus()
+        private void OnPerformanceChanged(HudPerformanceSnapshot snapshot)
         {
-            TxtCellCoord.Text = $"CELL: ({CanvasControl.CursorCellX}, {CanvasControl.CursorCellY})";
-            int zoomPercent = (int)Math.Round(CanvasControl.Zoom * 100);
-            TxtZoom.Text = $"ZOOM: {zoomPercent}%";
-            TxtNoteCount.Text = $"ITEMS: {CanvasControl.Items.Count}";
-            int metadataCount = CanvasControl.FieldEngine.GetTotalMetadataSourcesCount();
-            TxtLedgerCount.Text = $"LEDGER METADATA: {metadataCount}";
+            PerformanceTracker.Update(snapshot);
         }
 
         private void OnCameraChanged()
@@ -287,13 +282,12 @@ namespace GroveApp
             CanvasControl.Focus();
         }
 
-        private void OnEmptyCellDoubleClicked(int cellX, int cellY)
+        private void OnEmptyCellDoubleClicked(CursorDescriptor cursor)
         {
-            var newNote = new GridNote(cellX, cellY, "New Note", NoteColor.Violet, layerId: CanvasControl.LayerStack.ActiveLayerId);
+            EngineCellCoordinate placementOrigin = cursor.PlacementOriginCell;
+            var newNote = new GridNote(placementOrigin.X, placementOrigin.Y, "New Note", NoteColor.Violet, layerId: CanvasControl.LayerStack.ActiveLayerId);
             CanvasControl.AddItem(newNote);
-            CanvasControl.DeselectAllItems();
-            newNote.IsSelected = true;
-            CanvasControl.SelectedItem = newNote;
+            CanvasControl.SelectOnly(newNote);
             CanvasControl.InvalidateVisual();
             OpenNotepadEditorForNote(newNote);
         }
@@ -317,16 +311,14 @@ namespace GroveApp
         private void OnQuickNoteSaveAndPlaceRequested(QuickNoteItem item)
         {
             var newNote = new GridNote(
-                CanvasControl.CursorCellX,
-                CanvasControl.CursorCellY,
+                CanvasControl.CursorPlacementOrigin.X,
+                CanvasControl.CursorPlacementOrigin.Y,
                 item.Text,
                 NoteColor.Violet,
                 isAnchored: true,
                 layerId: CanvasControl.LayerStack.ActiveLayerId);
             CanvasControl.AddItem(newNote);
-            CanvasControl.DeselectAllItems();
-            newNote.IsSelected = true;
-            CanvasControl.SelectedItem = newNote;
+            CanvasControl.SelectOnly(newNote);
             item.IsAnchored = true;
             CanvasControl.InvalidateVisual();
             CanvasControl.Focus();
@@ -433,7 +425,7 @@ namespace GroveApp
         private async Task PasteContextMenuItemsAsync()
         {
             List<GridContentItem> pasted = await CanvasControl.ClipboardService.PasteItemsAsync(
-                new EngineCellCoordinate(CanvasControl.CursorCellX, CanvasControl.CursorCellY));
+                CanvasControl.CursorPlacementOrigin);
             foreach (GridContentItem item in pasted)
             {
                 item.LayerId = CanvasControl.LayerStack.ActiveLayerId;
@@ -445,6 +437,12 @@ namespace GroveApp
 
         private void OnWindowKeyDown(object? sender, KeyEventArgs e)
         {
+            if (e.Key == Key.Escape && CanvasControl.CancelActiveResize())
+            {
+                e.Handled = true;
+                return;
+            }
+
             if (DocumentEditor.IsVisible)
             {
                 if (e.Key == Key.Escape)
@@ -471,12 +469,18 @@ namespace GroveApp
             }
         }
 
+        private void OnWindowKeyUp(object? sender, KeyEventArgs e)
+        {
+            if (!e.Handled)
+            {
+                _keybindModule.ProcessKeyUp(e, this);
+            }
+        }
+
         bool IKeybindHost.IsNotepadVisible => NotepadEditor.IsVisible;
         bool IKeybindHost.IsQuickNoteVisible => QuickNote.IsVisible;
-        bool IKeybindHost.IsLayerSlateVisible => LayerSlate.IsVisible;
+        bool IKeybindHost.IsLayerManagerVisible => LayerManagerOverlay.IsVisible;
         bool IKeybindHost.IsToolArmed => CanvasControl.IsToolArmed;
-        int IKeybindHost.CursorCellX => CanvasControl.CursorCellX;
-        int IKeybindHost.CursorCellY => CanvasControl.CursorCellY;
         Size IKeybindHost.ViewportSize => CanvasControl.Bounds.Size;
 
         void IKeybindHost.CommitNotepadSave() => NotepadEditor.CommitSave();
@@ -488,10 +492,14 @@ namespace GroveApp
             NotepadEditor.OpenForNotes(notes.ToList(), sourceBounds, CanvasControl.Bounds.Size);
 
         void IKeybindHost.CloseQuickNote() => QuickNote.Close();
-        void IKeybindHost.ToggleLayerSlate() => LayerSlate.Toggle();
+        void IKeybindHost.ToggleLayerManager() => LayerManagerOverlay.Toggle();
         void IKeybindHost.ToggleLayerIsolation() => CanvasControl.LayerActivation.ToggleIsolationMode();
+        void IKeybindHost.ToggleGridLines() => CanvasControl.ToggleGridLines();
+        void IKeybindHost.FrameAllContent() => CanvasControl.FrameAllContent();
+        void IKeybindHost.BeginSpacePan() => CanvasControl.BeginSpacePan();
+        bool IKeybindHost.EndSpacePan() => CanvasControl.EndSpacePan();
 
-        bool IKeybindHost.ProcessLayerKeyDown(KeyEventArgs args) => LayerSlate.ProcessKeyDown(args);
+        bool IKeybindHost.ProcessLayerKeyDown(KeyEventArgs args) => LayerManagerOverlay.ProcessKeyDown(args);
 
         bool IKeybindHost.ArmTool(ArmableContentType contentType) => CanvasControl.ArmTool(contentType);
         void IKeybindHost.DisarmTool() => CanvasControl.DisarmTool();
@@ -499,6 +507,8 @@ namespace GroveApp
 
         void IKeybindHost.JumpToBottomLayer() => CanvasControl.LayerStack.JumpToBottom();
         void IKeybindHost.JumpToTopLayer() => CanvasControl.LayerStack.JumpToTop();
+        void IKeybindHost.CreateLayerAtBottom() => CanvasControl.LayerStack.InsertLayerAtBottom();
+        void IKeybindHost.CreateLayerAtTop() => CanvasControl.LayerStack.InsertLayerAtTop();
 
         void IKeybindHost.InsertLayerAboveActive()
         {
@@ -522,7 +532,7 @@ namespace GroveApp
         IReadOnlyList<GridNote> IKeybindHost.GetSelectedNotes() => CanvasControl.GetSelectedNotes();
 
         GridNote? IKeybindHost.FindNoteAtCursor() =>
-            CanvasControl.FindNoteAtCell(CanvasControl.CursorCellX, CanvasControl.CursorCellY);
+            CanvasControl.FindNoteAtCell(CanvasControl.CursorPlacementOrigin.X, CanvasControl.CursorPlacementOrigin.Y);
 
         Rect IKeybindHost.GetNoteScreenBounds(GridNote note) => CanvasControl.GetNoteScreenBounds(note);
         void IKeybindHost.SelectOnly(GridContentItem item) => CanvasControl.SelectOnly(item);
@@ -567,21 +577,19 @@ namespace GroveApp
         async Task IKeybindHost.PasteItemsAtCursorAsync()
         {
             List<GridContentItem> pasted = await CanvasControl.ClipboardService.PasteItemsAsync(
-                new EngineCellCoordinate(CanvasControl.CursorCellX, CanvasControl.CursorCellY));
+                CanvasControl.CursorPlacementOrigin);
             if (pasted.Count == 0)
             {
                 return;
             }
 
-            CanvasControl.DeselectAllItems();
             foreach (GridContentItem item in pasted)
             {
                 item.LayerId = CanvasControl.LayerStack.ActiveLayerId;
                 CanvasControl.AddItem(item);
-                item.IsSelected = true;
             }
 
-            CanvasControl.SelectedItem = pasted[^1];
+            CanvasControl.SelectItems(pasted);
             CanvasControl.InvalidateVisual();
         }
 

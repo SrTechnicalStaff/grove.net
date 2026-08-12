@@ -19,30 +19,32 @@ namespace GroveApp.Engine
             KeyEventArgs e,
             IKeybindHost host)
         {
-            // 1. Fluent Notepad Editor Active Key Handler
             if (host.IsNotepadVisible)
             {
                 return ProcessNotepadEditorKey(e, host);
             }
 
-            // 2. Quick Note Active Key Handler
             if (host.IsQuickNoteVisible)
             {
                 return ProcessQuickNoteKey(e, host);
             }
 
-            // 3. Layer Manager Slate Active Key Handler
-            if (host.IsLayerSlateVisible && host.ProcessLayerKeyDown(e))
+            if (host.IsLayerManagerVisible && host.ProcessLayerKeyDown(e))
             {
                 return true;
             }
 
-            // 4. Spatial Grid Canvas Active Key Handler
             return ProcessCanvasKey(e, host);
         }
 
         public bool ProcessRoutedCombination(KeyCombination combination, IKeybindHost host)
         {
+            if (combination.Key == Key.F && combination.Modifiers == KeyModifiers.None)
+            {
+                host.FrameAllContent();
+                return true;
+            }
+
             if (combination.Key == Key.N && combination.Modifiers == KeyModifiers.None)
             {
                 return host.ArmTool(ArmableContentType.Note);
@@ -61,6 +63,23 @@ namespace GroveApp.Engine
             if (combination.Key == Key.Escape && host.IsToolArmed)
             {
                 host.DisarmTool();
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool ProcessKeyUp(KeyEventArgs e, IKeybindHost host)
+        {
+            if (e.Key == Key.Space)
+            {
+                bool wasPan = host.EndSpacePan();
+                if (!wasPan)
+                {
+                    OpenSpaceTarget(host);
+                }
+
+                e.Handled = true;
                 return true;
             }
 
@@ -114,33 +133,13 @@ namespace GroveApp.Engine
                 return true;
             }
 
-            // Spacebar: Open Fluent Notepad Editor on selected Note(s) or note under cursor
+            // Space is a transient pan modifier. A tap preserves the existing
+            // editor shortcut on key-up; a drag is consumed by Plane 0 panning.
             if (e.Key == Key.Space)
             {
-                var selectedNotes = host.GetSelectedNotes();
-                if (selectedNotes.Count >= 2)
-                {
-                    host.OpenNotepadForNotes(selectedNotes, host.GetNoteScreenBounds(selectedNotes[0]));
-                    e.Handled = true;
-                    return true;
-                }
-                else if (selectedNotes.Count == 1)
-                {
-                    host.OpenNotepadForNote(selectedNotes[0], host.GetNoteScreenBounds(selectedNotes[0]));
-                    e.Handled = true;
-                    return true;
-                }
-                else
-                {
-                    GridNote? cursorNote = host.FindNoteAtCursor();
-                    if (cursorNote != null)
-                    {
-                        host.SelectOnly(cursorNote);
-                        host.OpenNotepadForNote(cursorNote, host.GetNoteScreenBounds(cursorNote));
-                        e.Handled = true;
-                        return true;
-                    }
-                }
+                host.BeginSpacePan();
+                e.Handled = true;
+                return true;
             }
 
             // Spatial arming keys
@@ -153,12 +152,12 @@ namespace GroveApp.Engine
                 }
             }
 
-            // L: Toggle the HUD layer manager slate.
+            // L: Toggle the Layer Manager overlay.
             if (e.Key == Key.L &&
                 (e.KeyModifiers == KeyModifiers.None ||
                  (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.KeyModifiers.HasFlag(KeyModifiers.Shift))))
             {
-                host.ToggleLayerSlate();
+                host.ToggleLayerManager();
                 e.Handled = true;
                 return true;
             }
@@ -172,6 +171,20 @@ namespace GroveApp.Engine
             }
 
             // A: Toggle Anchor
+            if (e.Key == Key.G && e.KeyModifiers == KeyModifiers.None)
+            {
+                host.ToggleGridLines();
+                e.Handled = true;
+                return true;
+            }
+
+            if (e.Key == Key.F && e.KeyModifiers == KeyModifiers.None)
+            {
+                host.FrameAllContent();
+                e.Handled = true;
+                return true;
+            }
+
             if (e.Key == Key.A)
             {
                 var selectedItems = host.GetSelectedItems();
@@ -215,16 +228,18 @@ namespace GroveApp.Engine
             }
 
             // Layer Management Keybindings:
-            // Shift+[ / Shift+] (Jump Bottom / Top)
-            if (e.Key == Key.OemOpenBrackets && e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+            // Shift+[ / Shift+] (Create Bottom / Top)
+            if (e.Key == Key.OemOpenBrackets &&
+                e.KeyModifiers == KeyModifiers.Shift)
             {
-                host.JumpToBottomLayer();
+                host.CreateLayerAtBottom();
                 e.Handled = true;
                 return true;
             }
-            if (e.Key == Key.OemCloseBrackets && e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+            if (e.Key == Key.OemCloseBrackets &&
+                e.KeyModifiers == KeyModifiers.Shift)
             {
-                host.JumpToTopLayer();
+                host.CreateLayerAtTop();
                 e.Handled = true;
                 return true;
             }
@@ -236,9 +251,35 @@ namespace GroveApp.Engine
                 e.Handled = true;
                 return true;
             }
-            if (e.Key == Key.OemCloseBrackets && e.KeyModifiers.HasFlag(KeyModifiers.None))
+            if (e.Key == Key.OemCloseBrackets && e.KeyModifiers == KeyModifiers.None)
             {
                 host.NavigateLayer(1);
+                e.Handled = true;
+                return true;
+            }
+
+            if (e.Key == Key.OemOpenBrackets && e.KeyModifiers == KeyModifiers.Control)
+            {
+                host.InsertLayerBelowActive();
+                e.Handled = true;
+                return true;
+            }
+            if (e.Key == Key.OemCloseBrackets && e.KeyModifiers == KeyModifiers.Control)
+            {
+                host.InsertLayerAboveActive();
+                e.Handled = true;
+                return true;
+            }
+
+            if (e.Key == Key.OemOpenBrackets && e.KeyModifiers == KeyModifiers.Alt)
+            {
+                host.ReorderActiveLayer(-1);
+                e.Handled = true;
+                return true;
+            }
+            if (e.Key == Key.OemCloseBrackets && e.KeyModifiers == KeyModifiers.Alt)
+            {
+                host.ReorderActiveLayer(1);
                 e.Handled = true;
                 return true;
             }
@@ -294,6 +335,28 @@ namespace GroveApp.Engine
             }
 
             return false;
+        }
+
+        private static void OpenSpaceTarget(IKeybindHost host)
+        {
+            var selectedNotes = host.GetSelectedNotes();
+            if (selectedNotes.Count >= 2)
+            {
+                host.OpenNotepadForNotes(selectedNotes, host.GetNoteScreenBounds(selectedNotes[0]));
+            }
+            else if (selectedNotes.Count == 1)
+            {
+                host.OpenNotepadForNote(selectedNotes[0], host.GetNoteScreenBounds(selectedNotes[0]));
+            }
+            else
+            {
+                GridNote? cursorNote = host.FindNoteAtCursor();
+                if (cursorNote != null)
+                {
+                    host.SelectOnly(cursorNote);
+                    host.OpenNotepadForNote(cursorNote, host.GetNoteScreenBounds(cursorNote));
+                }
+            }
         }
 
     }

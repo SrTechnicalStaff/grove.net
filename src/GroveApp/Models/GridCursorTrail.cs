@@ -1,15 +1,21 @@
+using System;
+
 namespace GroveApp.Models
 {
     public class SpentCell
     {
-        public int CellX { get; set; }
-        public int CellY { get; set; }
+        public double WorldX { get; set; }
+        public double WorldY { get; set; }
+        public double WorldWidth { get; set; }
+        public double WorldHeight { get; set; }
         public double Energy { get; set; } = 0.60; // ADR-050 E0; decays with Tokens.CursorTrailDecay
 
-        public SpentCell(int cellX, int cellY)
+        public SpentCell(double worldX, double worldY, double worldWidth, double worldHeight)
         {
-            CellX = cellX;
-            CellY = cellY;
+            WorldX = worldX;
+            WorldY = worldY;
+            WorldWidth = Math.Max(1.0, worldWidth);
+            WorldHeight = Math.Max(1.0, worldHeight);
             Energy = 0.60;
         }
     }

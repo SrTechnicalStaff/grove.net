@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-
 using Avalonia;
 using Avalonia.Media;
 using GroveApp.DesignSystem;
@@ -9,108 +7,188 @@ using Colors = GroveApp.DesignSystem.Colors;
 
 namespace GroveApp.Engine
 {
-    /// <summary>
-    /// Engine module for grid cursor rendering with inset 2px ring in #F4F4F2, 22% fill,
-    /// footprint expansion over all content types, and 18-step spent cell trail decay.
-    /// </summary>
+    public enum CursorFootprintKind : byte
+    {
+        MinorGrid,
+        MajorGrid,
+        Supercell,
+        Content,
+        ArmedTool,
+        DropPreview
+    }
+
+    /// <summary>Dimensions for an armed placement.</summary>
+    public readonly record struct CursorPlacementFootprint(int WidthCells, int HeightCells)
+    {
+        public CursorPlacementFootprint Normalize() => new(
+            Math.Max(1, WidthCells),
+            Math.Max(1, HeightCells));
+    }
+
+    /// <summary>Resolved world-space cursor geometry.</summary>
+    public readonly record struct CursorDescriptor(
+        Point WorldOrigin,
+        Size WorldExtent,
+        CursorFootprintKind Kind,
+        double RingStrokeWidth)
+    {
+        public CursorPlacementFootprint PlacementFootprint => new(
+            Math.Max(1, (int)Math.Round(WorldExtent.Width / Tokens.GridCell)),
+            Math.Max(1, (int)Math.Round(WorldExtent.Height / Tokens.GridCell)));
+
+        public CellCoordinate PlacementOriginCell => new(
+            (int)Math.Floor(WorldOrigin.X / Tokens.GridCell),
+            (int)Math.Floor(WorldOrigin.Y / Tokens.GridCell));
+
+        public int WidthCells => PlacementFootprint.WidthCells;
+        public int HeightCells => PlacementFootprint.HeightCells;
+
+        public Rect WorldBounds => new(WorldOrigin, WorldExtent);
+
+        public bool OccupiesSameFootprint(CursorDescriptor other) =>
+            WorldOrigin.Equals(other.WorldOrigin) && WorldExtent.Equals(other.WorldExtent);
+    }
+
+    /// <summary>Resolves and renders the grid cursor and spent trail.</summary>
     public class CursorRenderModule
     {
-        /// <summary>
-        /// Updates the 18-step spent cell trail decay physics.
-        /// </summary>
-        public bool DecayTrail(List<SpentCell> spentCells)
-        {
-            bool needsRedraw = false;
-            for (int i = spentCells.Count - 1; i >= 0; i--)
-            {
-                spentCells[i].Energy *= Tokens.CursorTrailDecay;
-                if (spentCells[i].Energy <= Tokens.CursorTrailMin)
-                {
-                    spentCells.RemoveAt(i);
-                }
-                needsRedraw = true;
-            }
-            return needsRedraw;
-        }
-
-        /// <summary>
-        /// Registers spent cell position when cursor transitions between grid cells.
-        /// Maintains 18-step cap per design system specs.
-        /// </summary>
-        public void RegisterCellTransition(List<SpentCell> spentCells, int lastCellX, int lastCellY)
-        {
-            if (lastCellX != int.MinValue && lastCellY != int.MinValue)
-            {
-                spentCells.Add(new SpentCell(lastCellX, lastCellY));
-                while (spentCells.Count > Tokens.CursorTrailMaxSteps)
-                {
-                    spentCells.RemoveAt(0);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Renders the 18-step spent cell trail decay on the grid canvas.
-        /// </summary>
-        public void RenderSpentTrail(
-            DrawingContext context,
-            Func<Point, Point> worldToScreen,
-            double cellSize,
+        /// <summary>Resolves cursor geometry from world position and content state.</summary>
+        public CursorDescriptor ResolveCursorDescriptor(
+            Point worldPoint,
             double zoom,
-            IEnumerable<SpentCell> spentCells)
+            GridContentItem? targetItem,
+            CursorPlacementFootprint? armedToolFootprint = null)
         {
-            foreach (var spent in spentCells)
+            if (armedToolFootprint is CursorPlacementFootprint placement)
             {
-                Point startWorld = new Point(spent.CellX * cellSize, spent.CellY * cellSize);
-                Point startScreen = worldToScreen(startWorld);
-                double sizeScreen = cellSize * zoom;
-
-                Rect cellRect = new Rect(startScreen.X, startScreen.Y, sizeScreen, sizeScreen);
-                byte alpha = (byte)(255 * Tokens.InkQuiet * spent.Energy);
-                var trailBrush = new SolidColorBrush(Color.FromArgb(alpha, Colors.NoteText.R, Colors.NoteText.G, Colors.NoteText.B));
-                context.FillRectangle(trailBrush, cellRect);
+                CursorPlacementFootprint normalized = placement.Normalize();
+                double toolOriginX = Math.Floor(worldPoint.X / Tokens.GridCell) * Tokens.GridCell;
+                double toolOriginY = Math.Floor(worldPoint.Y / Tokens.GridCell) * Tokens.GridCell;
+                return CreateDescriptor(
+                    toolOriginX,
+                    toolOriginY,
+                    normalized.WidthCells * Tokens.GridCell,
+                    normalized.HeightCells * Tokens.GridCell,
+                    CursorFootprintKind.ArmedTool,
+                    zoom);
             }
+
+            if (targetItem is not null)
+            {
+                return CreateDescriptor(
+                    targetItem.CellX * Tokens.GridCell,
+                    targetItem.CellY * Tokens.GridCell,
+                    targetItem.CellWidth * Tokens.GridCell,
+                    targetItem.CellHeight * Tokens.GridCell,
+                    CursorFootprintKind.Content,
+                    zoom);
+            }
+
+            (double gridPitch, CursorFootprintKind kind) = GetEmptySpaceFootprint(zoom);
+            double originX = Math.Floor(worldPoint.X / gridPitch) * gridPitch;
+            double originY = Math.Floor(worldPoint.Y / gridPitch) * gridPitch;
+            return CreateDescriptor(
+                originX,
+                originY,
+                gridPitch,
+                gridPitch,
+                kind,
+                zoom);
         }
 
-        /// <summary>
-        /// Renders the primary grid cursor with inset 2px ring in #F4F4F2, 22% fill,
-        /// and footprint expansion over the target content footprint.
-        /// </summary>
+        public CursorDescriptor ResolveDropPreviewDescriptor(
+            Point worldPoint,
+            double zoom,
+            CursorPlacementFootprint placement)
+        {
+            return ResolveCursorDescriptor(
+                worldPoint,
+                zoom,
+                targetItem: null,
+                armedToolFootprint: placement) with
+            {
+                Kind = CursorFootprintKind.DropPreview
+            };
+        }
+
         public void RenderGridCursor(
             DrawingContext context,
             Func<Point, Point> worldToScreen,
-            double cellSize,
-            double zoom,
-            int cursorCellX,
-            int cursorCellY,
-            GridContentItem? targetItem)
+            CursorDescriptor descriptor)
         {
-            int startCellX = targetItem?.CellX ?? cursorCellX;
-            int startCellY = targetItem?.CellY ?? cursorCellY;
-            int spanWidth = targetItem?.CellWidth ?? 1;
-            int spanHeight = targetItem?.CellHeight ?? 1;
+            Rect cursorRect = GetScreenBounds(worldToScreen, descriptor);
 
-            Point startWorld = new Point(startCellX * cellSize, startCellY * cellSize);
-            Point endWorld = new Point(
-                (startCellX + spanWidth) * cellSize,
-                (startCellY + spanHeight) * cellSize);
-
-            Point startScreen = worldToScreen(startWorld);
-            Point endScreen = worldToScreen(endWorld);
-
-            double curW = endScreen.X - startScreen.X;
-            double curH = endScreen.Y - startScreen.Y;
-            Rect cursorRect = new Rect(startScreen.X, startScreen.Y, curW, curH);
-
-            // 22% fill (#F4F4F2 ink with Tokens.CursorFillGain 0.22 alpha)
-            byte fillAlpha = (byte)(255 * Tokens.CursorFillGain);
-            var headFillBrush = new SolidColorBrush(Color.FromArgb(fillAlpha, Colors.NoteText.R, Colors.NoteText.G, Colors.NoteText.B));
-            context.FillRectangle(headFillBrush, cursorRect);
-
-            // Inset 2px ring in #F4F4F2 (Tokens.CursorRingInk = 0.88 alpha)
-            byte ringAlpha = (byte)(255 * Tokens.CursorRingInk);
-            var ringPen = new Pen(new SolidColorBrush(Color.FromArgb(ringAlpha, Colors.NoteText.R, Colors.NoteText.G, Colors.NoteText.B)), Tokens.StrokeCursorRing * Math.Max(0.5, zoom));
-            context.DrawRectangle(null, ringPen, cursorRect.Deflate(1.0));
+            RenderDescriptor(
+                context,
+                worldToScreen,
+                descriptor,
+                Colors.NoteText,
+                Tokens.CursorSteady * Tokens.CursorFillGain,
+                Colors.NoteText,
+                Tokens.CursorRingInk);
         }
+
+        public void RenderDescriptor(
+            DrawingContext context,
+            Func<Point, Point> worldToScreen,
+            CursorDescriptor descriptor,
+            Color fillColor,
+            double fillOpacity,
+            Color ringColor,
+            double ringOpacity)
+        {
+            Rect cursorRect = GetScreenBounds(worldToScreen, descriptor);
+            context.FillRectangle(
+                new SolidColorBrush(Color.FromArgb(ToAlphaByte(fillOpacity), fillColor.R, fillColor.G, fillColor.B)),
+                cursorRect);
+            var ringPen = new Pen(
+                new SolidColorBrush(Color.FromArgb(ToAlphaByte(ringOpacity), ringColor.R, ringColor.G, ringColor.B)),
+                descriptor.RingStrokeWidth);
+            context.DrawRectangle(null, ringPen, cursorRect.Deflate(descriptor.RingStrokeWidth / 2.0));
+        }
+
+        public Rect GetScreenBounds(
+            Func<Point, Point> worldToScreen,
+            CursorDescriptor descriptor)
+        {
+            Point startScreen = worldToScreen(descriptor.WorldOrigin);
+            Point endScreen = worldToScreen(descriptor.WorldBounds.BottomRight);
+            return new Rect(
+                startScreen.X,
+                startScreen.Y,
+                endScreen.X - startScreen.X,
+                endScreen.Y - startScreen.Y);
+        }
+
+        private static CursorDescriptor CreateDescriptor(
+            double originX,
+            double originY,
+            double width,
+            double height,
+            CursorFootprintKind kind,
+            double zoom)
+        {
+            return new CursorDescriptor(
+                new Point(originX, originY),
+                new Size(width, height),
+                kind,
+                GetRingStrokeWidth(zoom));
+        }
+
+        private static (double pitch, CursorFootprintKind kind) GetEmptySpaceFootprint(double zoom) =>
+            zoom >= Tokens.CursorLodMajorZoom
+                ? (Tokens.MinorCellSize, CursorFootprintKind.MinorGrid)
+                : zoom >= Tokens.CursorLodSupercellZoom
+                    ? (Tokens.GridCell, CursorFootprintKind.MajorGrid)
+                    : (Tokens.SupercellPitch, CursorFootprintKind.Supercell);
+
+        private static double GetRingStrokeWidth(double zoom) => zoom >= Tokens.CursorLodMajorZoom
+            ? Tokens.CursorLodMinorRing
+            : zoom >= Tokens.CursorLodSupercellZoom
+                ? Tokens.CursorLodMajorRing
+                : Tokens.CursorLodSupercellRing;
+
+        private static byte ToAlphaByte(double alpha) =>
+            (byte)Math.Clamp(Math.Round(alpha * byte.MaxValue), 0, byte.MaxValue);
     }
 }

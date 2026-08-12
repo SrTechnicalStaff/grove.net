@@ -69,6 +69,16 @@ namespace GroveApp.DesignSystem
         public const double CursorTrailDecay = 0.84;       // --cursor-trail-decay
         public const double CursorTrailMin = 0.03;         // --cursor-trail-min
         public const int CursorTrailMaxSteps = 18;
+        public const double CursorLodMajorZoom = 0.5;      // --cursor-lod-major-zoom
+        public const double CursorLodSupercellZoom = 0.1; // --cursor-lod-supercell-zoom
+        public const double CursorLodMinorRing = 2.0;      // --cursor-lod-minor-ring
+        public const double CursorLodMajorRing = 1.5;      // --cursor-lod-major-ring
+        public const double CursorLodSupercellRing = 1.0; // --cursor-lod-supercell-ring
+        public const double FieldContourMinProjectedCellSize = 3.0;
+        public const double GhostFillOpacity = 0.50; // --ghost-fill-opacity
+        public const double GhostRingOpacity = 0.88; // --ghost-ring-opacity
+        public const double InactiveGhostOpacity = 0.15;
+        public const double ResizeHandleTargetPixels = 12.0;
 
         // Distance Thresholds (Projected Cell Size in px)
         public const double TierStandinDemote = 18.0;  // --tier-standin-demote
@@ -114,6 +124,7 @@ namespace GroveApp.DesignSystem
 
         // Focus & Depth
         public const double FocusRingOffset = 2.0;
-        public const string ShadowLocal = "0 8px 24px rgb(0 0 0 / 0.40)"; // --shadow-local
+        // Avalonia BoxShadow syntax: offsetX offsetY blur spread color.
+        public const string ShadowLocal = "0 8 24 0 #66000000"; // --shadow-local
     }
 }

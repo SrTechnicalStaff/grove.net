@@ -26,6 +26,8 @@ namespace GroveApp.DesignSystem
         // Signal Hex Values
         public const string SelectHex = "#96B6F8";   // RGB: 150, 182, 248 --signal-interaction / --c-select
         public const string InvalidHex = "#E2625C";  // RGB: 226, 98, 92   --signal-refusal / --c-invalid
+        public const string ToolAccentHex = "#3B82F6"; // --k-tool
+        public const string ToolInvalidHex = "#EF4444"; // --k-invalid
         public const string MarqueeHex = "#E8B964";  // RGB: 232, 185, 100 --signal-active-work / --c-marquee
         public const string AnchorHex = "#9E8CEA";   // RGB: 158, 140, 234 --signal-authored-context / --c-anchor
 
@@ -94,6 +96,8 @@ namespace GroveApp.DesignSystem
         public static Color SignalInteraction => Color.Parse(SignalInteractionHex);
         public static Color SignalActiveWork => Color.Parse(SignalActiveWorkHex);
         public static Color SignalRefusal => Color.Parse(SignalRefusalHex);
+        public static Color ToolAccent => Color.Parse(ToolAccentHex);
+        public static Color ToolInvalid => Color.Parse(ToolInvalidHex);
         public static Color SignalAuthoredContext => Color.Parse(SignalAuthoredContextHex);
 
         public static Color KEditBorder => Color.Parse(KEditBorderHex);
@@ -131,6 +135,8 @@ namespace GroveApp.DesignSystem
         public static IBrush SignalInteractionBrush => new SolidColorBrush(SignalInteraction);
         public static IBrush SignalActiveWorkBrush => new SolidColorBrush(SignalActiveWork);
         public static IBrush SignalRefusalBrush => new SolidColorBrush(SignalRefusal);
+        public static IBrush ToolAccentBrush => new SolidColorBrush(ToolAccent);
+        public static IBrush ToolInvalidBrush => new SolidColorBrush(ToolInvalid);
         public static IBrush SignalAuthoredContextBrush => new SolidColorBrush(SignalAuthoredContext);
 
         public static IBrush KEditBorderBrush => new SolidColorBrush(KEditBorder);

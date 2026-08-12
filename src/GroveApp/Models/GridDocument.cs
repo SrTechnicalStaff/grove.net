@@ -11,6 +11,16 @@ namespace GroveApp.Models
     {
         public override ContentKind Kind => ContentKind.Document;
         public override float Mass => 2.5f;
+
+        public override void ResizeTo(Models.Interaction.SpatialRegion footprint)
+        {
+            if (!footprint.IsValid || footprint.Width is < 2 or > 8 || footprint.Height is < 2 or > 8)
+            {
+                throw new ArgumentException("A document footprint must be between 2 and 8 cells on each axis.", nameof(footprint));
+            }
+
+            base.ResizeTo(footprint);
+        }
         public override string FieldHueHex => IsAnchored ? DesignSystem.Colors.AnchorHex : DesignSystem.Colors.ViewFillHex;
 
         public string Title { get; set; } = "";

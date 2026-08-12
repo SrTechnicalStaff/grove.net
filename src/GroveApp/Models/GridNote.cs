@@ -19,6 +19,18 @@ namespace GroveApp.Models
         public override ContentKind Kind => ContentKind.Note;
         public override float Mass => 1.0f;
 
+        public override void ResizeTo(Models.Interaction.SpatialRegion footprint)
+        {
+            if (!footprint.IsValid || footprint.Width != footprint.Height)
+            {
+                throw new ArgumentException("A note footprint must be a positive square.", nameof(footprint));
+            }
+
+            CellX = footprint.X;
+            CellY = footprint.Y;
+            SizeCells = footprint.Width;
+        }
+
         public int SizeCells
         {
             get => CellWidth;

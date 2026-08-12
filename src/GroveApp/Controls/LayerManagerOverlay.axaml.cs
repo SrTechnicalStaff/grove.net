@@ -13,16 +13,17 @@ using Colors = GroveApp.DesignSystem.Colors;
 
 namespace GroveApp.Controls
 {
-    public partial class LayerManagerSlate : UserControl
+    public partial class LayerManagerOverlay : UserControl
     {
         private ISpatialLayerStateService? _layerService;
         private int? _editingZIndex;
         private int? _confirmDeleteZIndex;
         private string _filterQuery = string.Empty;
+        private string? _removalError;
 
         public event Action? Closed;
 
-        public LayerManagerSlate()
+        public LayerManagerOverlay()
         {
             InitializeComponent();
 
@@ -35,7 +36,7 @@ namespace GroveApp.Controls
                 RebuildList();
             };
 
-            KeyDown += OnSlateKeyDown;
+            KeyDown += OnOverlayKeyDown;
         }
 
         public void Open()
@@ -138,7 +139,7 @@ namespace GroveApp.Controls
 
             var rowBorder = new Border
             {
-                BorderThickness = new Thickness(1),
+                BorderThickness = layer.IsActive ? new Thickness(2) : new Thickness(1),
                 BorderBrush = layer.IsActive
                     ? Colors.SignalInteractionBrush
                     : Colors.GridMajorInkBrush,
@@ -156,8 +157,6 @@ namespace GroveApp.Controls
                 ColumnDefinitions = new ColumnDefinitions("40, *, 16, Auto")
             };
 
-            // Stable 4ch Monospaced Label (01, 02, B01, B02)
-            // Left padded / 4ch monospaced column
             string label4Ch = layer.Label.PadRight(4);
             var lblBlock = new TextBlock
             {
@@ -220,7 +219,6 @@ namespace GroveApp.Controls
             }
             else if (isDeleting)
             {
-                // Inline Delete Confirmation
                 var deletePanel = new StackPanel
                 {
                     Orientation = Orientation.Horizontal,
@@ -230,7 +228,7 @@ namespace GroveApp.Controls
 
                 var txtConfirm = new TextBlock
                 {
-                    Text = $"Remove Layer {layer.Label} and move its content to Layer 01?",
+                    Text = _removalError ?? $"Remove Layer {layer.Label} and move its content to Layer 01?",
                     FontSize = Typography.SizeLabel,
                     Foreground = Colors.SignalRefusalBrush,
                     VerticalAlignment = VerticalAlignment.Center
@@ -262,6 +260,7 @@ namespace GroveApp.Controls
                 btnCancel.Click += (_, _) =>
                 {
                     _confirmDeleteZIndex = null;
+                    _removalError = null;
                     RebuildList();
                 };
 
@@ -382,11 +381,18 @@ namespace GroveApp.Controls
 
         private void ConfirmDelete(int zIndex)
         {
-            _confirmDeleteZIndex = null;
             if (_layerService != null)
             {
-                // Transfer items to Main Ground Layer ZIndex 0 (label 01).
-                _layerService.RemoveLayer(zIndex, 0);
+                if (_layerService.RemoveLayer(zIndex, 0))
+                {
+                    _confirmDeleteZIndex = null;
+                    _removalError = null;
+                }
+                else
+                {
+                    _confirmDeleteZIndex = zIndex;
+                    _removalError = "That space is occupied on Layer 01.";
+                }
             }
             RebuildList();
         }
@@ -397,16 +403,16 @@ namespace GroveApp.Controls
 
             var activeZ = _layerService.ActiveLayer.ZIndex;
 
-            // 1. Shift+[ / Shift+] (Jump Bottom / Top)
-            if (e.Key == Key.OemOpenBrackets && e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+            // 1. Shift+[ / Shift+] (Create Bottom / Top)
+            if (e.Key == Key.OemOpenBrackets && e.KeyModifiers == KeyModifiers.Shift)
             {
-                _layerService.JumpToBottom();
+                _layerService.InsertLayerAtBottom();
                 e.Handled = true;
                 return true;
             }
-            if (e.Key == Key.OemCloseBrackets && e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+            if (e.Key == Key.OemCloseBrackets && e.KeyModifiers == KeyModifiers.Shift)
             {
-                _layerService.JumpToTop();
+                _layerService.InsertLayerAtTop();
                 e.Handled = true;
                 return true;
             }
@@ -421,6 +427,32 @@ namespace GroveApp.Controls
             if (e.Key == Key.OemCloseBrackets && e.KeyModifiers == KeyModifiers.None)
             {
                 _layerService.SetActiveLayer(activeZ + 1);
+                e.Handled = true;
+                return true;
+            }
+
+            if (e.Key == Key.OemOpenBrackets && e.KeyModifiers == KeyModifiers.Control)
+            {
+                _layerService.InsertLayerBelow(activeZ);
+                e.Handled = true;
+                return true;
+            }
+            if (e.Key == Key.OemCloseBrackets && e.KeyModifiers == KeyModifiers.Control)
+            {
+                _layerService.InsertLayerAbove(activeZ);
+                e.Handled = true;
+                return true;
+            }
+
+            if (e.Key == Key.OemOpenBrackets && e.KeyModifiers == KeyModifiers.Alt)
+            {
+                _layerService.ReorderSwap(activeZ, activeZ - 1);
+                e.Handled = true;
+                return true;
+            }
+            if (e.Key == Key.OemCloseBrackets && e.KeyModifiers == KeyModifiers.Alt)
+            {
+                _layerService.ReorderSwap(activeZ, activeZ + 1);
                 e.Handled = true;
                 return true;
             }
@@ -482,7 +514,7 @@ namespace GroveApp.Controls
             return false;
         }
 
-        private void OnSlateKeyDown(object? sender, KeyEventArgs e)
+        private void OnOverlayKeyDown(object? sender, KeyEventArgs e)
         {
             if (!e.Handled)
             {

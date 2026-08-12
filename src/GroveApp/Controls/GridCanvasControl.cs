@@ -1,7 +1,6 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.IO;
 using System.Threading.Tasks;
@@ -31,12 +30,21 @@ namespace GroveApp.Controls
     {
         public const double CellSize = Tokens.GridCell; // 220.0px
         public const double MinorCellSize = Tokens.MinorCellSize; // 44.0px
+        private readonly GridViewPreferenceStore _viewPreferences;
+        private readonly CameraAnimation _cameraAnimation = new();
+        private readonly CanvasPanInteraction _panInteraction = new();
+        private readonly SelectionService _selectionService = new(CellSize);
+        public bool GridLinesVisible { get; private set; }
 
-        // Engine Modules
-        private readonly FieldLedgerModule _fieldLedgerModule = new();
-        private readonly NoteRenderModule _noteRenderModule = new();
         private readonly CursorRenderModule _cursorRenderModule = new();
-        private readonly GridLineModule _gridLineModule = new();
+        private readonly CanonicalCursorTrailModel _cursorModel;
+        private readonly GridCanvasRenderPipeline _renderPipeline;
+        private readonly GridCanvasFeedbackRenderer _feedbackRenderer;
+        private static readonly Cursor HiddenCursor = new(StandardCursorType.None);
+        private static readonly Cursor ResizeNorthWestCursor = new(StandardCursorType.TopLeftCorner);
+        private static readonly Cursor ResizeNorthEastCursor = new(StandardCursorType.TopRightCorner);
+        private static readonly Cursor ResizeSouthEastCursor = new(StandardCursorType.BottomRightCorner);
+        private static readonly Cursor ResizeSouthWestCursor = new(StandardCursorType.BottomLeftCorner);
         public FieldLedgerEngine FieldEngine { get; } = new FieldLedgerEngine();
         public IMemoryLedger MemoryLedger { get; } = new ImmutableMemoryLedger();
         public IMemoryVersionTree MemoryVersionTree { get; } = new MemoryVersionTree();
@@ -51,11 +59,9 @@ namespace GroveApp.Controls
         public ToolArmingStateMachine Arming { get; }
         public LayerFeedbackAnimationController LayerFeedback { get; } = new();
 
-        // System Handlers (ADR-013 & ADR-014)
         public ExternalDragDropHandler DragDropHandler { get; private set; }
         public NativeClipboardService ClipboardService { get; private set; }
 
-        // Camera Module & State
         public CameraModule Camera { get; } = new CameraModule();
         public double CameraX
         {
@@ -64,7 +70,9 @@ namespace GroveApp.Controls
             {
                 if (Math.Abs(Camera.CameraX - value) > 1e-6)
                 {
-                    Camera.CameraX = value;
+                    Camera.SetState(new Point(value, Camera.CameraY), Camera.Zoom);
+                    CancelCameraAnimationAtCurrentState();
+                    RefreshCursorDescriptorFromScreen();
                     RefreshFieldLedger();
                     InvalidateVisual();
                     CameraChanged?.Invoke();
@@ -79,7 +87,9 @@ namespace GroveApp.Controls
             {
                 if (Math.Abs(Camera.CameraY - value) > 1e-6)
                 {
-                    Camera.CameraY = value;
+                    Camera.SetState(new Point(Camera.CameraX, value), Camera.Zoom);
+                    CancelCameraAnimationAtCurrentState();
+                    RefreshCursorDescriptorFromScreen();
                     RefreshFieldLedger();
                     InvalidateVisual();
                     CameraChanged?.Invoke();
@@ -95,7 +105,9 @@ namespace GroveApp.Controls
                 double clamped = Math.Clamp(value, CameraModule.MinZoom, CameraModule.MaxZoom);
                 if (Math.Abs(Camera.Zoom - clamped) > 1e-6)
                 {
-                    Camera.Zoom = clamped;
+                    Camera.SetState(new Point(Camera.CameraX, Camera.CameraY), clamped);
+                    CancelCameraAnimationAtCurrentState();
+                    RefreshCursorDescriptorFromScreen();
                     RefreshFieldLedger();
                     InvalidateVisual();
                     CameraChanged?.Invoke();
@@ -103,28 +115,33 @@ namespace GroveApp.Controls
             }
         }
 
-        // Pointer & Cursor State
         public Point MousePointerScreen { get; private set; }
         public Point MousePointerWorld { get; private set; }
-        public int CursorCellX { get; private set; }
-        public int CursorCellY { get; private set; }
+        public CursorDescriptor CursorDescriptor => _cursorModel.CurrentDescriptor;
+        public CellCoordinate CursorPlacementOrigin => CursorDescriptor.PlacementOriginCell;
+        public bool IsResizeActive => _isResizingItem;
 
-        // Spent Cell Trail
-        public List<SpentCell> SpentCells { get; } = new();
-        private int _lastCursorCellX = int.MinValue;
-        private int _lastCursorCellY = int.MinValue;
+        public List<SpentCell> SpentCells => _cursorModel.MutableTrailCompatibilityView;
 
-        // Content & Selection (GridContentItem Base Model)
         public List<GridContentItem> Items { get; } = new();
         public GridContentItem? SelectedItem { get; set; }
         public GridContentItem? HoveredItem { get; set; }
 
-        // Backwards compatibility aliases for GridNote
         public List<GridNote> Notes => Items.OfType<GridNote>().ToList();
         public GridNote? SelectedNote
         {
             get => SelectedItem as GridNote;
-            set => SelectedItem = value;
+            set
+            {
+                if (value is null)
+                {
+                    DeselectAllItems();
+                }
+                else
+                {
+                    SelectOnly(value);
+                }
+            }
         }
         public GridNote? HoveredNote
         {
@@ -132,21 +149,12 @@ namespace GroveApp.Controls
             set => HoveredItem = value;
         }
 
-        // Active Tool State
-        public string ActiveTool { get; set; } = "SELECT"; // SELECT, NOTE, ANCHOR, PAN
+        public CanvasToolMode ActiveTool { get; private set; } = CanvasToolMode.Select;
 
-        // Interaction States
-        private bool _isPanning;
-        private Point _panStartScreen;
-        private double _panStartCamX;
-        private double _panStartCamY;
-
-        // Marquee Selection State
         private bool _isMarqueeSelecting;
         private Point _marqueeStartWorld;
         private Point _marqueeCurrentWorld;
 
-        // Drag & Drop Movement State
         private bool _isDraggingItem;
         private GridContentItem? _draggedItem;
         private int _dragOffsetCellX;
@@ -157,36 +165,46 @@ namespace GroveApp.Controls
         private int _dragCandidateDeltaY;
         private bool _dragCandidateIsValid;
 
-        // Drag to Resize Corner State (ADR-010)
         private bool _isResizingItem;
         private GridContentItem? _resizingItem;
         private ResizeHandleLocation _resizeHandle;
         private SpatialRegion _resizeInitialFootprint;
+        private SpatialRegion _resizeCandidateFootprint;
         private bool _resizeCandidateIsValid;
 
-        // Native GPU VSync Render Loop State
         private TopLevel? _topLevel;
         private bool _isAnimationFrameRequested;
         private TimeSpan _lastAnimationTimestamp;
         private int _knownLayerCount;
         private DateTime _placementRejectedUntilUtc;
 
-        // Events
         public event Action<GridContentItem>? ItemSelected;
         public event Action<GridNote>? NoteSelected;
         public event Action<GridNote>? NoteDoubleClicked;
         public event Action<GridContentItem>? ContentDoubleClicked;
-        public event Action<int, int>? EmptyCellDoubleClicked;
+        public event Action<CursorDescriptor>? EmptyCellDoubleClicked;
         public event Action? CameraChanged;
+        public event Action<Point>? RightClickTapped;
         public event Action<GridContentItem, ArmableContentType>? ArmedItemPlaced;
+        public event Action<HudPerformanceSnapshot>? PerformanceChanged;
         public event Action<Exception>? MemoryAnchorPersistenceFailed;
+        public event Action<Exception>? PreferencePersistenceFailed;
 
         public GridCanvasControl()
         {
+            _cursorModel = new CanonicalCursorTrailModel(_cursorRenderModule);
+            _renderPipeline = new GridCanvasRenderPipeline();
+            _feedbackRenderer = new GridCanvasFeedbackRenderer(_cursorRenderModule);
             ClipToBounds = true;
             Focusable = true;
+            Cursor = HiddenCursor;
+            _viewPreferences = new GridViewPreferenceStore();
+            _viewPreferences.PersistenceFailed += exception => PreferencePersistenceFailed?.Invoke(exception);
+            GridLinesVisible = _viewPreferences.LoadLinesVisible();
 
             LayerActivation = new LayerActivationManager(LayerStack);
+            _selectionService.SelectionChanged += OnSelectionChanged;
+            _selectionService.MarqueeChanged += _ => InvalidateVisual();
             LayerActivation.StateChanged += () =>
             {
                 RefreshFieldLedger();
@@ -200,9 +218,11 @@ namespace GroveApp.Controls
             FieldEngine.LayerDeltaResolver = ResolveLayerDelta;
             FieldEngine.ActiveLayerId = LayerStack.ActiveLayerId;
             LayerStack.ItemCountProvider = layerId => Items.Count(item => item.LayerId == layerId);
+            LayerStack.LayerMigrationValidator = CanMigrateLayerItems;
             _knownLayerCount = LayerStack.Layers.Count;
             LayerStack.ActiveLayerChanged += _ =>
             {
+                DeselectAllItems();
                 FieldEngine.ActiveLayerId = LayerStack.ActiveLayerId;
                 RefreshFieldLedger();
                 InvalidateVisual();
@@ -229,19 +249,19 @@ namespace GroveApp.Controls
                 {
                     newItem.LayerId = LayerStack.ActiveLayerId;
                     AddItem(newItem);
-                    DeselectAllItems();
-                    newItem.IsSelected = true;
-                    SelectedItem = newItem;
+                    SelectOnly(newItem);
                     RefreshFieldLedger();
                     InvalidateVisual();
                     await Task.CompletedTask;
-                }
+                },
+                ResolvePlacementCursorAtScreenPoint
             );
-            DragDropHandler.PreviewChanged += InvalidateVisual;
+            DragDropHandler.PreviewChanged += OnDropPreviewChanged;
 
             ClipboardService = new NativeClipboardService(() => TopLevel.GetTopLevel(this)?.Clipboard);
 
             SeedSampleData();
+            RefreshCursorDescriptor(new Point(0, 0));
             SizeChanged += OnCanvasSizeChanged;
         }
 
@@ -252,9 +272,6 @@ namespace GroveApp.Controls
                 return;
             }
 
-            // The visual-tree attachment can precede layout. Rebuild the field
-            // snapshot when the canvas first receives usable bounds so the first
-            // render does not depend on a later pointer or selection interaction.
             RefreshFieldLedger();
             InvalidateVisual();
         }
@@ -272,7 +289,7 @@ namespace GroveApp.Controls
             base.OnAttachedToVisualTree(e);
             _topLevel = TopLevel.GetTopLevel(this);
 
-            DragDropHandler.Attach(this, () => new Point(CameraX, CameraY), () => Zoom);
+            DragDropHandler.Attach(this);
 
             RefreshFieldLedger();
             RequestNextAnimationFrame();
@@ -302,6 +319,13 @@ namespace GroveApp.Controls
                 ? TimeSpan.FromMilliseconds(16.67)
                 : timeStamp - _lastAnimationTimestamp;
             _lastAnimationTimestamp = timeStamp;
+            double frameMilliseconds = Math.Max(0.0, frameDelta.TotalMilliseconds);
+            double framesPerSecond = frameMilliseconds > 0.0 ? 1000.0 / frameMilliseconds : 0.0;
+            PerformanceChanged?.Invoke(new HudPerformanceSnapshot(
+                framesPerSecond,
+                frameMilliseconds,
+                Items.Count,
+                FieldEngine.GetTotalMetadataSourcesCount()));
             bool feedbackActive = LayerFeedback.State.IsActive;
             bool rejectionPulseActive = DateTime.UtcNow < _placementRejectedUntilUtc;
             if (feedbackActive)
@@ -309,9 +333,20 @@ namespace GroveApp.Controls
                 LayerFeedback.Advance(frameDelta < TimeSpan.Zero ? TimeSpan.Zero : frameDelta);
             }
 
-            bool needsRedraw = _cursorRenderModule.DecayTrail(SpentCells);
+            Point cameraPosition = new(Camera.CameraX, Camera.CameraY);
+            double cameraScale = Camera.Zoom;
+            bool cameraSettling = _cameraAnimation.Step(frameDelta, ref cameraPosition, ref cameraScale);
+            if (cameraSettling)
+            {
+                Camera.SetState(cameraPosition, cameraScale);
+                RefreshCursorDescriptorFromScreen();
+                RefreshFieldLedger();
+                CameraChanged?.Invoke();
+            }
 
-            if (needsRedraw || SpentCells.Count > 0 || feedbackActive || rejectionPulseActive || _isPanning || _isMarqueeSelecting || _isDraggingItem)
+            bool needsRedraw = _cursorModel.AdvanceTrail();
+
+            if (cameraSettling || needsRedraw || SpentCells.Count > 0 || feedbackActive || rejectionPulseActive || _panInteraction.IsActive || _isMarqueeSelecting || _isDraggingItem)
             {
                 InvalidateVisual();
             }
@@ -319,12 +354,83 @@ namespace GroveApp.Controls
             RequestNextAnimationFrame();
         }
 
-        // Camera Transforms delegated to CameraModule
         public Point ScreenToWorld(Point screenPt) => Camera.ScreenToWorld(screenPt);
 
         public Point WorldToScreen(Point worldPt) => Camera.WorldToScreen(worldPt);
 
         public (int cellX, int cellY) WorldToCell(Point worldPt) => Camera.WorldToCell(worldPt, CellSize);
+
+        private CursorDescriptor RefreshCursorDescriptor(Point worldPoint)
+        {
+            if (DragDropHandler.CurrentPreview is { } activePreview)
+            {
+                return ApplyCursorDescriptor(activePreview.Cursor);
+            }
+
+            var (pointerCellX, pointerCellY) = WorldToCell(worldPoint);
+            GridContentItem? targetItem = FindItemAtCell(pointerCellX, pointerCellY);
+            CursorPlacementFootprint? armedToolFootprint = Arming.IsArmed
+                ? new CursorPlacementFootprint(
+                    Arming.ActiveGhostDescriptor.WidthCells,
+                    Arming.ActiveGhostDescriptor.HeightCells)
+                : null;
+            CursorDescriptor resolved = _cursorModel.Resolve(
+                worldPoint,
+                Zoom,
+                targetItem,
+                armedToolFootprint);
+
+            ApplyCursorDescriptor(resolved);
+
+            if (Arming.IsArmed)
+            {
+                Arming.UpdateCursorPosition(CursorDescriptor, LayerStack.ActiveLayerId);
+            }
+
+            return CursorDescriptor;
+        }
+
+        private void RefreshCursorDescriptorFromScreen()
+        {
+            MousePointerWorld = ScreenToWorld(MousePointerScreen);
+            RefreshCursorDescriptor(MousePointerWorld);
+        }
+
+        public CursorDescriptor ResolveCursorDescriptorAtScreenPoint(Point screenPoint)
+        {
+            MousePointerScreen = screenPoint;
+            MousePointerWorld = ScreenToWorld(screenPoint);
+            return RefreshCursorDescriptor(MousePointerWorld);
+        }
+
+        private CursorDescriptor ResolvePlacementCursorAtScreenPoint(Point screenPoint, int widthCells, int heightCells)
+        {
+            MousePointerScreen = screenPoint;
+            MousePointerWorld = ScreenToWorld(screenPoint);
+            return _cursorModel.ResolveDropPreview(
+                MousePointerWorld,
+                Zoom,
+                placement: new CursorPlacementFootprint(widthCells, heightCells));
+        }
+
+        private CursorDescriptor ApplyCursorDescriptor(CursorDescriptor descriptor)
+        {
+            return _cursorModel.Apply(descriptor);
+        }
+
+        private void OnDropPreviewChanged()
+        {
+            if (DragDropHandler.CurrentPreview is { } preview)
+            {
+                ApplyCursorDescriptor(preview.Cursor);
+            }
+            else
+            {
+                RefreshCursorDescriptor(MousePointerWorld);
+            }
+
+            InvalidateVisual();
+        }
 
         /// <summary>
         /// Rebuilds the visible field snapshot outside the Skia render pass.
@@ -342,11 +448,9 @@ namespace GroveApp.Controls
             }
 
             FieldEngine.ActiveLayerId = LayerStack.ActiveLayerId;
-            double bufferPx = CellSize * 2;
-            int minCellX = (int)Math.Floor((-CameraX - bufferPx) / (CellSize * Zoom));
-            int maxCellX = (int)Math.Ceiling((Bounds.Width - CameraX + bufferPx) / (CellSize * Zoom));
-            int minCellY = (int)Math.Floor((-CameraY - bufferPx) / (CellSize * Zoom));
-            int maxCellY = (int)Math.Ceiling((Bounds.Height - CameraY + bufferPx) / (CellSize * Zoom));
+            var visibleBounds = Camera.GetVisibleCellBounds(Bounds.Size, CellSize);
+            int minCellX = visibleBounds.minX, maxCellX = visibleBounds.maxX;
+            int minCellY = visibleBounds.minY, maxCellY = visibleBounds.maxY;
             var visibleItems = Items
                 .Where(item => LayerActivation.GetRenderMode(item.LayerId) != LayerRenderMode.Hidden)
                 .Where(item => !LayerActivation.IsIsolationModeEnabled || item.LayerId == LayerStack.ActiveLayerId)
@@ -358,6 +462,105 @@ namespace GroveApp.Controls
             FieldEngine.RecalculateField(visibleItems, activeAuraCells);
         }
 
+        public void ToggleGridLines()
+        {
+            GridLinesVisible = !GridLinesVisible;
+            _viewPreferences.SaveLinesVisible(GridLinesVisible);
+            InvalidateVisual();
+        }
+
+        public void FrameAllContent()
+        {
+            var frameItems = Items.Where(item =>
+                    LayerStack.GetLayer(item.LayerId).IsVisible &&
+                    LayerActivation.GetRenderMode(item.LayerId) != LayerRenderMode.Hidden &&
+                    (!LayerActivation.IsIsolationModeEnabled || item.LayerId == LayerStack.ActiveLayerId))
+                .ToList();
+
+            if (frameItems.Count == 0 || Bounds.Width <= 0 || Bounds.Height <= 0)
+            {
+                AnimateCameraTo(new Point(0, 0), 1.0);
+                return;
+            }
+
+            int minCellX = frameItems.Min(item => item.CellX);
+            int minCellY = frameItems.Min(item => item.CellY);
+            int maxCellX = frameItems.Max(item => item.CellX + item.CellWidth);
+            int maxCellY = frameItems.Max(item => item.CellY + item.CellHeight);
+            double worldWidth = Math.Max(CellSize, (maxCellX - minCellX) * CellSize);
+            double worldHeight = Math.Max(CellSize, (maxCellY - minCellY) * CellSize);
+            double targetZoom = Math.Clamp(
+                Math.Min(Bounds.Width * 0.8 / worldWidth, Bounds.Height * 0.8 / worldHeight),
+                CameraModule.MinZoom,
+                CameraModule.MaxZoom);
+            Point worldCenter = new(
+                (minCellX * CellSize) + (worldWidth / 2.0),
+                (minCellY * CellSize) + (worldHeight / 2.0));
+            Point targetPosition = new(
+                (Bounds.Width / 2.0) - (worldCenter.X * targetZoom),
+                (Bounds.Height / 2.0) - (worldCenter.Y * targetZoom));
+            AnimateCameraTo(targetPosition, targetZoom);
+        }
+
+        public void FocusDoubleClick(Point screenPoint)
+        {
+            Point worldPoint = ScreenToWorld(screenPoint);
+            var (cellX, cellY) = WorldToCell(worldPoint);
+            GridContentItem? item = FindItemAtCell(cellX, cellY);
+            Point worldCenter;
+            double targetZoom;
+
+            if (item is null)
+            {
+                worldCenter = new Point((cellX + 0.5) * CellSize, (cellY + 0.5) * CellSize);
+                targetZoom = Math.Clamp(Math.Max(1.0, Zoom), 1.0, CameraModule.MaxZoom);
+            }
+            else
+            {
+                double worldWidth = Math.Max(CellSize, item.CellWidth * CellSize);
+                double worldHeight = Math.Max(CellSize, item.CellHeight * CellSize);
+                targetZoom = Math.Clamp(
+                    Math.Min(Bounds.Width * 0.8 / worldWidth, Bounds.Height * 0.6 / worldHeight),
+                    1.0,
+                    CameraModule.MaxZoom);
+                worldCenter = new Point(
+                    (item.CellX + (item.CellWidth / 2.0)) * CellSize,
+                    (item.CellY + (item.CellHeight / 2.0)) * CellSize);
+            }
+
+            Point targetPosition = new(
+                (Bounds.Width / 2.0) - (worldCenter.X * targetZoom),
+                (Bounds.Height / 2.0) - (worldCenter.Y * targetZoom));
+            AnimateCameraTo(targetPosition, targetZoom);
+        }
+
+        private void AnimateCameraTo(Point targetPosition, double targetZoom)
+        {
+            targetZoom = Math.Clamp(targetZoom, CameraModule.MinZoom, CameraModule.MaxZoom);
+            if (Motion.PlaceDuration == TimeSpan.Zero)
+            {
+                Camera.SetState(targetPosition, targetZoom);
+                _cameraAnimation.Cancel(targetPosition, targetZoom);
+                RefreshCursorDescriptorFromScreen();
+                RefreshFieldLedger();
+                CameraChanged?.Invoke();
+                InvalidateVisual();
+                return;
+            }
+
+            _cameraAnimation.Start(
+                new Point(Camera.CameraX, Camera.CameraY),
+                Camera.Zoom,
+                targetPosition,
+                targetZoom,
+                Motion.PlaceDuration);
+            InvalidateVisual();
+            RequestNextAnimationFrame();
+        }
+
+        private void CancelCameraAnimationAtCurrentState() =>
+            _cameraAnimation.Cancel(new Point(Camera.CameraX, Camera.CameraY), Camera.Zoom);
+
         private int ResolveLayerDelta(int sourceLayerId, int targetLayerId)
         {
             int sourceIndex = LayerStack.GetStackIndex(sourceLayerId);
@@ -365,6 +568,24 @@ namespace GroveApp.Controls
             return sourceIndex >= 0 && targetIndex >= 0
                 ? Math.Abs(sourceIndex - targetIndex)
                 : Math.Abs(sourceLayerId - targetLayerId);
+        }
+
+        private bool CanMigrateLayerItems(int sourceLayerId, int targetLayerId)
+        {
+            foreach (GridContentItem item in Items.Where(candidate => candidate.LayerId == sourceLayerId))
+            {
+                if (!IsRegionFree(
+                    new CellCoordinate(item.CellX, item.CellY),
+                    item.CellWidth,
+                    item.CellHeight,
+                    item,
+                    targetLayerId))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private HashSet<Guid> QueryIndexedMemoryIds(int minCellX, int maxCellX, int minCellY, int maxCellY)
@@ -425,12 +646,9 @@ namespace GroveApp.Controls
 
         public void MoveCursorToCell(int cellX, int cellY)
         {
-            CursorCellX = cellX;
-            CursorCellY = cellY;
-            if (Arming.IsArmed)
-            {
-                Arming.UpdateCursorPosition(new CellCoordinate(cellX, cellY), LayerStack.ActiveLayerId);
-            }
+            MousePointerWorld = CellToWorld(cellX, cellY);
+            MousePointerScreen = WorldToScreen(MousePointerWorld);
+            RefreshCursorDescriptor(MousePointerWorld);
             InvalidateVisual();
         }
 
@@ -471,7 +689,11 @@ namespace GroveApp.Controls
 
             if (ReferenceEquals(SelectedItem, item))
             {
-                SelectedItem = null;
+                DeselectAllItems();
+            }
+            else
+            {
+                _selectionService.Remove(item.Id);
             }
 
             if (item is IDisposable disposable)
@@ -581,38 +803,46 @@ namespace GroveApp.Controls
             return true;
         }
 
-        // Pointer Events
         protected override void OnPointerMoved(PointerEventArgs e)
         {
             base.OnPointerMoved(e);
             MousePointerScreen = e.GetPosition(this);
             MousePointerWorld = ScreenToWorld(MousePointerScreen);
 
-            var (cx, cy) = WorldToCell(MousePointerWorld);
-            CursorCellX = cx;
-            CursorCellY = cy;
+            var (pointerCellX, pointerCellY) = WorldToCell(MousePointerWorld);
+            GridContentItem? pointerItem = FindItemAtCell(pointerCellX, pointerCellY);
+            RefreshCursorDescriptor(MousePointerWorld);
 
-            if (Arming.IsArmed)
+            if (DragDropHandler.CurrentPreview is not null)
             {
-                Arming.UpdateCursorPosition(new CellCoordinate(cx, cy), LayerStack.ActiveLayerId);
                 InvalidateVisual();
                 return;
             }
 
-            // Handle Camera Panning
-            if (_isPanning)
+            (int cx, int cy) = WorldToCell(MousePointerWorld);
+
+            if (_panInteraction.IsActive)
             {
-                Vector delta = MousePointerScreen - _panStartScreen;
-                CameraX = _panStartCamX + delta.X;
-                CameraY = _panStartCamY + delta.Y;
+                Cursor = HiddenCursor;
+                PanGestureUpdate update = _panInteraction.Update(
+                    new ScreenPoint(MousePointerScreen.X, MousePointerScreen.Y));
+                CameraX = update.CameraPosition.X;
+                CameraY = update.CameraPosition.Y;
                 InvalidateVisual();
                 CameraChanged?.Invoke();
                 return;
             }
 
-            // Handle Drag-to-Resize Corner (ADR-010)
+            if (Arming.IsArmed)
+            {
+                Cursor = HiddenCursor;
+                InvalidateVisual();
+                return;
+            }
+
             if (_isResizingItem && _resizingItem != null)
             {
+                Cursor = ResizeCursorFor(_resizeHandle);
                 int handleOriginX = _resizeHandle is ResizeHandleLocation.NorthEast or ResizeHandleLocation.SouthEast
                     ? _resizeInitialFootprint.Right - 1
                     : _resizeInitialFootprint.X;
@@ -621,8 +851,8 @@ namespace GroveApp.Controls
                     : _resizeInitialFootprint.Y;
                 int deltaX = cx - handleOriginX;
                 int deltaY = cy - handleOriginY;
-                int intrinsicWidth = _resizingItem is GridImage image ? image.IntrinsicWidthPx : 0;
-                int intrinsicHeight = _resizingItem is GridImage image2 ? image2.IntrinsicHeightPx : 0;
+                int intrinsicWidth = _resizingItem.IntrinsicWidthPx;
+                int intrinsicHeight = _resizingItem.IntrinsicHeightPx;
                 SpatialRegion candidate = TypeSpecificFootprintSolver.SolveFootprint(
                     _resizingItem.Kind,
                     _resizeInitialFootprint,
@@ -637,26 +867,14 @@ namespace GroveApp.Controls
                     candidate.Height,
                     _resizingItem,
                     _resizingItem.LayerId);
-
-                if (_resizeCandidateIsValid)
-                {
-                    _resizingItem.CellX = candidate.X;
-                    _resizingItem.CellY = candidate.Y;
-                    _resizingItem.CellWidth = candidate.Width;
-                    _resizingItem.CellHeight = candidate.Height;
-                    if (_resizingItem is GridNote note)
-                    {
-                        note.SizeCells = candidate.Width;
-                    }
-                }
-                RefreshFieldLedger();
+                _resizeCandidateFootprint = candidate;
                 InvalidateVisual();
                 return;
             }
 
-            // Handle Drag & Drop Item Movement
             if (_isDraggingItem && _draggedItem != null)
             {
+                Cursor = HiddenCursor;
                 int targetX = cx - _dragOffsetCellX;
                 int targetY = cy - _dragOffsetCellY;
 
@@ -673,25 +891,16 @@ namespace GroveApp.Controls
                 return;
             }
 
-            // Handle Marquee Selection Sweep
             if (_isMarqueeSelecting)
             {
+                Cursor = HiddenCursor;
                 _marqueeCurrentWorld = MousePointerWorld;
                 UpdateMarqueeSelection();
                 InvalidateVisual();
                 return;
             }
 
-            // Update Spent Cells Trail Physics when cell changes
-            if (cx != _lastCursorCellX || cy != _lastCursorCellY)
-            {
-                _cursorRenderModule.RegisterCellTransition(SpentCells, _lastCursorCellX, _lastCursorCellY);
-                _lastCursorCellX = cx;
-                _lastCursorCellY = cy;
-            }
-
-            // Hover Detection
-            GridContentItem? newHover = FindItemAtCell(cx, cy);
+            GridContentItem? newHover = pointerItem;
             if (newHover != HoveredItem)
             {
                 if (HoveredItem != null) HoveredItem.IsHovered = false;
@@ -699,6 +908,7 @@ namespace GroveApp.Controls
                 if (HoveredItem != null) HoveredItem.IsHovered = true;
             }
 
+            UpdateResizeCursor(MousePointerScreen);
             InvalidateVisual();
         }
 
@@ -706,29 +916,39 @@ namespace GroveApp.Controls
         {
             base.OnPointerPressed(e);
             Focus();
+            ResolveCursorDescriptorAtScreenPoint(e.GetPosition(this));
             var props = e.GetCurrentPoint(this).Properties;
 
-            // Middle Click or Right Click to Pan Camera
-            if (props.IsMiddleButtonPressed || props.IsRightButtonPressed)
+            if (props.IsLeftButtonPressed && e.ClickCount >= 2)
             {
-                if (props.IsRightButtonPressed && Arming.IsArmed)
-                {
-                    DisarmTool();
-                    e.Handled = true;
-                    return;
-                }
-
-                _isPanning = true;
-                _panStartScreen = e.GetPosition(this);
-                _panStartCamX = CameraX;
-                _panStartCamY = CameraY;
                 e.Handled = true;
                 return;
             }
 
-            // Left Click
+            if (props.IsMiddleButtonPressed || props.IsRightButtonPressed)
+            {
+                _panInteraction.TryBegin(new PanGestureStart(
+                    new ScreenPoint(e.GetPosition(this).X, e.GetPosition(this).Y),
+                    new ScreenPoint(CameraX, CameraY),
+                    props.IsRightButtonPressed ? PanInitiator.RightButton : PanInitiator.MiddleButton,
+                    Arming.IsArmed));
+                e.Handled = true;
+                return;
+            }
+
             if (props.IsLeftButtonPressed)
             {
+                if (_panInteraction.IsSpacePanModifierActive)
+                {
+                    _panInteraction.TryBegin(new PanGestureStart(
+                        new ScreenPoint(e.GetPosition(this).X, e.GetPosition(this).Y),
+                        new ScreenPoint(CameraX, CameraY),
+                        PanInitiator.SpaceLeftButton,
+                        false));
+                    e.Handled = true;
+                    return;
+                }
+
                 if (Arming.IsArmed)
                 {
                     TryPlaceArmedItem();
@@ -736,7 +956,6 @@ namespace GroveApp.Controls
                     return;
                 }
 
-                // Check for Corner Resize Handle hit on SelectedItem first
                 if (SelectedItem != null)
                 {
                     if (LayerStack.GetLayer(SelectedItem.LayerId).IsLocked)
@@ -756,15 +975,17 @@ namespace GroveApp.Controls
                             SelectedItem.CellY,
                             SelectedItem.CellWidth,
                             SelectedItem.CellHeight);
+                        _resizeCandidateFootprint = _resizeInitialFootprint;
                         _resizeCandidateIsValid = true;
+                        Cursor = ResizeCursorFor(handle);
                         e.Handled = true;
                         return;
                     }
                 }
 
                 Point clickWorld = ScreenToWorld(e.GetPosition(this));
-                var (cx, cy) = WorldToCell(clickWorld);
-            GridContentItem? hitItem = FindItemAtCell(cx, cy);
+                (int cx, int cy) = WorldToCell(clickWorld);
+                GridContentItem? hitItem = FindItemAtCell(cx, cy);
 
             if (hitItem != null)
             {
@@ -778,6 +999,13 @@ namespace GroveApp.Controls
                 _draggedItem = hitItem;
                 _dragOffsetCellX = cx - hitItem.CellX;
                 _dragOffsetCellY = cy - hitItem.CellY;
+
+                if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+                {
+                    _selectionService.SelectSingle(hitItem.Id, isShiftHeld: true);
+                    e.Handled = true;
+                    return;
+                }
 
                 bool preserveCluster = hitItem.IsSelected && GetSelectedItems().Count > 1;
                 if (preserveCluster)
@@ -802,8 +1030,13 @@ namespace GroveApp.Controls
                     _isMarqueeSelecting = true;
                     _marqueeStartWorld = clickWorld;
                     _marqueeCurrentWorld = clickWorld;
-
-                    DeselectAllItems();
+                    _selectionService.BeginMarqueeSweep(
+                        new WorldPoint(clickWorld.X, clickWorld.Y),
+                        e.KeyModifiers.HasFlag(KeyModifiers.Shift));
+                    if (!e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+                    {
+                        _selectionService.ClearSelection();
+                    }
                 }
 
                 InvalidateVisual();
@@ -813,9 +1046,17 @@ namespace GroveApp.Controls
         protected override void OnPointerReleased(PointerReleasedEventArgs e)
         {
             base.OnPointerReleased(e);
-            if (_isPanning)
+            if (_panInteraction.IsActive)
             {
-                _isPanning = false;
+                PanGestureEnd result = _panInteraction.End();
+                if (result.ShouldDisarmTool)
+                {
+                    DisarmTool();
+                }
+                else if (result.ShouldOpenContextMenu)
+                {
+                    RightClickTapped?.Invoke(e.GetPosition(this));
+                }
                 e.Handled = true;
             }
             if (_isResizingItem)
@@ -823,17 +1064,23 @@ namespace GroveApp.Controls
                 if (_resizingItem != null && _resizeCandidateIsValid)
                 {
                     RemoveMemoryAnchor(_resizingItem);
+                    _resizingItem.ResizeTo(_resizeCandidateFootprint);
                     AddMemoryAnchor(_resizingItem);
+                    RefreshFieldLedger();
                 }
                 _isResizingItem = false;
                 _resizingItem = null;
                 _resizeHandle = ResizeHandleLocation.None;
                 _resizeInitialFootprint = default;
+                _resizeCandidateFootprint = default;
                 _resizeCandidateIsValid = false;
+                Cursor = HiddenCursor;
                 e.Handled = true;
             }
             if (_isDraggingItem)
             {
+                var sourceFootprints = new List<SpatialRegion>();
+                var targetFootprints = new List<SpatialRegion>();
                 foreach (GridContentItem item in _dragCluster)
                 {
                     var origin = _dragInitialPositions[item];
@@ -842,9 +1089,23 @@ namespace GroveApp.Controls
                         continue;
                     }
 
-                    EmitTranslationTrail(origin.cellX, origin.cellY, item);
+                    sourceFootprints.Add(new SpatialRegion(
+                        origin.cellX,
+                        origin.cellY,
+                        item.CellWidth,
+                        item.CellHeight));
+                    targetFootprints.Add(new SpatialRegion(
+                        item.CellX,
+                        item.CellY,
+                        item.CellWidth,
+                        item.CellHeight));
                     RemoveMemoryAnchor(item);
                     AddMemoryAnchor(item);
+                }
+
+                if (sourceFootprints.Count > 0)
+                {
+                    _cursorModel.RecordContentTranslationTrail(sourceFootprints, targetFootprints);
                 }
 
                 _isDraggingItem = false;
@@ -859,6 +1120,8 @@ namespace GroveApp.Controls
             if (_isMarqueeSelecting)
             {
                 _isMarqueeSelecting = false;
+                _selectionService.CommitMarqueeSweep(
+                    Items.Where(item => item.LayerId == LayerStack.ActiveLayerId));
                 e.Handled = true;
             }
         }
@@ -869,6 +1132,8 @@ namespace GroveApp.Controls
 
             double zoomFactor = e.Delta.Y > 0 ? 1.15 : 0.85;
             Camera.ZoomAt(e.GetPosition(this), zoomFactor);
+            CancelCameraAnimationAtCurrentState();
+            RefreshCursorDescriptorFromScreen();
 
             InvalidateVisual();
             CameraChanged?.Invoke();
@@ -877,7 +1142,9 @@ namespace GroveApp.Controls
 
         public void HandleDoubleClick(Point pt)
         {
-            var (cx, cy) = WorldToCell(ScreenToWorld(pt));
+            FocusDoubleClick(pt);
+            CursorDescriptor cursor = ResolveCursorDescriptorAtScreenPoint(pt);
+            var (cx, cy) = (cursor.PlacementOriginCell.X, cursor.PlacementOriginCell.Y);
             GridContentItem? hitItem = FindItemAtCell(cx, cy);
 
             if (hitItem is GridNote hitNote)
@@ -890,8 +1157,36 @@ namespace GroveApp.Controls
             }
             else if (hitItem == null)
             {
-                EmptyCellDoubleClicked?.Invoke(cx, cy);
+                EmptyCellDoubleClicked?.Invoke(cursor);
             }
+        }
+
+        public void BeginSpacePan()
+        {
+            _panInteraction.BeginSpacePan();
+        }
+
+        public bool EndSpacePan()
+        {
+            return _panInteraction.EndSpacePan();
+        }
+
+        public bool CancelActiveResize()
+        {
+            if (!_isResizingItem)
+            {
+                return false;
+            }
+
+            _isResizingItem = false;
+            _resizingItem = null;
+            _resizeHandle = ResizeHandleLocation.None;
+            _resizeInitialFootprint = default;
+            _resizeCandidateFootprint = default;
+            _resizeCandidateIsValid = false;
+            Cursor = HiddenCursor;
+            InvalidateVisual();
+            return true;
         }
 
         private bool TryGetResizeHandle(
@@ -903,7 +1198,7 @@ namespace GroveApp.Controls
             Point bottomRight = WorldToScreen(new Point(
                 (item.CellX + item.CellWidth) * CellSize,
                 (item.CellY + item.CellHeight) * CellSize));
-            double tolerance = 12.0;
+            double tolerance = Tokens.ResizeHandleTargetPixels / 2.0;
 
             var candidates = new[]
             {
@@ -925,6 +1220,35 @@ namespace GroveApp.Controls
             handle = ResizeHandleLocation.None;
             return false;
         }
+
+        private void UpdateResizeCursor(Point pointerScreen)
+        {
+            if (_isResizingItem)
+            {
+                Cursor = ResizeCursorFor(_resizeHandle);
+                return;
+            }
+
+            if (SelectedItem is not null &&
+                !LayerStack.GetLayer(SelectedItem.LayerId).IsLocked &&
+                TryGetResizeHandle(SelectedItem, pointerScreen, out ResizeHandleLocation handle))
+            {
+                Cursor = ResizeCursorFor(handle);
+                return;
+            }
+
+            Cursor = HiddenCursor;
+        }
+
+        private static Cursor ResizeCursorFor(ResizeHandleLocation handle) =>
+            handle switch
+            {
+                ResizeHandleLocation.NorthWest => ResizeNorthWestCursor,
+                ResizeHandleLocation.NorthEast => ResizeNorthEastCursor,
+                ResizeHandleLocation.SouthEast => ResizeSouthEastCursor,
+                ResizeHandleLocation.SouthWest => ResizeSouthWestCursor,
+                _ => HiddenCursor
+            };
 
         public GridContentItem? FindItemAtCell(int cx, int cy)
         {
@@ -962,7 +1286,6 @@ namespace GroveApp.Controls
             }
             if (list.Count == 0 && SelectedItem != null)
             {
-                SelectedItem.IsSelected = true;
                 list.Add(SelectedItem);
             }
             return list;
@@ -980,16 +1303,20 @@ namespace GroveApp.Controls
                 return false;
             }
 
-            Arming.ArmTool(
-                contentType,
-                new CellCoordinate(CursorCellX, CursorCellY),
-                LayerStack.ActiveLayerId);
+            int toolWidth = contentType == ArmableContentType.Document ? 2 : 1;
+            CursorDescriptor armedCursor = _cursorModel.Resolve(
+                MousePointerWorld,
+                Zoom,
+                targetItem: null,
+                armedToolFootprint: new CursorPlacementFootprint(toolWidth, toolWidth));
+            ApplyCursorDescriptor(armedCursor);
+            Arming.ArmTool(contentType, armedCursor, LayerStack.ActiveLayerId);
             ActiveTool = contentType switch
             {
-                ArmableContentType.Note => "NOTE",
-                ArmableContentType.QuickNote => "QUICKNOTE",
-                ArmableContentType.Document => "DOCUMENT",
-                _ => "SELECT"
+                ArmableContentType.Note => CanvasToolMode.Note,
+                ArmableContentType.QuickNote => CanvasToolMode.QuickNote,
+                ArmableContentType.Document => CanvasToolMode.Document,
+                _ => CanvasToolMode.Select
             };
             InvalidateVisual();
             return true;
@@ -998,7 +1325,8 @@ namespace GroveApp.Controls
         public void DisarmTool()
         {
             Arming.Disarm();
-            ActiveTool = "SELECT";
+            ActiveTool = CanvasToolMode.Select;
+            RefreshCursorDescriptor(MousePointerWorld);
             InvalidateVisual();
         }
 
@@ -1008,7 +1336,7 @@ namespace GroveApp.Controls
             if (changed)
             {
                 Arming.UpdateCursorPosition(
-                    new CellCoordinate(CursorCellX, CursorCellY),
+                    CursorDescriptor,
                     LayerStack.ActiveLayerId);
                 InvalidateVisual();
             }
@@ -1026,16 +1354,16 @@ namespace GroveApp.Controls
             SelectItem(item);
         }
 
+        public void SelectItems(IEnumerable<GridContentItem> items)
+        {
+            ArgumentNullException.ThrowIfNull(items);
+            GridContentItem[] selectedItems = items.ToArray();
+            _selectionService.SelectMany(selectedItems.Select(item => item.Id));
+        }
+
         private void SelectItem(GridContentItem item)
         {
-            DeselectAllItems();
-            SelectedItem = item;
-            SelectedItem.IsSelected = true;
-            ItemSelected?.Invoke(SelectedItem);
-            if (item is GridNote note)
-            {
-                NoteSelected?.Invoke(note);
-            }
+            _selectionService.SelectSingle(item.Id);
         }
 
         private void SelectNote(GridNote note)
@@ -1045,9 +1373,7 @@ namespace GroveApp.Controls
 
         public void DeselectAllItems()
         {
-            if (SelectedItem != null) SelectedItem.IsSelected = false;
-            SelectedItem = null;
-            foreach (var item in Items) item.IsSelected = false;
+            _selectionService.ClearSelection();
         }
 
         private bool IsClusterRegionFree(int deltaX, int deltaY)
@@ -1113,40 +1439,45 @@ namespace GroveApp.Controls
                 return;
             }
 
-            GridContentItem item = descriptor.ContentType switch
+            try
             {
-                ArmableContentType.Note => new GridNote(
-                    descriptor.OriginCell.X,
-                    descriptor.OriginCell.Y,
-                    "New Note",
-                    NoteColor.Violet,
-                    layerId: descriptor.LayerId),
-                ArmableContentType.QuickNote => new GridNote(
-                    descriptor.OriginCell.X,
-                    descriptor.OriginCell.Y,
-                    "",
-                    NoteColor.Violet,
-                    layerId: descriptor.LayerId),
-                ArmableContentType.Document => new GridDocument(
-                    descriptor.OriginCell.X,
-                    descriptor.OriginCell.Y,
-                    2,
-                    2,
-                    "New Document",
-                    "",
-                    layerId: descriptor.LayerId),
-                _ => throw new ArgumentOutOfRangeException()
-            };
+                GridContentItem item = descriptor.ContentType switch
+                {
+                    ArmableContentType.Note => new GridNote(
+                        descriptor.PlacementOriginCell.X,
+                        descriptor.PlacementOriginCell.Y,
+                        "New Note",
+                        NoteColor.Violet,
+                        layerId: descriptor.LayerId),
+                    ArmableContentType.QuickNote => new GridNote(
+                        descriptor.PlacementOriginCell.X,
+                        descriptor.PlacementOriginCell.Y,
+                        "",
+                        NoteColor.Violet,
+                        layerId: descriptor.LayerId),
+                    ArmableContentType.Document => new GridDocument(
+                        descriptor.PlacementOriginCell.X,
+                        descriptor.PlacementOriginCell.Y,
+                        descriptor.WidthCells,
+                        descriptor.HeightCells,
+                        "New Document",
+                        "",
+                        layerId: descriptor.LayerId),
+                    _ => throw new ArgumentOutOfRangeException()
+                };
 
-            AddItem(item);
-            DeselectAllItems();
-            item.IsSelected = true;
-            SelectedItem = item;
-            RefreshFieldLedger();
-            ArmedItemPlaced?.Invoke(item, descriptor.ContentType);
-            Arming.CompletePlacement();
-            ActiveTool = "SELECT";
-            InvalidateVisual();
+                AddItem(item);
+                SelectOnly(item);
+                RefreshFieldLedger();
+                ArmedItemPlaced?.Invoke(item, descriptor.ContentType);
+            }
+            finally
+            {
+                Arming.CompletePlacement();
+                ActiveTool = CanvasToolMode.Select;
+                RefreshCursorDescriptor(MousePointerWorld);
+                InvalidateVisual();
+            }
         }
 
         public void DeselectAllNotes()
@@ -1156,35 +1487,15 @@ namespace GroveApp.Controls
 
         private void UpdateMarqueeSelection()
         {
-            var (startCX, startCY) = WorldToCell(_marqueeStartWorld);
-            var (currCX, currCY) = WorldToCell(_marqueeCurrentWorld);
-
-            int minCX = Math.Min(startCX, currCX);
-            int maxCX = Math.Max(startCX, currCX);
-            int minCY = Math.Min(startCY, currCY);
-            int maxCY = Math.Max(startCY, currCY);
-
-            double minWorldX = minCX * CellSize;
-            double minWorldY = minCY * CellSize;
-            double maxWorldX = (maxCX + 1) * CellSize;
-            double maxWorldY = (maxCY + 1) * CellSize;
-
-            Rect cellAlignedMarqueeWorld = new Rect(minWorldX, minWorldY, maxWorldX - minWorldX, maxWorldY - minWorldY);
-
+            _selectionService.UpdateMarqueeSweep(
+                new WorldPoint(_marqueeCurrentWorld.X, _marqueeCurrentWorld.Y));
+            var previewIds = _selectionService.PreviewMarqueeSweep(
+                Items.Where(item => item.LayerId == LayerStack.ActiveLayerId)
+                    .Select(SpatialSelectionCandidate.From));
             GridContentItem? lastSelected = null;
-            foreach (var item in Items)
+            foreach (GridContentItem item in Items)
             {
-                if (item.LayerId != LayerStack.ActiveLayerId)
-                {
-                    item.IsSelected = false;
-                    continue;
-                }
-                Rect itemWorldRect = new Rect(item.CellX * CellSize, item.CellY * CellSize, item.CellWidth * CellSize, item.CellHeight * CellSize);
-                double overlapWidth = Math.Max(0, Math.Min(cellAlignedMarqueeWorld.Right, itemWorldRect.Right) - Math.Max(cellAlignedMarqueeWorld.Left, itemWorldRect.Left));
-                double overlapHeight = Math.Max(0, Math.Min(cellAlignedMarqueeWorld.Bottom, itemWorldRect.Bottom) - Math.Max(cellAlignedMarqueeWorld.Top, itemWorldRect.Top));
-                double itemArea = itemWorldRect.Width * itemWorldRect.Height;
-                double overlapRatio = itemArea <= 0 ? 0 : overlapWidth * overlapHeight / itemArea;
-                item.IsSelected = overlapRatio >= 0.5;
+                item.IsSelected = previewIds.Contains(item.Id);
                 if (item.IsSelected)
                 {
                     lastSelected = item;
@@ -1193,11 +1504,34 @@ namespace GroveApp.Controls
             SelectedItem = lastSelected;
         }
 
-        // Field Ledger Engine Spatial Lookups
+        private void OnSelectionChanged(SelectionSnapshot snapshot)
+        {
+            var selectedIds = new HashSet<string>(snapshot.SelectedPlacementIds, StringComparer.Ordinal);
+            foreach (GridContentItem item in Items)
+            {
+                item.IsSelected = selectedIds.Contains(item.Id) &&
+                    item.LayerId == LayerStack.ActiveLayerId;
+            }
+
+            GridContentItem? primary = snapshot.PrimarySelectionId is null
+                ? null
+                : Items.FirstOrDefault(item => item.Id == snapshot.PrimarySelectionId && item.IsSelected);
+            SelectedItem = primary;
+            if (primary is null)
+            {
+                return;
+            }
+
+            ItemSelected?.Invoke(primary);
+            if (primary is GridNote note)
+            {
+                NoteSelected?.Invoke(note);
+            }
+        }
+
         public CellLedgerEntry GetCellLedger(int col, int row) => FieldEngine.GetCellLedger(col, row);
         public List<CellMetadataSource> QueryMetadataInRegion(Rect cellBounds) => FieldEngine.QueryMetadataInRegion(cellBounds);
 
-        // High-Frequency Engine Pipeline Delegation
         public override void Render(DrawingContext context)
         {
             base.Render(context);
@@ -1205,148 +1539,107 @@ namespace GroveApp.Controls
             double w = Bounds.Width;
             double h = Bounds.Height;
             if (w <= 0 || h <= 0) return;
+            context.FillRectangle(Colors.SurfaceGridBrush, new Rect(Bounds.Size));
 
-            // Visible Cell Bounds in World Coordinates with 2-cell buffer (-CellSize * 2 to viewport + CellSize * 2)
-            double bufferPx = CellSize * 2;
-            int minCellX = (int)Math.Floor((-CameraX - bufferPx) / (CellSize * Zoom));
-            int maxCellX = (int)Math.Ceiling((w - CameraX + bufferPx) / (CellSize * Zoom));
-            int minCellY = (int)Math.Floor((-CameraY - bufferPx) / (CellSize * Zoom));
-            int maxCellY = (int)Math.Ceiling((h - CameraY + bufferPx) / (CellSize * Zoom));
+            var visibleBounds = Camera.GetVisibleCellBounds(Bounds.Size, CellSize);
+            int minCellX = visibleBounds.minX, maxCellX = visibleBounds.maxX;
+            int minCellY = visibleBounds.minY, maxCellY = visibleBounds.maxY;
 
-            // 1. Field Ledger Module: Gravitational Cell Fills, Atmosphere & Perimeter Rings
             var visibleItems = Items
                 .Where(item => LayerActivation.GetRenderMode(item.LayerId) != LayerRenderMode.Hidden)
                 .Where(item => !LayerActivation.IsIsolationModeEnabled || item.LayerId == LayerStack.ActiveLayerId)
                 .ToList();
-            _fieldLedgerModule.RenderFieldLedger(context, WorldToScreen, CellSize, Zoom, minCellX, maxCellX, minCellY, maxCellY, FieldEngine, visibleItems);
-
-            // 2. Grid Line Module: Major 220px, Minor 44px Subdivisions & LOD Fading
+            HashSet<Guid> indexedMemoryIds = QueryIndexedMemoryIds(minCellX, maxCellX, minCellY, maxCellY);
+            var activeItems = Items.Where(item =>
+                IsIndexedForViewport(item, indexedMemoryIds) &&
+                item.LayerId == LayerStack.ActiveLayerId &&
+                LayerStack.GetLayer(item.LayerId).IsVisible).ToList();
+            var inactiveItems = Items.Where(item =>
+                IsIndexedForViewport(item, indexedMemoryIds) &&
+                LayerActivation.GetRenderMode(item.LayerId) == LayerRenderMode.InactivePresenceOnly).ToList();
             double renderScaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
-            _gridLineModule.RenderGridLines(
-                context,
-                WorldToScreen,
+            _renderPipeline.Render(context, new GridCanvasRenderFrame(
+                Bounds.Size,
+                Camera.CurrentState.TransformMatrix,
                 CellSize,
                 Zoom,
                 minCellX,
                 maxCellX,
                 minCellY,
                 maxCellY,
-                SpatialGridGeometryConfig.Default with { CellSize = CellSize },
-                renderScaling);
+                renderScaling,
+                GridLinesVisible,
+                FieldEngine,
+                visibleItems,
+                activeItems,
+                inactiveItems,
+                SelectedItem,
+                HoveredItem,
+                WorldToScreen));
 
-            // 3. Note & Content Render Module: Inactive layer outlines & active layer items.
-            // Inactive content is presence-only: it must not paint a second full document
-            // or image into the active plane, and it must not participate in hit testing.
-            HashSet<Guid> indexedMemoryIds = QueryIndexedMemoryIds(minCellX, maxCellX, minCellY, maxCellY);
-            var inactiveItems = LayerActivation.IsIsolationModeEnabled
-                ? new List<GridContentItem>()
-                : Items.Where(item =>
-                    IsIndexedForViewport(item, indexedMemoryIds) &&
-                    item.LayerId != LayerStack.ActiveLayerId &&
-                    LayerStack.GetLayer(item.LayerId).IsVisible).ToList();
-            int activeZ = LayerStack.GetZIndexForLayerId(LayerStack.ActiveLayerId);
-            foreach (var inactiveItem in inactiveItems)
+            _feedbackRenderer.RenderResizePreview(
+                context,
+                _isResizingItem,
+                _resizeCandidateIsValid,
+                _resizeCandidateFootprint,
+                CellSize,
+                Zoom,
+                Bounds.Size,
+                WorldToScreen);
+
+            context.Custom(new CursorTrailDrawOperation(
+                new Rect(Bounds.Size),
+                Camera.CurrentState.TransformMatrix,
+                _cursorModel.Trail,
+                _cursorModel.TrailVersion));
+
+            if (DragDropHandler.CurrentPreview is { } dropPreview)
             {
-                int itemZ = LayerStack.GetZIndexForLayerId(inactiveItem.LayerId);
-                double ghostOpacity = 0.15 * Math.Pow(0.5, Math.Abs(itemZ - activeZ));
-                _noteRenderModule.RenderGhostOutline(
+                _feedbackRenderer.RenderDropPreview(context, dropPreview, WorldToScreen);
+            }
+            else if (Arming.IsArmed)
+            {
+                _feedbackRenderer.RenderArmingGhost(
                     context,
-                    WorldToScreen,
-                    CellSize,
-                    Zoom,
-                    minCellX,
-                    maxCellX,
-                    minCellY,
-                    maxCellY,
-                    inactiveItem,
-                    ghostOpacity);
+                    Arming.ActiveGhostDescriptor,
+                    CursorDescriptor,
+                    DateTime.UtcNow < _placementRejectedUntilUtc,
+                    WorldToScreen);
             }
-
-            var activeItems = Items.Where(item =>
-                IsIndexedForViewport(item, indexedMemoryIds) &&
-                item.LayerId == LayerStack.ActiveLayerId &&
-                LayerStack.GetLayer(item.LayerId).IsVisible).ToList();
-            _noteRenderModule.RenderContentItems(context, WorldToScreen, CellSize, Zoom, minCellX, maxCellX, minCellY, maxCellY, activeItems, SelectedItem, HoveredItem);
-
-            RenderResizeRefusal(context);
-
-            // 4. Cursor Render Module: Spent Cell Decay Trail Physics
-            _cursorRenderModule.RenderSpentTrail(context, WorldToScreen, CellSize, Zoom, SpentCells);
-
-            // 5. Cursor Render Module: Grid Cursor Head, 22% Fill & Inset 2px Ring
-            GridContentItem? targetItem = FindItemAtCell(CursorCellX, CursorCellY);
-            _cursorRenderModule.RenderGridCursor(context, WorldToScreen, CellSize, Zoom, CursorCellX, CursorCellY, targetItem);
-
-            // 6. Marquee Selection Box Sweep
-            RenderMarqueeSelection(context);
-
-            // 7. Transaction preview for a multi-item rigid translation.
-            RenderGroupDragPreview(context);
-
-            // 8. Cell-aligned arming ghost.
-            RenderArmingGhost(context);
-
-            // 9. Cell-aligned OS drag placement preview.
-            RenderDropPlacementPreview(context);
-
-            // 10. Discrete layer insertion feedback sweep (no cross-cell blur).
-            RenderLayerFeedback(context);
-        }
-
-        private void RenderDropPlacementPreview(DrawingContext context)
-        {
-            DropPlacementPreview? preview = DragDropHandler.CurrentPreview;
-            if (preview is null)
+            else
             {
-                return;
+                _cursorRenderModule.RenderGridCursor(context, WorldToScreen, CursorDescriptor);
             }
 
-            DropPlacementPreview value = preview.Value;
-            Color signal = value.IsValid ? Colors.SignalInteraction : Colors.SignalRefusal;
-            var fill = new SolidColorBrush(Color.FromArgb(32, signal.R, signal.G, signal.B));
-            var pen = new Pen(new SolidColorBrush(Color.FromArgb(210, signal.R, signal.G, signal.B)), Tokens.StrokeState);
-            Point screen = WorldToScreen(CellToWorld(value.Origin.X, value.Origin.Y));
-            var rect = new Rect(
-                screen.X,
-                screen.Y,
-                value.Width * CellSize * Zoom,
-                value.Height * CellSize * Zoom);
-            context.FillRectangle(fill, rect);
-            context.DrawRectangle(null, pen, rect.Deflate(Tokens.StrokeState / 2.0));
-        }
+            _feedbackRenderer.RenderMarqueeSelection(
+                context,
+                _isMarqueeSelecting,
+                _marqueeStartWorld,
+                _marqueeCurrentWorld,
+                WorldToCell,
+                WorldToScreen,
+                CellSize);
 
-        private void RenderLayerFeedback(DrawingContext context)
-        {
-            LayerFeedbackAnimationState state = LayerFeedback.State;
-            if (!state.IsActive)
-            {
-                return;
-            }
+            _feedbackRenderer.RenderGroupDragPreview(
+                context,
+                _isDraggingItem,
+                _dragCluster,
+                _dragInitialPositions,
+                _dragCandidateDeltaX,
+                _dragCandidateDeltaY,
+                _dragCandidateIsValid,
+                CellSize,
+                Zoom,
+                WorldToScreen,
+                CellToWorld);
 
-            int radius = Math.Max(0, (int)Math.Round(state.SweepProgress * 4.0));
-            byte alpha = (byte)Math.Clamp((int)Math.Round(state.SweepOpacity * 255.0), 0, 255);
-            var pen = new Pen(new SolidColorBrush(Color.FromArgb(
-                alpha,
-                state.SweepColor.R,
-                state.SweepColor.G,
-                state.SweepColor.B)), Tokens.StrokeState);
-            int originX = (int)Math.Round(state.Origin.X);
-            int originY = (int)Math.Round(state.Origin.Y);
-
-            for (int dx = -radius; dx <= radius; dx++)
-            {
-                for (int dy = -radius; dy <= radius; dy++)
-                {
-                    if (Math.Max(Math.Abs(dx), Math.Abs(dy)) != radius)
-                    {
-                        continue;
-                    }
-
-                    Point screen = WorldToScreen(CellToWorld(originX + dx, originY + dy));
-                    var rect = new Rect(screen.X, screen.Y, CellSize * Zoom, CellSize * Zoom);
-                    context.DrawRectangle(null, pen, rect.Deflate(Tokens.StrokeState / 2.0));
-                }
-            }
+            _feedbackRenderer.RenderLayerFeedback(
+                context,
+                LayerFeedback.State,
+                CellSize,
+                Zoom,
+                WorldToScreen,
+                CellToWorld);
         }
 
         private void OnLayerStackChanged()
@@ -1354,105 +1647,12 @@ namespace GroveApp.Controls
             int currentCount = LayerStack.Layers.Count;
             if (currentCount > _knownLayerCount)
             {
-                LayerFeedback.Begin(new LayerInsertionFeedbackOrigin(CursorCellX, CursorCellY));
+                LayerFeedback.Begin(new LayerInsertionFeedbackOrigin(CursorPlacementOrigin.X, CursorPlacementOrigin.Y));
             }
 
             _knownLayerCount = currentCount;
             RefreshFieldLedger();
             InvalidateVisual();
-        }
-
-        private void RenderGroupDragPreview(DrawingContext context)
-        {
-            if (!_isDraggingItem || _dragCluster.Count <= 1 ||
-                (_dragCandidateDeltaX == 0 && _dragCandidateDeltaY == 0))
-            {
-                return;
-            }
-
-            Color signal = _dragCandidateIsValid ? Colors.SignalInteraction : Colors.SignalRefusal;
-            var fill = new SolidColorBrush(Color.FromArgb(38, signal.R, signal.G, signal.B));
-            var pen = new Pen(new SolidColorBrush(Color.FromArgb(220, signal.R, signal.G, signal.B)), Tokens.StrokeState);
-
-            foreach (var item in _dragCluster)
-            {
-                var origin = _dragInitialPositions[item];
-                Point world = CellToWorld(origin.cellX + _dragCandidateDeltaX, origin.cellY + _dragCandidateDeltaY);
-                Point screen = WorldToScreen(world);
-                double width = item.CellWidth * CellSize * Zoom;
-                double height = item.CellHeight * CellSize * Zoom;
-                var rect = new Rect(screen.X, screen.Y, width, height);
-                context.FillRectangle(fill, rect);
-                context.DrawRectangle(null, pen, rect.Deflate(Tokens.StrokeState / 2));
-            }
-        }
-
-        private void RenderResizeRefusal(DrawingContext context)
-        {
-            if (!_isResizingItem || _resizeCandidateIsValid || _resizingItem is null)
-            {
-                return;
-            }
-
-            Rect rect = GetContentScreenBounds(_resizingItem);
-            Color refusal = Colors.SignalRefusal;
-            context.FillRectangle(new SolidColorBrush(Color.FromArgb(32, refusal.R, refusal.G, refusal.B)), rect);
-            using (context.PushClip(rect))
-            {
-                var pen = new Pen(new SolidColorBrush(Color.FromArgb(190, refusal.R, refusal.G, refusal.B)), Math.Max(1.0, Zoom));
-                double spacing = Math.Max(8.0, 12.0 * Zoom);
-                for (double start = rect.Left - rect.Height; start < rect.Right; start += spacing)
-                {
-                    context.DrawLine(pen, new Point(start, rect.Bottom), new Point(start + rect.Height, rect.Top));
-                }
-            }
-
-            double stripHeight = Math.Min(24.0, Math.Max(18.0, rect.Height));
-            var strip = new Rect(rect.Left, rect.Top, rect.Width, stripHeight);
-            context.FillRectangle(new SolidColorBrush(Color.FromArgb(220, refusal.R, refusal.G, refusal.B)), strip);
-            var text = new FormattedText(
-                "SPACE OCCUPIED",
-                CultureInfo.InvariantCulture,
-                FlowDirection.LeftToRight,
-                new Typeface(Typography.FontFamilyMono, FontStyle.Normal, FontWeight.Bold),
-                Typography.SizeMicro * Math.Max(1.0, Zoom),
-                Colors.CPaperInkBrush)
-            {
-                MaxTextWidth = Math.Max(1.0, rect.Width - Tokens.SpaceSm)
-            };
-            context.DrawText(text, new Point(rect.Left + Tokens.SpaceXs, rect.Top + Tokens.SpaceXs));
-        }
-
-        private void RenderArmingGhost(DrawingContext context)
-        {
-            GhostPlacementDescriptor ghost = Arming.ActiveGhostDescriptor;
-            if (!ghost.IsVisible)
-            {
-                return;
-            }
-
-            Color signal = ghost.IsValidRegion ? Colors.SignalInteraction : Colors.SignalRefusal;
-            bool rejectionPulse = DateTime.UtcNow < _placementRejectedUntilUtc;
-            double fillAlpha = ghost.IsValidRegion ? 0.06 : rejectionPulse ? 0.22 : 0.12;
-            double insetAlpha = ghost.IsValidRegion ? 0.60 : rejectionPulse ? 1.0 : 0.85;
-            double edgeAlpha = ghost.IsValidRegion ? 0.80 : rejectionPulse ? 1.0 : 0.90;
-            var fill = new SolidColorBrush(Color.FromArgb(
-                ToAlphaByte(fillAlpha), signal.R, signal.G, signal.B));
-            var insetPen = new Pen(new SolidColorBrush(Color.FromArgb(
-                ToAlphaByte(insetAlpha), signal.R, signal.G, signal.B)), Tokens.StrokeState);
-            var edgePen = new Pen(new SolidColorBrush(Color.FromArgb(
-                ToAlphaByte(edgeAlpha), signal.R, signal.G, signal.B)), 1.0, DashStyle.Dash);
-            Point world = CellToWorld(ghost.OriginCell.X, ghost.OriginCell.Y);
-            Point screen = WorldToScreen(world);
-            var rect = new Rect(
-                screen.X,
-                screen.Y,
-                ghost.WidthCells * CellSize * Zoom,
-                ghost.HeightCells * CellSize * Zoom);
-
-            context.FillRectangle(fill, rect);
-            context.DrawRectangle(null, insetPen, rect.Deflate(Tokens.StrokeState));
-            context.DrawRectangle(null, edgePen, rect);
         }
 
         private void OnPlacementRejected()
@@ -1461,53 +1661,5 @@ namespace GroveApp.Controls
             InvalidateVisual();
         }
 
-        private void EmitTranslationTrail(int originX, int originY, GridContentItem item)
-        {
-            for (int x = 0; x < item.CellWidth; x++)
-            {
-                for (int y = 0; y < item.CellHeight; y++)
-                {
-                    SpentCells.Add(new SpentCell(originX + x, originY + y));
-                }
-            }
-
-            while (SpentCells.Count > Tokens.CursorTrailMaxSteps)
-            {
-                SpentCells.RemoveAt(0);
-            }
-        }
-
-        private static byte ToAlphaByte(double alpha) =>
-            (byte)Math.Clamp(Math.Round(alpha * byte.MaxValue), 0, byte.MaxValue);
-
-        private void RenderMarqueeSelection(DrawingContext context)
-        {
-            if (!_isMarqueeSelecting) return;
-
-            var (startCX, startCY) = WorldToCell(_marqueeStartWorld);
-            var (currCX, currCY) = WorldToCell(_marqueeCurrentWorld);
-
-            int minCX = Math.Min(startCX, currCX);
-            int maxCX = Math.Max(startCX, currCX);
-            int minCY = Math.Min(startCY, currCY);
-            int maxCY = Math.Max(startCY, currCY);
-
-            Point startScreen = WorldToScreen(new Point(minCX * CellSize, minCY * CellSize));
-            Point endScreen = WorldToScreen(new Point((maxCX + 1) * CellSize, (maxCY + 1) * CellSize));
-
-            double x = startScreen.X;
-            double y = startScreen.Y;
-            double w = endScreen.X - startScreen.X;
-            double h = endScreen.Y - startScreen.Y;
-
-            Rect marqueeRect = new Rect(x, y, w, h);
-
-            Color marqueeColor = Colors.SignalActiveWork;
-            var fillBrush = new SolidColorBrush(Color.FromArgb((byte)(255 * 0.10), marqueeColor.R, marqueeColor.G, marqueeColor.B));
-            var borderPen = new Pen(Colors.SignalActiveWorkBrush, Tokens.FieldPerimeterWidth, new DashStyle(new double[] { 4, 4 }, 0));
-
-            context.FillRectangle(fillBrush, marqueeRect);
-            context.DrawRectangle(null, borderPen, marqueeRect);
-        }
     }
 }

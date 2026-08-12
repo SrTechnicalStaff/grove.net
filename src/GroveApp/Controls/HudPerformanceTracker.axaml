@@ -1,0 +1,106 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ds="clr-namespace:GroveApp.DesignSystem"
+             x:Class="GroveApp.Controls.HudPerformanceTracker"
+             Width="214"
+             IsHitTestVisible="True">
+    <Border Background="{x:Static ds:Colors.SurfaceChromeHex}"
+            BorderBrush="{x:Static ds:Colors.EdgeHairlineBrush}"
+            BorderThickness="1"
+            CornerRadius="{x:Static ds:Tokens.CornerRadiusNone}"
+            Padding="8">
+        <Grid RowDefinitions="Auto,Auto">
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                <TextBlock Text="PERFORMANCE"
+                           Foreground="{x:Static ds:Colors.TextMetaBrush}"
+                           FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                           FontSize="{x:Static ds:Typography.SizeMicro}"
+                           LetterSpacing="1.2"
+                           VerticalAlignment="Center" />
+                <Button x:Name="ToggleButton"
+                        Grid.Column="1"
+                        Content="—"
+                        Width="22"
+                        Height="20"
+                        Padding="0"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center" />
+            </Grid>
+
+            <Grid x:Name="DetailsPanel"
+                  Grid.Row="1"
+                  Margin="0,6,0,0"
+                  RowDefinitions="Auto,Auto"
+                  ColumnDefinitions="Auto,*,Auto,Auto">
+                <TextBlock Text="FPS"
+                           Foreground="{x:Static ds:Colors.TextMetaBrush}"
+                           FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                           FontSize="{x:Static ds:Typography.SizeMicro}" />
+                <TextBlock x:Name="FpsText"
+                           Grid.Column="1"
+                           Foreground="{x:Static ds:Colors.SignalInteractionBrush}"
+                           FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                           FontSize="{x:Static ds:Typography.SizeMicro}"
+                           HorizontalAlignment="Right" />
+                <TextBlock Text="FRAME"
+                           Grid.Column="2"
+                           Foreground="{x:Static ds:Colors.TextMetaBrush}"
+                           FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                           FontSize="{x:Static ds:Typography.SizeMicro}" />
+                <TextBlock x:Name="FrameText"
+                           Grid.Column="3"
+                           Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
+                           FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                           FontSize="{x:Static ds:Typography.SizeMicro}"
+                           HorizontalAlignment="Right" />
+
+                <TextBlock Text="ITEMS"
+                           Grid.Row="1"
+                           Foreground="{x:Static ds:Colors.TextMetaBrush}"
+                           FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                           FontSize="{x:Static ds:Typography.SizeMicro}" />
+                <TextBlock x:Name="ItemsText"
+                           Grid.Row="1"
+                           Grid.Column="1"
+                           Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
+                           FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                           FontSize="{x:Static ds:Typography.SizeMicro}"
+                           HorizontalAlignment="Right" />
+                <TextBlock Text="FIELD"
+                           Grid.Row="1"
+                           Grid.Column="2"
+                           Foreground="{x:Static ds:Colors.TextMetaBrush}"
+                           FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                           FontSize="{x:Static ds:Typography.SizeMicro}" />
+                <TextBlock x:Name="FieldText"
+                           Grid.Row="1"
+                           Grid.Column="3"
+                           Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
+                           FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                           FontSize="{x:Static ds:Typography.SizeMicro}"
+                           HorizontalAlignment="Right" />
+            </Grid>
+
+            <Grid x:Name="CollapsedPanel"
+                  Grid.Row="1"
+                  IsVisible="False"
+                  ColumnDefinitions="*,Auto"
+                  Margin="0,4,0,0">
+                <TextBlock x:Name="CollapsedSummaryText"
+                           Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
+                           FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                           FontSize="{x:Static ds:Typography.SizeMicro}"
+                           VerticalAlignment="Center" />
+                <TextBlock Text="HUD"
+                           Grid.Column="1"
+                           Foreground="{x:Static ds:Colors.TextMetaBrush}"
+                           FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                           FontSize="{x:Static ds:Typography.SizeMicro}"
+                           VerticalAlignment="Center" />
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>

@@ -26,13 +26,16 @@ namespace GroveApp.Engine
     public readonly record struct GhostPlacementDescriptor(
         ToolArmingState ArmingState,
         ArmableContentType ContentType,
-        CellCoordinate OriginCell,
-        int WidthCells,
-        int HeightCells,
+        CursorDescriptor Cursor,
         int LayerId,
         bool IsValidRegion)
     {
-        public bool IsVisible => ArmingState != ToolArmingState.Idle;
+        public CellCoordinate PlacementOriginCell => Cursor.PlacementOriginCell;
+        public int WidthCells => Cursor.WidthCells;
+        public int HeightCells => Cursor.HeightCells;
+        public bool IsVisible => ArmingState is ToolArmingState.ArmedNote
+            or ToolArmingState.ArmedQuickNote
+            or ToolArmingState.ArmedDocument;
     }
 
     /// <summary>
@@ -60,14 +63,12 @@ namespace GroveApp.Engine
             _activeGhost = new GhostPlacementDescriptor(
                 ToolArmingState.Idle,
                 ArmableContentType.Note,
-                new CellCoordinate(0, 0),
-                1,
-                1,
+                default,
                 0,
                 false);
         }
 
-        public void ArmTool(ArmableContentType contentType, CellCoordinate origin, int layerId)
+        public void ArmTool(ArmableContentType contentType, CursorDescriptor cursor, int layerId)
         {
             var state = contentType switch
             {
@@ -77,15 +78,17 @@ namespace GroveApp.Engine
                 _ => throw new ArgumentOutOfRangeException(nameof(contentType))
             };
 
-            (int width, int height) = contentType == ArmableContentType.Document ? (2, 2) : (1, 1);
+            if (cursor.Kind != CursorFootprintKind.ArmedTool)
+            {
+                throw new ArgumentException("An armed tool must be represented by an ArmedTool cursor descriptor.", nameof(cursor));
+            }
+
             _activeGhost = new GhostPlacementDescriptor(
                 state,
                 contentType,
-                origin,
-                width,
-                height,
+                cursor,
                 layerId,
-                _isRegionFree(origin, width, height, layerId));
+                _isRegionFree(cursor.PlacementOriginCell, cursor.WidthCells, cursor.HeightCells, layerId));
 
             ArmingStateChanged?.Invoke(state);
             GhostPreviewUpdated?.Invoke(_activeGhost);
@@ -101,28 +104,34 @@ namespace GroveApp.Engine
             _activeGhost = _activeGhost with
             {
                 ArmingState = ToolArmingState.Idle,
+                Cursor = default,
                 IsValidRegion = false
             };
             ArmingStateChanged?.Invoke(ToolArmingState.Idle);
             GhostPreviewUpdated?.Invoke(_activeGhost);
         }
 
-        public void UpdateCursorPosition(CellCoordinate origin, int layerId)
+        public void UpdateCursorPosition(CursorDescriptor cursor, int layerId)
         {
             if (!IsArmed)
             {
                 return;
             }
 
+            if (cursor.Kind != CursorFootprintKind.ArmedTool)
+            {
+                throw new ArgumentException("An armed tool must be represented by an ArmedTool cursor descriptor.", nameof(cursor));
+            }
+
             bool isValid = _isRegionFree(
-                origin,
-                _activeGhost.WidthCells,
-                _activeGhost.HeightCells,
+                cursor.PlacementOriginCell,
+                cursor.WidthCells,
+                cursor.HeightCells,
                 layerId);
 
             var updated = _activeGhost with
             {
-                OriginCell = origin,
+                Cursor = cursor,
                 LayerId = layerId,
                 IsValidRegion = isValid
             };

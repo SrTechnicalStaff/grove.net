@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using GroveApp.DesignSystem;
 
 namespace GroveApp.Engine
 {
@@ -12,7 +13,7 @@ namespace GroveApp.Engine
         bool IsVisible = true,
         bool IsLocked = false,
         bool IsProtected = false,
-        string ColorHex = "#E2A6C6"
+        string ColorHex = Colors.LayerFillHex
     );
 
     public interface ISpatialLayerStateService : ISpatialLayerPermeability
@@ -23,6 +24,8 @@ namespace GroveApp.Engine
         void SetActiveLayer(int zIndex);
         SpatialLayerModel InsertLayerAbove(int currentZIndex);
         SpatialLayerModel InsertLayerBelow(int currentZIndex);
+        SpatialLayerModel InsertLayerAtTop();
+        SpatialLayerModel InsertLayerAtBottom();
         void ReorderSwap(int sourceZIndex, int targetZIndex);
         bool RenameLayer(int zIndex, string newName, out string errorReason);
         bool RemoveLayer(int zIndex, int targetTransferZIndex);

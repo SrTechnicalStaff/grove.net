@@ -1,5 +1,6 @@
 using System;
 using GroveApp.DesignSystem;
+using GroveApp.Models.Interaction;
 
 namespace GroveApp.Models
 {
@@ -34,6 +35,8 @@ namespace GroveApp.Models
         public abstract ContentKind Kind { get; }
         public virtual float Mass => 1.0f;
         public virtual string FieldHueHex => IsAnchored ? DesignSystem.Colors.AnchorHex : DesignSystem.Colors.NoteVioletFieldHex;
+        public virtual int IntrinsicWidthPx { get; protected set; }
+        public virtual int IntrinsicHeightPx { get; protected set; }
 
         protected GridContentItem(int cellX, int cellY, int cellWidth = 1, int cellHeight = 1, bool isAnchored = false, int layerId = 0)
         {
@@ -55,6 +58,19 @@ namespace GroveApp.Models
         {
             return !(x + w <= CellX || CellX + CellWidth <= x ||
                      y + h <= CellY || CellY + CellHeight <= y);
+        }
+
+        public virtual void ResizeTo(SpatialRegion footprint)
+        {
+            if (!footprint.IsValid)
+            {
+                throw new ArgumentOutOfRangeException(nameof(footprint));
+            }
+
+            CellX = footprint.X;
+            CellY = footprint.Y;
+            CellWidth = footprint.Width;
+            CellHeight = footprint.Height;
         }
     }
 }

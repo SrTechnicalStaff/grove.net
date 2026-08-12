@@ -125,8 +125,17 @@ namespace GroveApp.Engine
     }
 
     /// <summary>
-    /// Computes the additive energy-weighted hue for a cell and its render alpha.
-    /// Hues are summed and channel-clamped; no midpoint colour is computed.
+    /// Pure grid-space topology segment. Rendering adapters map its integer
+    /// endpoints through the active camera transform.
+    /// </summary>
+    public readonly record struct PerimeterContourEdge(
+        (int X, int Y) Start,
+        (int X, int Y) End);
+
+    /// <summary>
+    /// Computes the energy-weighted composite hue for a cell and its render alpha.
+    /// The composite remains a discrete cell value; overlapping sources are
+    /// normalized by their total contribution rather than averaged by position.
     /// </summary>
     public sealed class AuraHeatmapSubscriber : IFieldSubscriber
     {
@@ -166,9 +175,9 @@ namespace GroveApp.Engine
 
             return Color.FromArgb(
                 ToByte(alpha * byte.MaxValue),
-                ToByte(red),
-                ToByte(green),
-                ToByte(blue));
+                ToByte(red / totalWeight),
+                ToByte(green / totalWeight),
+                ToByte(blue / totalWeight));
         }
 
         public void OnCellFieldUpdated(in CellLedgerEntry entry)
@@ -215,6 +224,75 @@ namespace GroveApp.Engine
         public HashSet<(int col, int row)> SaturatedCells { get; } = new();
         public HashSet<(int col, int row)> PerimeterCells { get; } = new();
 
+        public IReadOnlyList<PerimeterContourEdge> GetBoundaryEdges(
+            int minX,
+            int maxX,
+            int minY,
+            int maxY)
+        {
+            var edges = new List<PerimeterContourEdge>();
+            foreach (var (col, row) in SaturatedCells)
+            {
+                if (col < minX || col > maxX || row < minY || row > maxY)
+                {
+                    continue;
+                }
+
+                var topLeft = (X: col, Y: row);
+                var topRight = (X: col + 1, Y: row);
+                var bottomRight = (X: col + 1, Y: row + 1);
+                var bottomLeft = (X: col, Y: row + 1);
+                if (!SaturatedCells.Contains((col, row - 1))) edges.Add(new PerimeterContourEdge(topLeft, topRight));
+                if (!SaturatedCells.Contains((col + 1, row))) edges.Add(new PerimeterContourEdge(topRight, bottomRight));
+                if (!SaturatedCells.Contains((col, row + 1))) edges.Add(new PerimeterContourEdge(bottomRight, bottomLeft));
+                if (!SaturatedCells.Contains((col - 1, row))) edges.Add(new PerimeterContourEdge(bottomLeft, topLeft));
+            }
+
+            if (edges.Count < 1)
+            {
+                return Array.Empty<PerimeterContourEdge>();
+            }
+
+            // Order segments into continuous loops. Shared internal edges were
+            // omitted above, so touching aura cells naturally form one hull.
+            var outgoing = new Dictionary<(int X, int Y), List<int>>();
+            for (int index = 0; index < edges.Count; index++)
+            {
+                if (!outgoing.TryGetValue(edges[index].Start, out List<int>? candidates))
+                {
+                    candidates = new List<int>();
+                    outgoing[edges[index].Start] = candidates;
+                }
+                candidates.Add(index);
+            }
+
+            var ordered = new List<PerimeterContourEdge>(edges.Count);
+            var visited = new bool[edges.Count];
+            for (int edgeIndex = 0; edgeIndex < edges.Count; edgeIndex++)
+            {
+                if (visited[edgeIndex]) continue;
+                int current = edgeIndex;
+                while (!visited[current])
+                {
+                    visited[current] = true;
+                    PerimeterContourEdge edge = edges[current];
+                    ordered.Add(edge);
+                    if (edge.End == edges[edgeIndex].Start)
+                    {
+                        break;
+                    }
+
+                    current = FindNextEdge(outgoing, edge.End, visited);
+                    if (current < 0)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            return ordered;
+        }
+
         public void OnCellFieldUpdated(in CellLedgerEntry entry)
         {
             var key = (entry.Col, entry.Row);
@@ -243,6 +321,24 @@ namespace GroveApp.Engine
                     PerimeterCells.Add((c, r));
                 }
             }
+        }
+
+        private static int FindNextEdge(
+            Dictionary<(int X, int Y), List<int>> outgoing,
+            (int X, int Y) start,
+            bool[] visited)
+        {
+            if (!outgoing.TryGetValue(start, out List<int>? candidates))
+            {
+                return -1;
+            }
+
+            foreach (int candidate in candidates)
+            {
+                if (!visited[candidate]) return candidate;
+            }
+
+            return -1;
         }
     }
 
@@ -362,7 +458,6 @@ namespace GroveApp.Engine
         private readonly Dictionary<(int col, int row), CellLedgerEntry> _ledger = new();
         private readonly List<IFieldSubscriber> _subscribers = new();
 
-        public const int MaxLayerPermeabilityDepth = 3;
         public const double LayerPermeabilityDecay = 0.5;
 
         /// <summary>
@@ -381,6 +476,8 @@ namespace GroveApp.Engine
         public AuraHeatmapSubscriber HeatmapSubscriber { get; } = new();
         public PerimeterRingSubscriber PerimeterSubscriber { get; } = new();
         public AnnotationMetadataSubscriber AnnotationSubscriber { get; } = new();
+        public IReadOnlySet<(int col, int row)> CurrentAuraCells { get; private set; } = new HashSet<(int col, int row)>();
+        public IReadOnlySet<(int col, int row)> CurrentVisibleAuraCells { get; private set; } = new HashSet<(int col, int row)>();
 
         /// <summary>
         /// Produces the canonical visible aura cell set shared by preparation and
@@ -450,6 +547,8 @@ namespace GroveApp.Engine
         public void Clear()
         {
             _ledger.Clear();
+            CurrentAuraCells = new HashSet<(int col, int row)>();
+            CurrentVisibleAuraCells = new HashSet<(int col, int row)>();
             PerimeterSubscriber.SaturatedCells.Clear();
             PerimeterSubscriber.PerimeterCells.Clear();
             AnnotationSubscriber.AggregatedMetadata.Clear();
@@ -476,6 +575,8 @@ namespace GroveApp.Engine
             }
 
             NotifyBatch(updatedEntries);
+            CurrentAuraCells = updatedEntries.Select(entry => (entry.Col, entry.Row)).ToHashSet();
+            SetVisibleAuraCells(updatedEntries);
             PerimeterSubscriber.RecomputePerimeter();
         }
 
@@ -486,6 +587,9 @@ namespace GroveApp.Engine
         {
             ResetSnapshot();
             var itemList = items as List<GridContentItem> ?? items.ToList();
+            HashSet<(int col, int row)> preparedCells = activeCells as HashSet<(int col, int row)>
+                ?? activeCells.ToHashSet();
+            CurrentAuraCells = preparedCells;
             if (activeCells is ICollection<(int col, int row)> cellCollection)
             {
                 var updatedEntries = new CellLedgerEntry[cellCollection.Count];
@@ -496,6 +600,7 @@ namespace GroveApp.Engine
                 }
 
                 NotifyBatch(updatedEntries);
+                SetVisibleAuraCells(updatedEntries);
             }
             else
             {
@@ -506,6 +611,7 @@ namespace GroveApp.Engine
                 }
 
                 NotifyBatch(updatedEntries.ToArray());
+                SetVisibleAuraCells(updatedEntries);
             }
             PerimeterSubscriber.RecomputePerimeter();
         }
@@ -553,11 +659,7 @@ namespace GroveApp.Engine
                     continue;
                 }
 
-                int layerDelta = LayerDeltaResolver(item.LayerId, ActiveLayerId);
-                if (layerDelta > MaxLayerPermeabilityDepth)
-                {
-                    continue;
-                }
+                int layerDelta = Math.Abs(LayerDeltaResolver(item.LayerId, ActiveLayerId));
 
                 double distSq = dx * dx + dy * dy;
                 if (distSq > Tokens.MaxCullingRadiusCells * Tokens.MaxCullingRadiusCells)
@@ -645,6 +747,14 @@ namespace GroveApp.Engine
         }
 
         private void ResetSnapshot() => Clear();
+
+        private void SetVisibleAuraCells(IEnumerable<CellLedgerEntry> entries)
+        {
+            CurrentVisibleAuraCells = entries
+                .Where(entry => entry.FieldEnergy > CellLedgerEntry.BaselineEnergy && entry.CompositeColor.A > 0)
+                .Select(entry => (entry.Col, entry.Row))
+                .ToHashSet();
+        }
 
         private void NotifySingle(CellLedgerEntry entry)
         {

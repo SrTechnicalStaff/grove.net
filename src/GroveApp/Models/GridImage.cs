@@ -15,8 +15,8 @@ namespace GroveApp.Models
         public override string FieldHueHex => IsAnchored ? DesignSystem.Colors.AnchorHex : DesignSystem.Colors.ToolFillHex;
 
         public string FilePath { get; set; } = "";
-        public int IntrinsicWidthPx { get; set; }
-        public int IntrinsicHeightPx { get; set; }
+        public override int IntrinsicWidthPx { get; protected set; }
+        public override int IntrinsicHeightPx { get; protected set; }
         public ImageFootprint Footprint { get; private set; }
         public bool IsAnimatedGif { get; set; }
         private Bitmap? _loadedBitmap;
@@ -65,6 +65,20 @@ namespace GroveApp.Models
         }
 
         public double EffectivePpi => ImageFootprintResolver.CalculateEffectivePpi(IntrinsicWidthPx, IntrinsicHeightPx, CellWidth, CellHeight);
+
+        public override void ResizeTo(Models.Interaction.SpatialRegion footprint)
+        {
+            if (!footprint.IsValid)
+            {
+                throw new ArgumentException("An image footprint must be positive.", nameof(footprint));
+            }
+
+            CellX = footprint.X;
+            CellY = footprint.Y;
+            CellWidth = footprint.Width;
+            CellHeight = footprint.Height;
+            Footprint = new ImageFootprint(footprint.Width, footprint.Height, Footprint.Aspect);
+        }
 
         public void Dispose()
         {

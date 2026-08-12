@@ -4,8 +4,7 @@
              x:Class="GroveApp.Controls.QuickNoteOverlay"
              Background="Transparent">
 
-    <!-- Quick Note is a viewport capture slate. It is intentionally separate
-         from FluentNotepadEditor, which edits an existing grid placement. -->
+    <!-- Quick Note captures a new placement; FluentNotepadEditor edits an existing one. -->
     <Border Name="FrameBorder"
             Width="{x:Static ds:Tokens.QuickNoteFrameWidth}"
             MaxWidth="{x:Static ds:Tokens.QuickNoteFrameWidth}"

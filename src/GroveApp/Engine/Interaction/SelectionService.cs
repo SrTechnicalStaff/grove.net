@@ -18,8 +18,11 @@ public interface ISelectionService
 
     void BeginMarqueeSweep(WorldPoint start, bool isShiftHeld = false);
     void UpdateMarqueeSweep(WorldPoint current);
+    ImmutableHashSet<string> PreviewMarqueeSweep(IEnumerable<SpatialSelectionCandidate> candidates);
     bool CommitMarqueeSweep(IEnumerable<SpatialSelectionCandidate> candidates);
     void SelectSingle(string placementId, bool isShiftHeld = false);
+    void SelectMany(IEnumerable<string> placementIds);
+    void Remove(string placementId);
     void ClearSelection();
 }
 
@@ -72,6 +75,40 @@ public sealed class SelectionService : ISelectionService
         MarqueeSweepState state = _activeMarquee.Value;
         _activeMarquee = state with { Current = current };
         MarqueeChanged?.Invoke(_activeMarquee);
+    }
+
+    public ImmutableHashSet<string> PreviewMarqueeSweep(IEnumerable<SpatialSelectionCandidate> candidates)
+    {
+        ArgumentNullException.ThrowIfNull(candidates);
+        if (!_activeMarquee.HasValue)
+        {
+            return _selectedSet.ToImmutableHashSet(StringComparer.Ordinal);
+        }
+
+        var preview = _activeMarquee.Value.IsAdditiveShift
+            ? new HashSet<string>(_selectedSet, StringComparer.Ordinal)
+            : new HashSet<string>(StringComparer.Ordinal);
+        WorldRectangle bounds = _activeMarquee.Value.Bounds;
+        foreach (SpatialSelectionCandidate candidate in candidates)
+        {
+            if (string.IsNullOrWhiteSpace(candidate.PlacementId) || !candidate.Footprint.IsValid)
+            {
+                continue;
+            }
+
+            double ratio = candidate.Footprint.CalculateWorldAreaOverlapRatio(
+                bounds.MinX,
+                bounds.MinY,
+                bounds.MaxX,
+                bounds.MaxY,
+                _cellPitchDips);
+            if (ratio >= MinimumMarqueeOverlapRatio)
+            {
+                preview.Add(candidate.PlacementId);
+            }
+        }
+
+        return preview.ToImmutableHashSet(StringComparer.Ordinal);
     }
 
     public bool CommitMarqueeSweep(IEnumerable<SpatialSelectionCandidate> candidates)
@@ -136,7 +173,7 @@ public sealed class SelectionService : ISelectionService
 
         if (isShiftHeld)
         {
-            if (!Remove(placementId))
+            if (!RemoveFromSelection(placementId))
             {
                 Add(placementId);
             }
@@ -146,6 +183,32 @@ public sealed class SelectionService : ISelectionService
             _selectedIds.Clear();
             _selectedSet.Clear();
             Add(placementId);
+        }
+
+        PublishSelection();
+    }
+
+    public void SelectMany(IEnumerable<string> placementIds)
+    {
+        ArgumentNullException.ThrowIfNull(placementIds);
+        _selectedIds.Clear();
+        _selectedSet.Clear();
+        foreach (string placementId in placementIds)
+        {
+            if (!string.IsNullOrWhiteSpace(placementId))
+            {
+                Add(placementId);
+            }
+        }
+
+        PublishSelection();
+    }
+
+    public void Remove(string placementId)
+    {
+        if (string.IsNullOrWhiteSpace(placementId) || !RemoveFromSelection(placementId))
+        {
+            return;
         }
 
         PublishSelection();
@@ -174,7 +237,7 @@ public sealed class SelectionService : ISelectionService
         return true;
     }
 
-    private bool Remove(string placementId)
+    private bool RemoveFromSelection(string placementId)
     {
         if (!_selectedSet.Remove(placementId))
         {

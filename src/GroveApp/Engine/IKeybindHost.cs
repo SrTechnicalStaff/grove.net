@@ -15,17 +15,19 @@ public interface IKeybindHost
 {
     bool IsNotepadVisible { get; }
     bool IsQuickNoteVisible { get; }
-    bool IsLayerSlateVisible { get; }
+    bool IsLayerManagerVisible { get; }
     bool IsToolArmed { get; }
-    int CursorCellX { get; }
-    int CursorCellY { get; }
     Size ViewportSize { get; }
+    void ToggleGridLines();
+    void FrameAllContent();
+    void BeginSpacePan();
+    bool EndSpacePan();
 
     void CommitNotepadSave();
     void OpenNotepadForNote(GridNote note, Rect sourceBounds);
     void OpenNotepadForNotes(IReadOnlyList<GridNote> notes, Rect sourceBounds);
     void CloseQuickNote();
-    void ToggleLayerSlate();
+    void ToggleLayerManager();
     void ToggleLayerIsolation();
     bool ProcessLayerKeyDown(KeyEventArgs args);
 
@@ -34,6 +36,8 @@ public interface IKeybindHost
     bool NavigateLayer(int direction);
     void JumpToBottomLayer();
     void JumpToTopLayer();
+    void CreateLayerAtBottom();
+    void CreateLayerAtTop();
     void InsertLayerAboveActive();
     void InsertLayerBelowActive();
     void ReorderActiveLayer(int direction);

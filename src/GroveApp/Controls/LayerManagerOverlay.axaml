@@ -2,10 +2,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
              xmlns:ds="clr-namespace:GroveApp.DesignSystem"
-             x:Class="GroveApp.Controls.LayerManagerSlate"
+             x:Class="GroveApp.Controls.LayerManagerOverlay"
              Background="Transparent">
 
-    <Border Name="SlateBorder"
+    <Border Name="RoleBorder"
             Width="320"
             Background="{x:Static ds:Colors.SurfaceChromeHex}"
             BorderBrush="{x:Static ds:Colors.EdgeQuietBrush}"
@@ -46,7 +46,7 @@
             <!-- Search / Filter Input -->
             <TextBox Grid.Row="1"
                      Name="TxtFilter"
-                     Watermark="Find layer..."
+                     Watermark="Find a Layer"
                      Margin="0,4,0,8"
                      Padding="6,4"
                      Background="{x:Static ds:Colors.SurfaceGridHex}"

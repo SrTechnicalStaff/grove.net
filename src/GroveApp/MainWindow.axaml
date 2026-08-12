@@ -1,7 +1,6 @@
 <fa:AppWindow xmlns="https://github.com/avaloniaui"
               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
               xmlns:fa="using:FluentAvalonia.UI.Windowing"
-              xmlns:ui="using:FluentAvalonia.UI.Controls"
               xmlns:controls="clr-namespace:GroveApp.Controls"
               xmlns:ds="clr-namespace:GroveApp.DesignSystem"
               x:Class="GroveApp.MainWindow"
@@ -10,22 +9,22 @@
               WindowStartupLocation="CenterScreen"
               Background="{x:Static ds:Colors.SurfaceGridHex}">
 
-    <Grid>
+    <controls:ThreePlaneVisualCompositorContainer x:Name="PlaneCompositor">
         <!-- PLANE 0: Infinite Spatial Grid Canvas -->
         <controls:GridCanvasControl x:Name="CanvasControl" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
 
-        <!-- PLANE 1: Information Layer Overlays -->
-        <!-- Headerless Fluent Notepad Editor (Plane 1 Information Layer) -->
+        <!-- PLANE 1: Information Plane Overlays -->
+        <!-- Headerless Fluent Notepad Editor (Plane 1 Information Plane) -->
         <controls:FluentNotepadEditor x:Name="NotepadEditor" IsVisible="False" VerticalAlignment="Top" Background="Transparent" />
 
-        <!-- Headerless Quick Note Slate (Plane 1 Information Layer) -->
+        <!-- Headerless Quick Note capture overlay (Plane 1 Information Plane) -->
         <controls:QuickNoteOverlay x:Name="QuickNote" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent" />
         <controls:DocumentEditorOverlay x:Name="DocumentEditor" IsVisible="False" Background="Transparent" />
         <controls:ImagePropertyOverlay x:Name="ImageProperties" IsVisible="False" Background="Transparent" />
 
         <!-- PLANE 2: HUD Plane -->
-        <!-- Spatial Layer Manager Slate (Plane 2 HUD Slate) -->
-        <controls:LayerManagerSlate x:Name="LayerSlate" IsVisible="False" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,40,16,0" />
+        <!-- Spatial Layer Manager overlay (Plane 2 HUD) -->
+        <controls:LayerManagerOverlay x:Name="LayerManagerOverlay" IsVisible="False" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,40,16,0" />
 
         <!-- Spatial context menu (Plane 2 HUD; opened from Plane 0 right-click) -->
         <controls:SpatialContextMenuOverlay x:Name="ContextMenuOverlay" />
@@ -33,59 +32,10 @@
         <!-- Active spatial identity and camera watermark (Plane 2 HUD) -->
         <controls:HudSpatialWatermark x:Name="SpatialWatermark" />
 
-        <!-- Minimal Grid Telemetry Strip at Bottom (FluentAvalonia Styled) -->
-        <Border HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Height="32"
-                Background="{x:Static ds:Colors.SurfaceChromeHex}"
-                BorderBrush="{x:Static ds:Colors.GridMajorLineHex}"
-                BorderThickness="0,1,0,0">
-            <Grid ColumnDefinitions="Auto, *, Auto" Margin="14,0">
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="18" VerticalAlignment="Center">
-                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <ui:SymbolIcon Symbol="Target" FontSize="12" Foreground="{x:Static ds:Colors.SignalInteractionBrush}" />
-                        <TextBlock Name="TxtCellCoord" Text="CELL: (0, 0)"
-                                   Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
-                                   FontSize="{x:Static ds:Typography.SizeLabel}"
-                                   FontFamily="{x:Static ds:Typography.FontFamilyMono}"
-                                   LetterSpacing="0.8" />
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <ui:SymbolIcon Symbol="Find" FontSize="12" Foreground="{x:Static ds:Colors.SignalInteractionBrush}" />
-                        <TextBlock Name="TxtZoom" Text="ZOOM: 100%"
-                                   Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
-                                   FontSize="{x:Static ds:Typography.SizeLabel}"
-                                   FontFamily="{x:Static ds:Typography.FontFamilyMono}"
-                                   LetterSpacing="0.8" />
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <ui:SymbolIcon Symbol="Document" FontSize="12" Foreground="{x:Static ds:Colors.SignalInteractionBrush}" />
-                        <TextBlock Name="TxtNoteCount" Text="NOTES: 3"
-                                   Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
-                                   FontSize="{x:Static ds:Typography.SizeLabel}"
-                                   FontFamily="{x:Static ds:Typography.FontFamilyMono}"
-                                   LetterSpacing="0.8" />
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <ui:SymbolIcon Symbol="Tag" FontSize="12" Foreground="{x:Static ds:Colors.SignalInteractionBrush}" />
-                        <TextBlock Name="TxtLedgerCount" Text="LEDGER METADATA: 0"
-                                   Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
-                                   FontSize="{x:Static ds:Typography.SizeLabel}"
-                                   FontFamily="{x:Static ds:Typography.FontFamilyMono}"
-                                   LetterSpacing="0.8" />
-                    </StackPanel>
-                </StackPanel>
-
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                    <ui:SymbolIcon Symbol="Help" FontSize="12" Foreground="{x:Static ds:Colors.TextMetaBrush}" />
-                    <TextBlock Text="N: Quick Note • Middle/Right Drag: Pan • Wheel: Zoom • Double Click: Edit Note • Keys 2-4: Colors • A: Anchor • Del: Delete"
-                               Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
-                               FontSize="{x:Static ds:Typography.SizeLabel}"
-                               VerticalAlignment="Center"
-                               FontFamily="{x:Static ds:Typography.FontFamilyUi}" />
-                </StackPanel>
-            </Grid>
-        </Border>
-    </Grid>
+        <!-- Compact, collapsible performance tracker on the HUD plane. -->
+        <controls:HudPerformanceTracker x:Name="PerformanceTracker"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Top"
+                                        Margin="16" />
+    </controls:ThreePlaneVisualCompositorContainer>
 </fa:AppWindow>

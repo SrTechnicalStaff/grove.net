@@ -153,7 +153,7 @@ namespace GroveApp.Engine
 
         private static bool IsGlobalSpatialCombination(KeyCombination combination)
         {
-            if (combination.Key is Key.N or Key.D or Key.P or Key.A or Key.Space or Key.Tab or
+            if (combination.Key is Key.N or Key.D or Key.P or Key.A or Key.F or Key.Space or Key.Tab or
                 Key.Delete or Key.Back or Key.Escape or Key.OemOpenBrackets or Key.OemCloseBrackets)
             {
                 return true;

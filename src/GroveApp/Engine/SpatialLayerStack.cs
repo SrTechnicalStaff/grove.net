@@ -79,6 +79,7 @@ namespace GroveApp.Engine
         private int _activeLayerId;
 
         public Func<int, int>? ItemCountProvider { get; set; }
+        public Func<int, int, bool>? LayerMigrationValidator { get; set; }
 
         public event Action<SpatialLayerModel>? ActiveLayerChanged;
         public event Action? LayerStackChanged;
@@ -233,6 +234,12 @@ namespace GroveApp.Engine
             return model;
         }
 
+        public SpatialLayerModel InsertLayerAtTop() =>
+            InsertLayerAbove(GetZIndexForLayerId(_layers[0].Id));
+
+        public SpatialLayerModel InsertLayerAtBottom() =>
+            InsertLayerBelow(GetZIndexForLayerId(_layers[^1].Id));
+
         public void ReorderSwap(int sourceZIndex, int targetZIndex)
         {
             int sourceId = GetLayerIdForZIndex(sourceZIndex);
@@ -285,6 +292,12 @@ namespace GroveApp.Engine
             if (removeIdx < 0) return false;
 
             int targetTransferLayerId = GetLayerIdForZIndex(targetTransferZIndex);
+            if (LayerMigrationValidator is not null &&
+                !LayerMigrationValidator(removeLayerId, targetTransferLayerId))
+            {
+                return false;
+            }
+
             LayerItemsTransferRequested?.Invoke(removeLayerId, targetTransferLayerId);
 
             _layers.RemoveAt(removeIdx);

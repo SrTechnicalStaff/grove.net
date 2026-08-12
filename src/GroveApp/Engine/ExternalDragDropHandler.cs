@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using GroveApp.DesignSystem;
 using GroveApp.Models;
 
 namespace GroveApp.Engine
@@ -14,37 +13,20 @@ namespace GroveApp.Engine
     public sealed record CellCoordinate(int X, int Y);
 
     public readonly record struct DropPlacementPreview(
-        CellCoordinate Origin,
-        int Width,
-        int Height,
-        bool IsValid);
-
-    public static class SpatialCoordinateResolver
+        CursorDescriptor Cursor,
+        bool IsValid)
     {
-        public const double CellPitch = Tokens.GridCell; // 220.0px
-
-        public static CellCoordinate ScreenToCell(Point screenPoint, Point panOffset, double zoomScale)
-        {
-            zoomScale = Math.Clamp(zoomScale, 0.01, 10.0);
-
-            double worldX = (screenPoint.X - panOffset.X) / zoomScale;
-            double worldY = (screenPoint.Y - panOffset.Y) / zoomScale;
-
-            int cellX = (int)Math.Floor(worldX / CellPitch);
-            int cellY = (int)Math.Floor(worldY / CellPitch);
-
-            return new CellCoordinate(cellX, cellY);
-        }
+        public CellCoordinate Origin => Cursor.PlacementOriginCell;
+        public int Width => Cursor.WidthCells;
+        public int Height => Cursor.HeightCells;
     }
 
-    /// <summary>
-    /// Implements ADR-013 External Drag-and-Drop System, ScreenToCell Coordinate Resolution, and Content Auto-Creation.
-    /// Handles native OS shell file drops (.png, .jpg, .txt, .md, .json, .pdf) onto the Grid.
-    /// </summary>
+    /// <summary>Resolves native file drops into grid content placements.</summary>
     public sealed class ExternalDragDropHandler
     {
         private readonly Func<CellCoordinate, int, int, bool> _isRegionFreeChecker;
         private readonly Func<GridContentItem, Task> _onItemPlacedAsync;
+        private readonly Func<Point, int, int, CursorDescriptor> _resolvePlacementCursor;
 
         public DropPlacementPreview? CurrentPreview { get; private set; }
         public event Action? PreviewChanged;
@@ -52,21 +34,23 @@ namespace GroveApp.Engine
 
         public ExternalDragDropHandler(
             Func<CellCoordinate, int, int, bool> isRegionFreeChecker,
-            Func<GridContentItem, Task> onItemPlacedAsync)
+            Func<GridContentItem, Task> onItemPlacedAsync,
+            Func<Point, int, int, CursorDescriptor> resolvePlacementCursor)
         {
             _isRegionFreeChecker = isRegionFreeChecker ?? throw new ArgumentNullException(nameof(isRegionFreeChecker));
             _onItemPlacedAsync = onItemPlacedAsync ?? throw new ArgumentNullException(nameof(onItemPlacedAsync));
+            _resolvePlacementCursor = resolvePlacementCursor ?? throw new ArgumentNullException(nameof(resolvePlacementCursor));
         }
 
-        public void Attach(Control control, Func<Point> getPanOffset, Func<double> getZoom)
+        public void Attach(Control control)
         {
             DragDrop.SetAllowDrop(control, true);
-            control.AddHandler(DragDrop.DragOverEvent, (s, e) => OnDragOver(s, e, getPanOffset(), getZoom()));
-            control.AddHandler(DragDrop.DropEvent, async (s, e) => await OnDropAsync(s, e, getPanOffset(), getZoom()));
+            control.AddHandler(DragDrop.DragOverEvent, (s, e) => OnDragOver(s, e));
+            control.AddHandler(DragDrop.DropEvent, async (s, e) => await OnDropAsync(s, e));
             control.AddHandler(DragDrop.DragLeaveEvent, (_, _) => ClearPreview());
         }
 
-        public void OnDragOver(object? sender, DragEventArgs e, Point panOffset, double zoomScale)
+        public void OnDragOver(object? sender, DragEventArgs e)
         {
             if (!e.Data.Contains(DataFormats.Files))
             {
@@ -76,11 +60,13 @@ namespace GroveApp.Engine
             }
 
             Visual? visual = sender as Visual;
-            if (visual == null) return;
+            if (visual == null)
+            {
+                ClearPreview();
+                return;
+            }
 
             Point screenPos = e.GetPosition(visual);
-            CellCoordinate origin = SpatialCoordinateResolver.ScreenToCell(screenPos, panOffset, zoomScale);
-
             var files = e.Data.GetFiles()?.Select(f => f.Path.LocalPath).ToList();
             (int reqW, int reqH)? requestedFootprint;
             try
@@ -105,15 +91,16 @@ namespace GroveApp.Engine
             }
 
             (int reqW, int reqH) = requestedFootprint.Value;
+            CursorDescriptor cursor = _resolvePlacementCursor(screenPos, reqW, reqH);
+            CellCoordinate origin = cursor.PlacementOriginCell;
 
-            // Check if full resolved footprint (CellWidth, CellHeight) is free across region
-            bool isFree = _isRegionFreeChecker(origin, reqW, reqH);
-            SetPreview(new DropPlacementPreview(origin, reqW, reqH, isFree));
+            bool isFree = _isRegionFreeChecker(origin, cursor.WidthCells, cursor.HeightCells);
+            SetPreview(new DropPlacementPreview(cursor, isFree));
             e.DragEffects = isFree ? DragDropEffects.Copy : DragDropEffects.None;
             e.Handled = true;
         }
 
-        public async Task OnDropAsync(object? sender, DragEventArgs e, Point panOffset, double zoomScale)
+        public async Task OnDropAsync(object? sender, DragEventArgs e)
         {
             if (!e.Data.Contains(DataFormats.Files))
             {
@@ -129,57 +116,95 @@ namespace GroveApp.Engine
             }
 
             Visual? visual = sender as Visual;
-            if (visual == null) return;
-
-            Point screenPos = e.GetPosition(visual);
-            CellCoordinate origin = SpatialCoordinateResolver.ScreenToCell(screenPos, panOffset, zoomScale);
-
-            int currentX = origin.X;
-            int currentY = origin.Y;
-
-            foreach (string filePath in files)
+            if (visual == null)
             {
-                if (!File.Exists(filePath)) continue;
-
-                string ext = Path.GetExtension(filePath).ToLowerInvariant();
-                GridContentItem? newItem;
-                try
-                {
-                    newItem = await CreatePlacementFromFileAsync(filePath, ext, new CellCoordinate(currentX, currentY));
-                }
-                catch (Exception exception)
-                {
-                    DropRejected?.Invoke(exception);
-                    continue;
-                }
-
-                try
-                {
-                    if (newItem is not null && _isRegionFreeChecker(new CellCoordinate(newItem.CellX, newItem.CellY), newItem.CellWidth, newItem.CellHeight))
-                    {
-                        await _onItemPlacedAsync(newItem);
-                        currentX += newItem.CellWidth; // Shift next dropped item horizontally to avoid overlap
-                    }
-                    else if (newItem is IDisposable rejectedPlacement)
-                    {
-                        // Decoded image ownership belongs to the placement model.
-                        // Collision refusal releases it before the next file.
-                        rejectedPlacement.Dispose();
-                    }
-                }
-                catch (Exception exception)
-                {
-                    if (newItem is IDisposable failedPlacement)
-                    {
-                        failedPlacement.Dispose();
-                    }
-
-                    DropRejected?.Invoke(exception);
-                }
+                ClearPreview();
+                return;
             }
 
-            e.Handled = true;
-            ClearPreview();
+            Point screenPos = e.GetPosition(visual);
+            try
+            {
+                int currentX;
+                int currentY;
+                string? firstFile = files.FirstOrDefault();
+                (int firstWidth, int firstHeight)? firstFootprint = ResolveRequestedFootprint(firstFile);
+                if (firstFootprint is null)
+                {
+                    return;
+                }
+
+                if (CurrentPreview is { IsValid: false })
+                {
+                    e.Handled = true;
+                    return;
+                }
+
+                CursorDescriptor cursor = CurrentPreview is { } preview
+                    ? preview.Cursor
+                    : _resolvePlacementCursor(
+                        screenPos,
+                        firstFootprint.Value.firstWidth,
+                        firstFootprint.Value.firstHeight);
+                currentX = cursor.PlacementOriginCell.X;
+                currentY = cursor.PlacementOriginCell.Y;
+
+                foreach (string filePath in files)
+                {
+                    if (!File.Exists(filePath))
+                    {
+                        continue;
+                    }
+
+                    string ext = Path.GetExtension(filePath).ToLowerInvariant();
+                    GridContentItem? newItem;
+                    try
+                    {
+                        newItem = await CreatePlacementFromFileAsync(
+                            filePath,
+                            ext,
+                            new CellCoordinate(currentX, currentY));
+                    }
+                    catch (Exception exception)
+                    {
+                        DropRejected?.Invoke(exception);
+                        continue;
+                    }
+
+                    try
+                    {
+                        bool canPlace = newItem is not null &&
+                            _isRegionFreeChecker(
+                                new CellCoordinate(newItem.CellX, newItem.CellY),
+                                newItem.CellWidth,
+                                newItem.CellHeight);
+                        if (canPlace)
+                        {
+                            await _onItemPlacedAsync(newItem!);
+                            currentX += newItem!.CellWidth;
+                        }
+                        else if (newItem is IDisposable rejectedPlacement)
+                        {
+                            rejectedPlacement.Dispose();
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (newItem is IDisposable failedPlacement)
+                        {
+                            failedPlacement.Dispose();
+                        }
+
+                        DropRejected?.Invoke(exception);
+                    }
+                }
+
+                e.Handled = true;
+            }
+            finally
+            {
+                ClearPreview();
+            }
         }
 
         private static (int width, int height)? ResolveRequestedFootprint(string? firstFile)
@@ -288,7 +313,6 @@ namespace GroveApp.Engine
                 return note;
             }
 
-            // Long text, markdown, json, pdf -> Document placement (2x2 minimum)
             string title = Path.GetFileNameWithoutExtension(filePath);
             var doc = new GridDocument(origin.X, origin.Y, 2, 2, title, text);
             return doc;
