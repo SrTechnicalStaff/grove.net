@@ -10,6 +10,9 @@ namespace GroveApp.Engine
     /// </summary>
     public class CameraModule
     {
+        public const double MinZoom = 0.01;
+        public const double MaxZoom = 10.0;
+
         public double CameraX { get; set; } = 100.0;
         public double CameraY { get; set; } = 100.0;
         public double Zoom { get; set; } = 1.0;
@@ -76,8 +79,9 @@ namespace GroveApp.Engine
 
         /// <summary>
         /// Zooms the camera relative to a fixed 2D screen origin point (e.g. cursor position).
+        /// Range: 1% (0.01) to 1000% (10.0).
         /// </summary>
-        public void ZoomAt(Point originScreen, double zoomFactor, double minZoom = 0.2, double maxZoom = 3.5)
+        public void ZoomAt(Point originScreen, double zoomFactor, double minZoom = MinZoom, double maxZoom = MaxZoom)
         {
             double newZoom = Math.Clamp(Zoom * zoomFactor, minZoom, maxZoom);
             if (Math.Abs(newZoom - Zoom) < 0.000001) return;

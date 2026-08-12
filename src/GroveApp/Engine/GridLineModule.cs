@@ -33,7 +33,7 @@ namespace GroveApp.Engine
             double superAlpha = Math.Clamp((superSpacing - Tokens.GridFadeStart) / (Tokens.GridFadeEnd - Tokens.GridFadeStart), 0.0, 1.0);
 
             // 1. Minor Subdivisions (44px pitch, #151517)
-            if (minorAlpha > 0.01)
+            if (minorAlpha > 0.001)
             {
                 Color minorBase = Color.Parse(Colors.GridMinorLineHex);
                 Color minorClr = Color.FromArgb((byte)(255 * minorAlpha), minorBase.R, minorBase.G, minorBase.B);
@@ -64,7 +64,7 @@ namespace GroveApp.Engine
             }
 
             // 2. Major Grid Lines (220px pitch, #1F1F22)
-            if (majorAlpha > 0.01)
+            if (majorAlpha > 0.001)
             {
                 Color majorBase = Color.Parse(Colors.GridMajorLineHex);
                 Color majorClr = Color.FromArgb((byte)(255 * majorAlpha), majorBase.R, majorBase.G, majorBase.B);
@@ -75,7 +75,7 @@ namespace GroveApp.Engine
                     if (cx % Tokens.GridSupercell == 0) continue; // Skip supercell positions
                     double wx = cx * cellSize;
                     Point p1 = worldToScreen(new Point(wx, minCellY * cellSize));
-                    Point p2 = worldToScreen(new Point(wx, maxCellX * cellSize));
+                    Point p2 = worldToScreen(new Point(wx, maxCellY * cellSize));
                     context.DrawLine(majorPen, p1, p2);
                 }
 
@@ -90,11 +90,11 @@ namespace GroveApp.Engine
             }
 
             // 3. Supercell Grid Pitch (1100px pitch, #242428)
-            if (superAlpha > 0.01)
+            if (superAlpha > 0.001)
             {
-                Color superBase = Color.Parse(Colors.GridMajHex);
+                Color superBase = Color.Parse(Colors.GridMajorInkHex);
                 Color superClr = Color.FromArgb((byte)(255 * superAlpha), superBase.R, superBase.G, superBase.B);
-                var superPen = new Pen(new SolidColorBrush(superClr), 1.5);
+                var superPen = new Pen(new SolidColorBrush(superClr), Tokens.StrokeHairline);
 
                 int minSuperX = (int)Math.Floor((double)minCellX / Tokens.GridSupercell);
                 int maxSuperX = (int)Math.Ceiling((double)maxCellX / Tokens.GridSupercell);

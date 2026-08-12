@@ -69,20 +69,27 @@ namespace GroveApp.Engine
             int maxCellX,
             int minCellY,
             int maxCellY,
+            FieldLedgerEngine fieldEngine,
             IEnumerable<GridNote> notes)
         {
-            // 1. Layer 0: High-Precision Cell Fill Matrix
+            // 0. Recalculate Field Ledger for visible range
+            fieldEngine.RecalculateField(notes, minCellX, maxCellX, minCellY, maxCellY);
+
+            // 1. Layer 0: High-Precision Cell Fill Matrix (via FieldLedgerEngine & AuraHeatmapSubscriber)
             for (int cx = minCellX; cx <= maxCellX; cx++)
             {
                 for (int cy = minCellY; cy <= maxCellY; cy++)
                 {
-                    Point startScreen = worldToScreen(new Point(cx * cellSize, cy * cellSize));
-                    double sizeScreen = cellSize * zoom;
-                    Rect cellRect = new Rect(startScreen.X, startScreen.Y, sizeScreen, sizeScreen);
+                    CellLedgerEntry entry = fieldEngine.GetCellLedger(cx, cy);
+                    if (entry.FieldEnergy > 0.05 || entry.CompositeColor != Colors.SurfaceGrid)
+                    {
+                        Point startScreen = worldToScreen(new Point(cx * cellSize, cy * cellSize));
+                        double sizeScreen = cellSize * zoom;
+                        Rect cellRect = new Rect(startScreen.X, startScreen.Y, sizeScreen, sizeScreen);
 
-                    Color cellFieldColor = CalculateCellFieldColor(cx, cy, notes);
-                    var cellBrush = new SolidColorBrush(cellFieldColor);
-                    context.FillRectangle(cellBrush, cellRect);
+                        var cellBrush = new SolidColorBrush(entry.CompositeColor);
+                        context.FillRectangle(cellBrush, cellRect);
+                    }
                 }
             }
 

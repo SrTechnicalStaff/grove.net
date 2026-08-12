@@ -41,6 +41,11 @@
                                FontSize="{x:Static ds:Typography.SizeLabel}"
                                FontFamily="{x:Static ds:Typography.FontFamilyMono}"
                                LetterSpacing="0.8" />
+                    <TextBlock Name="TxtLedgerCount" Text="LEDGER METADATA: 0"
+                               Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
+                               FontSize="{x:Static ds:Typography.SizeLabel}"
+                               FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                               LetterSpacing="0.8" />
                 </StackPanel>
 
                 <TextBlock Grid.Column="2"

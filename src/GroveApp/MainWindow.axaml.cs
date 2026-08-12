@@ -65,8 +65,11 @@ namespace GroveApp
         private void UpdateHudStatus()
         {
             TxtCellCoord.Text = $"CELL: ({CanvasControl.CursorCellX}, {CanvasControl.CursorCellY})";
-            TxtZoom.Text = $"ZOOM: {(int)(CanvasControl.Zoom * 100)}%";
+            int zoomPercent = (int)Math.Round(CanvasControl.Zoom * 100);
+            TxtZoom.Text = $"ZOOM: {zoomPercent}%";
             TxtNoteCount.Text = $"NOTES: {CanvasControl.Notes.Count}";
+            int metadataCount = CanvasControl.FieldEngine.GetTotalMetadataSourcesCount();
+            TxtLedgerCount.Text = $"LEDGER METADATA: {metadataCount}";
         }
 
         private void OnCameraChanged()

@@ -22,6 +22,7 @@ namespace GroveApp.Controls
         private readonly NoteRenderModule _noteRenderModule = new();
         private readonly CursorRenderModule _cursorRenderModule = new();
         private readonly GridLineModule _gridLineModule = new();
+        public FieldLedgerEngine FieldEngine { get; } = new FieldLedgerEngine();
 
         // Camera Module & State
         public CameraModule Camera { get; } = new CameraModule();
@@ -354,6 +355,10 @@ namespace GroveApp.Controls
             SelectedNote = lastSelected;
         }
 
+        // Field Ledger Engine Spatial Lookups
+        public CellLedgerEntry GetCellLedger(int col, int row) => FieldEngine.GetCellLedger(col, row);
+        public List<CellMetadataSource> QueryMetadataInRegion(Rect cellBounds) => FieldEngine.QueryMetadataInRegion(cellBounds);
+
         // High-Frequency Engine Pipeline Delegation
         public override void Render(DrawingContext context)
         {
@@ -363,14 +368,15 @@ namespace GroveApp.Controls
             double h = Bounds.Height;
             if (w <= 0 || h <= 0) return;
 
-            // Visible Cell Bounds in World Coordinates
-            int minCellX = (int)Math.Floor((-CameraX) / (CellSize * Zoom)) - 1;
-            int maxCellX = (int)Math.Ceiling((w - CameraX) / (CellSize * Zoom)) + 1;
-            int minCellY = (int)Math.Floor((-CameraY) / (CellSize * Zoom)) - 1;
-            int maxCellY = (int)Math.Ceiling((h - CameraY) / (CellSize * Zoom)) + 1;
+            // Visible Cell Bounds in World Coordinates with 2-cell buffer (-CellSize * 2 to viewport + CellSize * 2)
+            double bufferPx = CellSize * 2;
+            int minCellX = (int)Math.Floor((-CameraX - bufferPx) / (CellSize * Zoom));
+            int maxCellX = (int)Math.Ceiling((w - CameraX + bufferPx) / (CellSize * Zoom));
+            int minCellY = (int)Math.Floor((-CameraY - bufferPx) / (CellSize * Zoom));
+            int maxCellY = (int)Math.Ceiling((h - CameraY + bufferPx) / (CellSize * Zoom));
 
             // 1. Field Ledger Module: Gravitational Cell Fills, Atmosphere & Perimeter Rings
-            _fieldLedgerModule.RenderFieldLedger(context, WorldToScreen, CellSize, Zoom, minCellX, maxCellX, minCellY, maxCellY, Notes);
+            _fieldLedgerModule.RenderFieldLedger(context, WorldToScreen, CellSize, Zoom, minCellX, maxCellX, minCellY, maxCellY, FieldEngine, Notes);
 
             // 2. Grid Line Module: Major 220px, Minor 44px Subdivisions & LOD Fading
             _gridLineModule.RenderGridLines(context, WorldToScreen, CellSize, Zoom, minCellX, maxCellX, minCellY, maxCellY);
