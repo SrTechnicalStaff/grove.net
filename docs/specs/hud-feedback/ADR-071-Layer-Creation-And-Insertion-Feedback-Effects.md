@@ -1,8 +1,12 @@
+---
+status: "IMPLEMENTED - AWAITING USER REVIEW"
+---
+
 # ADR-071: Layer Creation and Insertion Feedback Effects
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | Accepted |
+| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
 | **Date** | 2026-08-12 |
 | **Area** | Motion Engineering / Visual Feedback / Layer Operations |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp 3.x |

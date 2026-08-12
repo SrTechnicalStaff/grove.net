@@ -1,3 +1,7 @@
+---
+status: "IMPLEMENTED - AWAITING USER REVIEW"
+---
+
 # ADR-014: Native Clipboard HTML and RichText Interoperability Specification
 
 - **Status**: Normative

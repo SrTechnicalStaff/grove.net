@@ -1,8 +1,12 @@
+---
+status: "IMPLEMENTED - AWAITING USER REVIEW"
+---
+
 # ADR-062: Skia GPU Anti-Aliasing and Subpixel Typography
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | Accepted |
+| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
 | **Date** | 2026-08-12 |
 | **Area** | Graphics Engine / SkiaSharp Rendering Performance & Typography |
 | **Target Runtime** | C# 13 / .NET 9 / SkiaSharp / Direct3D 11/12 / Vulkan / OpenGL |

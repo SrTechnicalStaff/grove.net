@@ -1,8 +1,12 @@
+---
+status: "IMPLEMENTED - AWAITING USER REVIEW"
+---
+
 # ADR-050: Footprint-Aware Grid Cursor and Spent-Cell Trail Decay System
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | Accepted |
+| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
 | **Date** | 2026-08-12 |
 | **Area** | Spatial Grid Engine / Cursor Interaction & Render Subsystem |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp 3.x |
@@ -298,3 +302,5 @@ public sealed class GridCursorDrawOperation : ICustomDrawOperation
 2. **Strict Non-Hit-Testability**: `HitTest` on the cursor draw operation returns `false` invariant. Pointer events pass through to underlying spatial content or grid canvas.
 3. **No Screen-Fixed Pointer Floating**: The cursor head position MUST be strictly derived from grid cell coordinates. Screen-space mouse pointers floating independently above Plane 0 without cell snapping are illegal.
 4. **Reduced-Motion Compliance**: When `SystemAnimations.IsEnabled` is false, the spent cell trail is suppressed entirely ($\gamma_{\text{decay}} = 0$). Cells clear instantaneously when the head departs.
+5. **Neutral Rest & Action Recoloring Protocol**: At rest, the cursor fill is strictly neutral `234 234 234` (`#F4F4F2`). The cursor recolors ONLY when actively placing (`#3B82F6`), moving/resizing (`#F59E0B`), or tracing layers (`#10B981`); passive hover or pointer movement does not alter cursor hue.
+6. **Scale-Independent Cell Addressing**: The cursor is measured in world cell units, never fixed screen pixels. It shrinks proportionally with camera scale and maintains exact major cell boundary alignment at all zoom levels ($1\%$ to $1000\%$), including when grid lines are faded or hidden (`linesVisible = false`).

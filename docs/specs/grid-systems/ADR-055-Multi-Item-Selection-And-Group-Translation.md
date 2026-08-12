@@ -1,8 +1,12 @@
+---
+status: "IMPLEMENTED - AWAITING USER REVIEW"
+---
+
 # ADR-055: Multi-Item Selection Model, Cell-Aligned Marquee Sweep, and Multi-Type Group Translation Engine
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | Accepted |
+| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
 | **Date** | 2026-08-12 |
 | **Area** | Spatial Grid Engine / Selection & Group Translation Subsystem |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp 3.x |
@@ -697,4 +701,20 @@ public void DrawGroupTranslationGhost(
         }
     }
 }
+
+---
+
+## 6. Signal Role Color Standards & Refusal Overlay Contracts
+
+### 6.1 Signal Role Color Matrix
+Group translation and marquee selection enforce 3 non-overlapping signal roles:
+- **Interaction (`#96B6F8`)**: Applied to selected item outlines (2px solid outside content edge with soft glow `0 0 24px 6px rgb(150 182 248 / 0.45)`), valid group drag previews, and structural field cell brightening (`rgba(150,182,248,0.13)` edge cells, `0.06` diagonal cells) with perimeter inset `inset 0 0 0 1.5px rgb(150 182 248 / 0.30)`.
+- **Marquee (`#E8B964`)**: Applied ONLY while a marquee sweep gesture is open (`rgba(232,185,100,0.08)` fill, 1.5px border `rgba(232,185,100,0.78)`). Hands over to interaction accent `#96B6F8` upon gesture release.
+- **Refusal / Invalid (`#F06543` / `#E2625C`)**: Applied ONLY when cluster translation or resize encounters a collision (`!IsClusterRegionFree`). Rendered as a 12% fill (`rgba(226,98,92,0.12)`), $45^\circ$ diagonal cross-hatching, and inset border `inset 0 0 0 1.5px rgba(226,98,92,0.45)`.
+
+### 6.2 Refusal Mechanics & Strip Toolbar Notification
+When a group move is refused:
+1. **Origin Retention**: All items in the cluster maintain their origin positions without moving.
+2. **Point-of-Action Strip**: An inline strip toolbar appears beside the refused footprint ("This space is occupied" with disabled `Place` action and `Cancel` button).
+3. **No Screen Modal**: Center-screen dialogs and canvas dimming are strictly forbidden.
 ```

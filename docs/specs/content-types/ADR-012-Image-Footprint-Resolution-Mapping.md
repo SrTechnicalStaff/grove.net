@@ -1,3 +1,7 @@
+---
+status: "IMPLEMENTED - AWAITING USER REVIEW"
+---
+
 # ADR-012: Image Footprint Resolution Mapping, Zero-Crop Rules, and Skia Bitmap Sampling
 
 - **Status**: Normative
@@ -278,4 +282,24 @@ public sealed class PicturePlacementControl : Control
         context.DrawGeometry(diamondBrush, null, streamGeometry);
     }
 }
+
+---
+
+## 6. Interaction States, Distance Shedding & Image Refusal Invariants
+
+### 6.1 Interaction & Anchoring Geometry
+- **Quiet Edge**: 1px outer frame edge `border: 1px solid rgba(234,234,234,0.16)`.
+- **GIF Badge**: Monospaced corner tag (`badge`, 9px mono, tracking 0.18em, background `rgba(14,14,16,0.72)`, border `rgba(234,234,234,0.18)`). Reduced motion renders a complete still frame on the exact footprint without controls.
+- **Selected State**: Interaction outline `outline: 2px solid #96B6F8`, `outline-offset: 3px`. Picture itself is never restyled, tinted, or dimmed. Surrounding grid cells brighten (`rgba(150,182,248,0.13)`).
+- **Anchor State**: Fixed 9x9px rotated $45^\circ$ indigo diamond mark (`#9E8CEA`) at top-left frame corner (`left: 476px, top: 36px`).
+
+### 6.2 Distance Zoom Shedding Tiers
+- **Working Zoom**: Full image frame rendered with 1px quiet edge.
+- **Stepped Back**: Surface treatment sheds; frame remains on exact cell footprint while rendering simplified fill.
+- **Far Zoom**: Footprint demotes to a figure stand-in (`.standin`) on exact footprint bounds featuring paper background `#F5F5F5` (`var(--paper)`), inset 1px border `rgba(26,26,26,0.28)`, and simplified SVG mountain/sun geometry (`fill="#9BB6E0"`, `fill="#E8B964"`). Distance simplifies detail, never existence.
+
+### 6.3 Picture Architectural Refusals
+- **Refused Cover Crop**: Cover-fit cropping that clips picture sides to force a square container is strictly forbidden. Panorama images take wide cell footprints ($8 \times 2$), portrait images take tall footprints ($5 \times 7$).
+- **Refused Caption Overlay**: Overlaying filename bars or metadata text directly on top of the image surface is forbidden.
+- **Refused Decorated Keepsake Card**: Adding rounded radii, drop shadows, mats, or italic captions dressing the picture as a polaroid keepsake card is forbidden; the only frame treatment permitted is the quiet 1px edge.
 ```

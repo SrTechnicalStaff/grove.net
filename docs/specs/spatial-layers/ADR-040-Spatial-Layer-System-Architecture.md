@@ -1,8 +1,12 @@
+---
+status: "IMPLEMENTED - AWAITING USER REVIEW"
+---
+
 # ADR-040: Spatial Layer System Architecture
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | Accepted |
+| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
 | **Date** | 2026-08-12 |
 | **Area** | Spatial Layers / Field Physics / Layer Indexing |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp |

@@ -1,3 +1,7 @@
+---
+status: "IMPLEMENTED - AWAITING USER REVIEW"
+---
+
 # ADR-010: Note Physical Geometry, Authored Fills, and Grid Placement
 
 - **Status**: Normative
@@ -306,4 +310,23 @@ public sealed class NotePlacementControl : Control
         context.DrawGeometry(ribbonBrush, null, streamGeometry);
     }
 }
+
+---
+
+## 6. Hover Affordances, Distance Tiers & Explicit Refusals
+
+### 6.1 Response Chrome on Approach
+- **Hover State**: Hovering near a Note causes the 18x18px bottom-right resize corner handle and top-right `g-edit` affordance (8px mono uppercase `EDIT`, padding 4px 6px, border `1px solid rgba(255,255,255,0.42)`, background `rgba(20,20,24,0.38)`) to fade in. At rest, the surface is untouched.
+- **Selection State**: Outline `2px solid rgb(150 182 248 / 0.9)` (`#96B6F8`) with soft glow `0 0 24px 6px rgb(150 182 248 / 0.45)`. Surrounding cells answer with perimeter inset `inset 0 0 0 1.5px rgb(150 182 248 / 0.30)`.
+- **Anchor State**: Ribbon positioned at `top: -5px`, `left: 16px`, `width: 12px`, `height: 22px`, fill `#9E8CEA`, clip polygon `polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%)`. Aura takes anchor indigo hue `#9E8CEA`.
+
+### 6.2 Distance Zoom Representation Tiers
+- **Working (100%)**: Cell pitch 220px, minor pitch 44px. Full form, true type, response chrome available, presence field cast into surrounding cells.
+- **Stepped Back (24%)**: Cell pitch 52.8px, minor pitch 10.6px at 57% opacity. Hover chrome and inset ring shed. True text remains legible and scaled without summary substitution.
+- **Far (6%)**: Cell pitch 13.2px, minor pitch gone. Detail collapses to a kind-coded stand-in on the exact $1 \times 1$ footprint using authored color fill `#6E62A6`, `#B0524E`, or `#4E6E9C` with hard-edged cell presence.
+
+### 6.3 Explicit Architectural Refusals
+- **Refused Title Bar + Truncation**: Headers restating text and ellipsis clipping withholding text are strictly forbidden. Nothing stands between one glance and the whole thought.
+- **Refused Persistent Chrome**: Button bars (edit, color, delete) parked permanently on the Note are forbidden. Affordances answer approach and leave with pointer.
+- **Refused Interior Scroll**: Scrollbars inside a Note are forbidden. When text outgrows the footprint, the footprint steps up to $2 \times 2$ or $3 \times 3$ whole cells.
 ```

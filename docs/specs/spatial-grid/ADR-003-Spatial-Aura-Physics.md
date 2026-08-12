@@ -1,8 +1,12 @@
+---
+status: "IMPLEMENTED - AWAITING USER REVIEW"
+---
+
 # ADR-003: Spatial Aura Physics
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | Accepted |
+| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
 | **Date** | 2026-08-12 |
 | **Area** | Aura Field Dynamics / Spatial Physics Engine |
 | **Target Runtime** | C# 13 / .NET 9 / SkiaSharp |
@@ -217,4 +221,30 @@ public sealed class SpatialAuraPhysicsEngine
         return path;
     }
 }
+
+---
+
+## 6. Distance Representation Tiers & Selection Aura Integration
+
+### 6.1 View Distance Shedding & Representation Tiers
+As camera zoom $s$ changes, content representation transitions across 5 defined representation tiers (`WV-00` through `WV-04`) to preserve visual calm while keeping cell presence constant:
+- **WV-00 Working Zoom ($S_{\text{cell}} \ge 72\text{px}$)**: Full content form, true text typography, authored color fills, hover response chrome available.
+- **WV-01 Stepped Back ($56\text{px} > S_{\text{cell}} \ge 19\text{px}$)**: Interactive handles and edit affordances shed first. Surface textures (paper grain, inset rings) shed next while text bones (title mass, rules) remain visible.
+- **WV-02 Far Zoom ($S_{\text{cell}} \le 18\text{px}$)**: Detail collapses into a kind-coded stand-in on the exact footprint bounds:
+  - *Sheet (Document)*: Paper fill `#F5F5F5` with ruled header line and 4 text lines (`.si-sheet`).
+  - *Note*: Authored color block (`#6E62A6`, `#B0524E`, `#4E6E9C`) with white line strokes (`.si-note`).
+  - *Figure (Picture)*: Paper frame with simplified SVG mountain/sun geometry (`.si-fig`).
+- **WV-03 Approach (Promotion Pending)**: Crossing the promotion threshold queues true form loading; the distant stand-in holds the footprint position without blanking ("pending is never blank").
+- **WV-04 Arrived (Promotion Complete)**: True form resolves via a 160ms cross-fade in place, matching exact spatial identity, position, and footprint extent.
+
+### 6.2 Viewport Hysteresis Thresholds
+To prevent visual flickering when camera position rests near a scale boundary, hysteresis bands are enforced:
+- **Stand-in / Page Boundary**: Demote to stand-in at $S_{\text{cell}} \le 18\text{px}$; promote back to page at $S_{\text{cell}} \ge 28\text{px}$.
+- **Detail Shedding Boundary**: Shed surface detail below $S_{\text{cell}} < 56\text{px}$; restore full detail at $S_{\text{cell}} \ge 72\text{px}$.
+
+### 6.3 Selection State Aura Response
+When a placement is selected:
+1. **Interaction Outline**: A 2px outline in `#96B6F8` (`--signal-interaction`) is drawn $3\text{px}$ outside the content edge with a soft glow `0 0 24px 6px rgb(150 182 248 / 0.45)`.
+2. **Structural Field Response**: Surrounding cells brighten in the interaction hue (`rgba(150,182,248,0.13)` for edge cells, `rgba(150,182,248,0.06)` for diagonal cells) with perimeter inset `inset 0 0 0 1.5px rgb(150 182 248 / 0.30)`.
+3. **Selection Invariance**: Selection outline and field response operate identically across working forms and distant stand-ins.
 ```

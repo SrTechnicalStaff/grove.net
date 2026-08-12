@@ -1,3 +1,7 @@
+---
+status: "Normative / Accepted"
+---
+
 # ADR-022: Memory Spatial R-Tree Index Architecture
 
 | Property | Value |

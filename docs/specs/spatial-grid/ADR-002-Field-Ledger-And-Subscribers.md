@@ -1,8 +1,12 @@
+---
+status: "IMPLEMENTED - AWAITING USER REVIEW"
+---
+
 # ADR-002: Field Ledger and Subscribers
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | Accepted |
+| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
 | **Date** | 2026-08-12 |
 | **Area** | Field Ledger System / Multi-Layer Energy Topology |
 | **Target Runtime** | C# 13 / .NET 9 / High-Performance Span & Memory Primitives |
@@ -269,4 +273,28 @@ public sealed class FieldLedgerManager
         }
     }
 }
+
+---
+
+## 6. Field Quantization, Latency Trade-offs & Refusal Invariants
+
+### 6.1 Discrete Alpha Tiers & Hue Summation
+Presence field values are evaluated per discrete grid cell ($220\text{px} \times 220\text{px}$) and rendered with hard cell boundaries ("the cell is the field's pixel"). The discrete alpha tiers across presence modes are:
+- **Neutral Content (`--fw`)**: Tier 1 = $0.19$, Tier 2 = $0.12$, Tier 3 = $0.070$, Tier 4 = $0.038$.
+- **Warm Note (`--fh`, `#6B5540`)**: Tier 1 = $0.60$, Tier 2 = $0.38$, Tier 3 = $0.22$, Tier 4 = $0.11$.
+- **Anchor Indigo (`--fi`, `#9E8CEA`)**: Tier 1 = $0.30$, Tier 2 = $0.18$, Tier 3 = $0.10$, Tier 4 = $0.05$.
+
+Where multiple fields overlap across layers, cell hues accumulate additively without blending cell boundary edges.
+
+### 6.2 Gesture Latency Trade-off & Trail Lag
+During active drag-and-drop operations:
+1. **Input Priority**: The dragged footprint cursor tracks pointer position with zero input latency.
+2. **Local Recompute**: Destination cells light as origin cells dim (`PA-01`).
+3. **1-Frame Aura Lag**: The field heatmap evaluation MAY trail cursor position by exactly 1 frame (`PA-02`). Field evaluation lag is explicitly accepted to preserve 0ms pointer response.
+4. **Origin Ghosting**: An origin ghost outline persists at the source position until pointer release (`commit`).
+
+### 6.3 Presence Field Refusal Contracts
+- **Refused Smooth Glow**: Radial gradient halos or continuous gaussian blurs crossing cell edges are forbidden; field intensity must remain cell-quantized.
+- **Refused Ghost Content**: Materializing faint frames or readable text from inactive layers is forbidden; non-active layers contribute presence (lit cell heatmaps) only.
+- **Refused Field Over Content**: Aura brightness must never exceed content surface luminance; field intensity is capped below content contrast floors.
 ```

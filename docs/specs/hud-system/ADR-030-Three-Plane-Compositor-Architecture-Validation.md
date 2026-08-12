@@ -1,3 +1,7 @@
+---
+status: "Accepted"
+---
+
 # ADR-030: Three-Plane Compositor Architecture Validation
 
 | Property | Value |

@@ -1,8 +1,12 @@
+---
+status: "IMPLEMENTED - AWAITING USER REVIEW"
+---
+
 # ADR-061: Aura Field Fluid Gradient Rendering
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | Accepted |
+| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
 | **Date** | 2026-08-12 |
 | **Area** | Spatial Physics Engine / SkiaSharp Rendering Compositor |
 | **Target Runtime** | C# 13 / .NET 9 / SkiaSharp / Vulkan / Direct3D 11 |

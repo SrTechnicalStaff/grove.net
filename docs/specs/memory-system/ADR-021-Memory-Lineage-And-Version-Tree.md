@@ -1,3 +1,7 @@
+---
+status: "Normative / Accepted"
+---
+
 # ADR-021: Memory Lineage and Version Tree Architecture
 
 | Property | Value |

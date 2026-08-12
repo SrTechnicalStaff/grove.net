@@ -1,8 +1,12 @@
+---
+status: "IMPLEMENTED - AWAITING USER REVIEW"
+---
+
 # ADR-001: Spatial Grid Plane Architecture
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | Accepted |
+| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
 | **Date** | 2026-08-12 |
 | **Area** | Spatial Grid Engine / Skia Rendering Pipeline |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp |
@@ -257,3 +261,8 @@ public sealed class SkiaSpatialGridRenderer : ISpatialGridRenderer
 1. **Continuous Line Fade Verification**: Assert that no tier pops or changes opacity discretely across camera scale delta $\Delta s = 0.0001$.
 2. **Visual Budget Limit**: On Plane 0 at rest, only placed content, grid lines, presence aura heatmaps, and the grid cursor are permitted to draw.
 3. **Line Snap Independence**: Toggling grid line visibility (`linesVisible = false`) MUST NOT alter coordinate snapping, content footprints, cursor geometry, or placement collision math.
+4. **Canvas Ground & View Preference Contract**: The canonical spatial canvas background is fixed at `#0E0E10` (`--canvas`). The grid line visibility toggle (`Key.G`) is persisted per person (not per place). Toggling lines off removes grid lines only—snapping, placement previews, selection outlines, whole-cell cursor addressing, and presence fields remain pixel-identical.
+5. **Architectural Grid Refusals**:
+   - **Refused Single Uniform Line Tier**: Single fixed-ink line rendering without per-tier legibility fade is forbidden; un-faded fine lines turn distant viewports into moiré texture.
+   - **Refused Container-per-Item Packaging**: Frames, borders, and drop shadows wrapped around content items are refused; lines orient spatial context, they do not package items as card layouts.
+   - **Refused Parked Chrome**: Persistent toolbars anchored over Plane 0 are forbidden; tools arrive on approach and depart when work is complete.

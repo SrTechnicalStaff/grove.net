@@ -1,8 +1,12 @@
+---
+status: "IMPLEMENTED - AWAITING USER REVIEW"
+---
+
 # ADR-051: Interactive Resize Engine and Cell Alignment System
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | Accepted |
+| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
 | **Date** | 2026-08-12 |
 | **Area** | Spatial Grid Engine / Transform & Resize Subsystem |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp 3.x |
@@ -249,3 +253,5 @@ public sealed class ResizePreviewDrawOperation : ICustomDrawOperation
 1. **Hard Size Limits**: Footprints MUST NOT be resized smaller than $1 \times 1$ cell ($220 \times 220\text{ DIPs}$) nor larger than $8 \times 8$ cells ($1760 \times 1760\text{ DIPs}$). Pointer movement beyond these limits is clamped.
 2. **Collision Atomic Refusal**: Committing a resize operation when `IsRegionFree` returns `false` is strictly forbidden. The system rejects the commit, reverts target bounds to `OriginalRegion`, and emits an inline refusal signal.
 3. **Non-Destructive Content Reflow**: Text inside `Document` or `Note` placements reflows dynamically according to updated cell width. Media elements inside `Picture` placements re-evaluate pixel density scale without altering raw file assets.
+4. **Collision Refusal Cross-Hatching**: When candidate resize bounds overlap an occupied cell, the preview renders in the invalid role `#E2625C` / `#F06543` (12% fill) with $45^\circ$ diagonal cross-hatching (`repeating-linear-gradient(45deg, rgba(226,98,92,0.22) 0 4px, transparent 4px 12px)` and inset border `inset 0 0 0 1px rgba(226,98,92,0.45)`). Structure and hue convey refusal together.
+5. **Local Point-of-Action Refusal Strip**: Refusal feedback is delivered via a local strip toolbar positioned beside the refused footprint ("This space is occupied" with disabled `Place` action). Center-screen modal alert dialogs and canvas dimming are strictly forbidden.

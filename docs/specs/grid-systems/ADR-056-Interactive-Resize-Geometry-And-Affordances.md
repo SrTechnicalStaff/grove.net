@@ -1,8 +1,12 @@
+---
+status: "IMPLEMENTED - AWAITING USER REVIEW"
+---
+
 # ADR-056: Interactive Resize Geometry, Type-Specific Footprint Solvers, and Affordance Rendering Engine
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | Accepted |
+| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
 | **Date** | 2026-08-12 |
 | **Area** | Spatial Grid Engine / Interactive Resize & Affordances Subsystem |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp 3.x |
@@ -456,4 +460,19 @@ public void DrawResizeGhostPreview(
         canvas.Restore();
     }
 }
+
+---
+
+## 6. Interactive Resize Refusal & Point-of-Action Feedback Rules
+
+### 6.1 Collision Refusal Cross-Hatch Pattern
+When an interactive resize gesture expands a footprint into an occupied spatial cell:
+1. **Visual State**: The candidate footprint preview transitions to the refusal role `#F06543` / `#E2625C` with a 12% fill (`rgba(226,98,92,0.12)`), $45^\circ$ diagonal cross-hatch stripes (`stroke: rgba(226,98,92,0.40)`), and an inset border `inset 0 0 0 1.5px rgba(226,98,92,0.45)`.
+2. **Dual Representation**: Structure (diagonal hatching) and color (`#F06543`) convey refusal together so the signal remains readable without color vision.
+
+### 6.2 Point-of-Action Refusal Strip Toolbar
+Refusal feedback is rendered at the point of action beside the candidate footprint via a local strip toolbar:
+- Text: "This space is occupied"
+- Actions: `Cancel` (resets bounds to original size), `Place` (disabled/off state `rgba(234,234,234,0.28)`).
+- **Zero Modal Invariant**: Center-screen alert dialogs and canvas dimming scrims are strictly forbidden.
 ```

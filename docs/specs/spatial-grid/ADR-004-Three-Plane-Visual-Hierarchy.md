@@ -1,8 +1,12 @@
+---
+status: "IMPLEMENTED - AWAITING USER REVIEW"
+---
+
 # ADR-004: Three-Plane Visual Hierarchy
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | Accepted |
+| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
 | **Date** | 2026-08-12 |
 | **Area** | Visual Architecture / Compositor & Input Pipeline |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 TopLevel Compositor |

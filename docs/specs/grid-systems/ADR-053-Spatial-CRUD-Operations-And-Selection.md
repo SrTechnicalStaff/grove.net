@@ -1,8 +1,12 @@
+---
+status: "IMPLEMENTED - AWAITING USER REVIEW"
+---
+
 # ADR-053: Spatial CRUD Operations, Selection State Machine, and Marquee Sweep
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | Accepted |
+| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
 | **Date** | 2026-08-12 |
 | **Area** | Spatial Grid Engine / Operations & Selection Subsystem |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp 3.x |
@@ -213,3 +217,23 @@ public sealed class MarqueeDrawOperation : ICustomDrawOperation
 | `Esc` | Clear Selection / Cancel Mode | Active selection or marquee drag active |
 | `Ctrl+C` | Copy Memory References | Selection count $\ge 1$ |
 | `Ctrl+V` | Paste Memory Footprints | Clipboard contains valid payload |
+
+---
+
+## 6. Signal Roles, Footprint Previewing & Selection Refusal Rules
+
+### 6.1 Three Distinct Signal Roles
+Working chrome enforces strict role-to-color mapping with zero semantic overlap:
+1. **Interaction Role (`#96B6F8`)**: Selection and focus. Applied as a 2px outline outside the content edge, a soft glow `0 0 24px 6px rgb(150 182 248 / 0.45)`, and structural field brightening (`rgba(150,182,248,0.13)` edge cells, `0.06` diagonal cells) with perimeter inset `inset 0 0 0 1.5px rgb(150 182 248 / 0.30)`.
+2. **Marquee Role (`#E8B964`)**: Active selection work during an open drag gesture. Rendered with 6% fill `rgba(232,185,100,0.08)` and 1.5px border `rgba(232,185,100,0.78)`. Upon pointer release, amber disappears and hands over to interaction accent `#96B6F8`.
+3. **Invalid / Refusal Role (`#E2625C` / `#F06543`)**: Spatial refusal. Rendered with 12% fill `rgba(226,98,92,0.12)`, $45^\circ$ diagonal cross-hatching, and inset border `inset 0 0 0 1.5px rgba(226,98,92,0.45)`.
+
+### 6.2 Placement Footprint Preview Contract
+Before commit, placement previews cover every cell the content will occupy:
+- Rendered with a 1px dashed edge `rgba(150,182,248,0.80)`, 6% transparent fill `rgba(150,182,248,0.06)`, and a quiet monospaced corner size label (`3 × 3`).
+- Origin content remains untouched at its source position until pointer release.
+
+### 6.3 Selection & Placement Refusal Invariants
+- **Refused Fill Wash**: Selection is not a coat of paint. Tinting or washing over content surfaces to show selection is forbidden.
+- **Refused Solid Preview**: Previews must never look like placed content facts. Solid opaque previews are forbidden.
+- **Refused Center-Screen Alert**: Refusal notification belongs at the point of action beside the footprint ("This space is occupied" strip toolbar). Center-screen modal alert dialogs and canvas dimming are strictly forbidden.

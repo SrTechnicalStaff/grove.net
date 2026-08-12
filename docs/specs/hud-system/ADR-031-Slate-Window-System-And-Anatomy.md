@@ -1,3 +1,7 @@
+---
+status: "Accepted"
+---
+
 # ADR-031: Slate Window System and Anatomy Specifications
 
 | Property | Value |

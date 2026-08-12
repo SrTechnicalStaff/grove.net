@@ -1,3 +1,7 @@
+---
+status: "Accepted"
+---
+
 # ADR-032: Spatial Layer Manager and Navigation Specifications
 
 | Property | Value |

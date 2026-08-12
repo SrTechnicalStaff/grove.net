@@ -1,3 +1,7 @@
+---
+status: "IMPLEMENTED - AWAITING USER REVIEW"
+---
+
 # ADR-011: Document Physical Geometry, Page Texture, AST, and Multi-Column Reflow Engine
 
 - **Status**: Normative
@@ -360,4 +364,32 @@ public sealed class DocumentPlacementControl : Control
         }
     }
 }
+
+---
+
+## 7. Front-Page Zone Hierarchy, Distance Hysteresis & Refusal Contracts
+
+### 7.1 Front-Page Zone Hierarchy & Typography
+The Document front page layout is structured into 5 vertical zones rendered over paper `#F5F5F5` (`--surface-page`) with inset shadow edge `inset 0 0 0 1px rgba(26,26,26,0.10)`:
+1. **Front Matter (Mono 11px / 0.20em / 48% Ink)**: Metadata line set uppercase in JetBrains Mono (`rgba(26,26,26,0.48)`).
+2. **Display Title (38px / 0.98 Leading / 0.03em Tracking)**: Oswald Display uppercase title with tight leading to keep title lines consolidated.
+3. **Hairline Rule (1px Height / 16% Ink)**: Divider rule (`rgba(26,26,26,0.16)`), margin 18px top/bottom.
+4. **Abstract (UI Font 15px / 1.65 / 62% Ink / 34ch Max-Width)**: Primary reading excerpt set at comfortable 34-character measure. Optional close section sits under a tight 56px hairline (`rgba(26,26,26,0.16)`) set in 13px / 1.60 UI font (`50% ink`).
+5. **Title Block (Mono Pair in 28% Border)**: Stamped metadata box pushed to bottom-right by flexible spacer (`flex: 1`, min-height 12px).
+
+### 7.2 Presence Field & States
+- **Neutral Aura**: Documents cast a neutral `234 234 234` aura (`0.025`–`0.055` alpha) into surrounding cells.
+- **Selection State**: Outline `2px solid rgb(150 182 248 / 0.9)` (`#96B6F8`) with soft glow `0 0 24px 6px rgb(150 182 248 / 0.45)`. Field answers with perimeter inset `inset 0 0 0 1.5px rgb(150 182 248 / 0.30)`.
+- **Anchor State**: Indigo ribbon at `top: -5px`, `left: 20px`, `width: 12px`, `height: 22px`, fill `#9E8CEA`. Aura switches to anchor indigo hue `#9E8CEA`.
+
+### 7.3 Distance Zoom Hysteresis & Stand-in Specs
+- **Working (50%)**: Cell pitch 110px. Renders complete front page with paper texture rules.
+- **Stepped Back (12%)**: Cell pitch 26.4px. Paper texture and inset edge shed; true text lines remain rendered.
+- **Far (3%)**: Cell pitch 6.6px. Footprint demotes to a 96px paper sheet snapshot stand-in on exact $2 \times 2$ footprint bounds (`.si-sheet`) featuring paper fill `#F5F5F5`, 1px border `rgba(26,26,26,0.28)`, ruled header bar (`rgba(26,26,26,0.44)`), and 4 text line strokes.
+- **Hysteresis Bands**: Demote to stepped back below 56px, restore to working at 72px; demote to stand-in below 18px, promote back to page at 28px.
+
+### 7.4 Document Architectural Refusals
+- **Refused Ellipsis Clip**: Truncating text with ellipses is strictly forbidden. Front pages carry complete chosen passages or fewer of them.
+- **Refused Interior Scrollbar**: Interior scrollbars inside a Document placement are forbidden. Full reading occurs by opening the Writing Slate on Plane 2.
+- **Refused File-Card Stand-in**: Replacing a Document with a dark filename container card is forbidden. Front page paper says what the writing is before it is opened.
 ```

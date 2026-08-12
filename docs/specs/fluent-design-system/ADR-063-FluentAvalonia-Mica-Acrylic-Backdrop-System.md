@@ -1,8 +1,12 @@
+---
+status: "IMPLEMENTED - AWAITING USER REVIEW"
+---
+
 # ADR-063: FluentAvalonia Mica and Acrylic Backdrop System
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | Accepted |
+| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
 | **Date** | 2026-08-12 |
 | **Area** | UI Architecture / Visual Shell & Windowing / FluentAvalonia Backdrops |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11 / FluentAvalonia 2.x / Windows 11 DWM |

@@ -1,3 +1,7 @@
+---
+status: "Normative / Accepted"
+---
+
 # ADR-020: Memory Model and Immutable Ledger Architecture
 
 | Property | Value |
