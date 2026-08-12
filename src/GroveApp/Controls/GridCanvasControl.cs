@@ -71,6 +71,7 @@ namespace GroveApp.Controls
         public event Action<GridNote>? NoteSelected;
         public event Action<GridNote>? NoteDoubleClicked;
         public event Action<int, int>? EmptyCellDoubleClicked;
+        public event Action? CameraChanged;
 
         public GridCanvasControl()
         {
@@ -90,9 +91,9 @@ namespace GroveApp.Controls
 
         private void SeedSampleData()
         {
-            Notes.Add(new GridNote(0, 0, "Grove v9 Field Ledger\n\nEvery cell derives its background color directly from aura field gravity.", NoteColor.Violet, isAnchored: true));
-            Notes.Add(new GridNote(3, 1, "Marquee & Drag Mechanics\n\nDrag notes across cells or sweep a marquee selection box.", NoteColor.Clay));
-            Notes.Add(new GridNote(-2, 3, "Spacetime Grid\n\nCell energy accumulates from surrounding content presence.", NoteColor.SlateBlue));
+            Notes.Add(new GridNote(0, 0, "# Field Ledger\n\nEvery cell derives its aura field gravity with `gravity field` and [violet signal](#96B6F8).", NoteColor.Violet, isAnchored: true));
+            Notes.Add(new GridNote(3, 1, "## Marquee Mechanics\n\n- Drag notes across cells\n- Sweep a **marquee** box\n- Edit with *immediate response*", NoteColor.Clay));
+            Notes.Add(new GridNote(-2, 3, "# Spacetime Grid\n\nCell energy accumulates from `content` presence.\n- **Zero** global overhead\n- [Primary signal](#E8B964) status", NoteColor.SlateBlue));
         }
 
         private void OnAnimationTick(object? sender, EventArgs e)
@@ -126,6 +127,14 @@ namespace GroveApp.Controls
             return (cx, cy);
         }
 
+        public Rect GetNoteScreenBounds(GridNote note)
+        {
+            Point worldTopLeft = new Point(note.CellX * CellSize, note.CellY * CellSize);
+            Point screenTopLeft = WorldToScreen(worldTopLeft);
+            double sizePx = note.SizeCells * CellSize * Zoom;
+            return new Rect(screenTopLeft.X, screenTopLeft.Y, sizePx, sizePx);
+        }
+
         // Pointer Events
         protected override void OnPointerMoved(PointerEventArgs e)
         {
@@ -144,6 +153,7 @@ namespace GroveApp.Controls
                 CameraX = _panStartCamX + delta.X;
                 CameraY = _panStartCamY + delta.Y;
                 InvalidateVisual();
+                CameraChanged?.Invoke();
                 return;
             }
 
@@ -265,6 +275,7 @@ namespace GroveApp.Controls
             Zoom = newZoom;
 
             InvalidateVisual();
+            CameraChanged?.Invoke();
             e.Handled = true;
         }
 

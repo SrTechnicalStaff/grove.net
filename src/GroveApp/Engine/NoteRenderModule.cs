@@ -97,29 +97,27 @@ namespace GroveApp.Engine
                 RenderAnchorRibbon(context, noteRect, zoom);
             }
 
-            // 5. Text Block (#F4F4F2 ink, --f-ui Inter 500, --t-body 15px, --lh-snug 1.42, 16px 15px padding)
+            // 5. Rich Text Block (#F4F4F2 ink, formatted via RichTextEngine: bold, italic, code, headings, bullets, colors)
             if (!string.IsNullOrEmpty(note.Text))
             {
                 double fontSize = Math.Max(9.0, Typography.SizeBody * zoom);
                 double padTop = 16.0 * zoom;
                 double padLeft = 15.0 * zoom;
 
-                var formattedText = new FormattedText(
-                    note.Text,
-                    CultureInfo.CurrentCulture,
-                    FlowDirection.LeftToRight,
-                    new Typeface(Typography.UiFamily, FontStyle.Normal, Typography.WeightNoteText),
-                    fontSize,
-                    Colors.NoteTextBrush
-                )
-                {
-                    MaxTextWidth = Math.Max(10.0, noteRect.Width - (padLeft * 2.0)),
-                    MaxTextHeight = Math.Max(10.0, noteRect.Height - (padTop * 2.0)),
-                    LineHeight = fontSize * Typography.LineHeightSnug
-                };
-
+                double maxWidth = Math.Max(10.0, noteRect.Width - (padLeft * 2.0));
+                double maxHeight = Math.Max(10.0, noteRect.Height - (padTop * 2.0));
                 Point textPos = new Point(noteRect.X + padLeft, noteRect.Y + padTop);
-                context.DrawText(formattedText, textPos);
+
+                var layout = RichTextEngine.CreateLayout(
+                    note.Text,
+                    fontSize,
+                    Colors.NoteTextBrush,
+                    maxWidth,
+                    maxHeight,
+                    zoom
+                );
+
+                RichTextEngine.Render(context, textPos, layout);
             }
 
             // 6. Hover / Focus Edit Affordance Pill (Top-Right inset 8px, EDIT uppercase mono)
@@ -159,22 +157,20 @@ namespace GroveApp.Engine
                 double padTop = 16.0 * zoom;
                 double padLeft = 15.0 * zoom;
 
-                var formattedText = new FormattedText(
-                    note.Text,
-                    CultureInfo.CurrentCulture,
-                    FlowDirection.LeftToRight,
-                    new Typeface(Typography.UiFamily, FontStyle.Normal, Typography.WeightNoteText),
-                    fontSize,
-                    Colors.NoteTextBrush
-                )
-                {
-                    MaxTextWidth = Math.Max(5.0, noteRect.Width - (padLeft * 2.0)),
-                    MaxTextHeight = Math.Max(5.0, noteRect.Height - (padTop * 2.0)),
-                    LineHeight = fontSize * Typography.LineHeightSnug
-                };
-
+                double maxWidth = Math.Max(5.0, noteRect.Width - (padLeft * 2.0));
+                double maxHeight = Math.Max(5.0, noteRect.Height - (padTop * 2.0));
                 Point textPos = new Point(noteRect.X + padLeft, noteRect.Y + padTop);
-                context.DrawText(formattedText, textPos);
+
+                var layout = RichTextEngine.CreateLayout(
+                    note.Text,
+                    fontSize,
+                    Colors.NoteTextBrush,
+                    maxWidth,
+                    maxHeight,
+                    zoom
+                );
+
+                RichTextEngine.Render(context, textPos, layout);
             }
         }
 

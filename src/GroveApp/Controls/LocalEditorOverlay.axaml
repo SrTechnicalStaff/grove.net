@@ -1,0 +1,179 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ds="clr-namespace:GroveApp.DesignSystem"
+             x:Class="GroveApp.Controls.LocalEditorOverlay">
+
+    <Border Name="FrameBorder"
+            Width="340"
+            Background="{x:Static ds:Colors.SurfaceChromeHex}"
+            BorderBrush="{x:Static ds:Colors.KEditBorderHex}"
+            BorderThickness="1"
+            CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
+            Padding="16"
+            BoxShadow="0 8 24 0 #66000000">
+
+        <StackPanel Spacing="16">
+            <!-- Header (Label Row) -->
+            <Grid ColumnDefinitions="*, Auto">
+                <TextBlock Name="TxtLabel"
+                           Grid.Column="0"
+                           Text="NOTE"
+                           FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                           FontSize="{x:Static ds:Typography.SizeLabel}"
+                           FontWeight="Medium"
+                           Foreground="{x:Static ds:Colors.TextMetaBrush}"
+                           LetterSpacing="1.6"
+                           VerticalAlignment="Center" />
+
+                <TextBlock Name="TxtUnsaved"
+                           Grid.Column="1"
+                           Text="UNSAVED CHANGES"
+                           FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                           FontSize="{x:Static ds:Typography.SizeLabel}"
+                           FontWeight="Medium"
+                           Foreground="{x:Static ds:Colors.KEditBrush}"
+                           LetterSpacing="1.6"
+                           VerticalAlignment="Center"
+                           IsVisible="False" />
+            </Grid>
+
+            <!-- Body (Draft Field) -->
+            <TextBox Name="TxtDraft"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     MinHeight="140"
+                     MaxHeight="360"
+                     Background="Transparent"
+                     Foreground="{x:Static ds:Colors.TextPrimaryBrush}"
+                     BorderThickness="0"
+                     CornerRadius="0"
+                     Padding="0"
+                     FontFamily="{x:Static ds:Typography.FontFamilyUi}"
+                     FontSize="{x:Static ds:Typography.SizeBody}" />
+
+            <!-- Inline Confirm Row (Dirty Cancel Confirmation) -->
+            <Border Name="InlineConfirmRow"
+                    IsVisible="False"
+                    Background="{x:Static ds:Colors.SurfaceNestedHex}"
+                    BorderBrush="{x:Static ds:Colors.EdgeHairlineBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
+                    Padding="16,8">
+                <Grid ColumnDefinitions="*, Auto, Auto">
+                    <TextBlock Grid.Column="0"
+                               Text="Discard unsaved changes?"
+                               FontFamily="{x:Static ds:Typography.FontFamilyUi}"
+                               FontSize="{x:Static ds:Typography.SizeCaption}"
+                               Foreground="{x:Static ds:Colors.TextPrimaryBrush}"
+                               VerticalAlignment="Center" />
+                    <Button Name="BtnKeepEditing"
+                            Grid.Column="1"
+                            Click="BtnKeepEditing_Click"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
+                            FontSize="{x:Static ds:Typography.SizeCaption}"
+                            Margin="0,0,12,0"
+                            Padding="0">Keep editing</Button>
+                    <Button Name="BtnDiscardConfirm"
+                            Grid.Column="2"
+                            Click="BtnDiscardConfirm_Click"
+                            Background="{x:Static ds:Colors.SignalRefusalBrush}"
+                            BorderThickness="0"
+                            CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
+                            Foreground="#FFFFFF"
+                            FontSize="{x:Static ds:Typography.SizeCaption}"
+                            Padding="8,4">Discard</Button>
+                </Grid>
+            </Border>
+
+            <!-- Refusal Row (Save Failed) -->
+            <Border Name="RefusalRow"
+                    IsVisible="False"
+                    Background="{x:Static ds:Colors.SurfaceNestedHex}"
+                    BorderBrush="{x:Static ds:Colors.SignalRefusalBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
+                    Padding="16,8">
+                <Grid ColumnDefinitions="*, Auto, Auto">
+                    <TextBlock Grid.Column="0"
+                               Text="This change is not saved."
+                               FontFamily="{x:Static ds:Typography.FontFamilyUi}"
+                               FontSize="{x:Static ds:Typography.SizeCaption}"
+                               Foreground="{x:Static ds:Colors.TextPrimaryBrush}"
+                               VerticalAlignment="Center" />
+                    <Button Name="BtnRefusalDismiss"
+                            Grid.Column="1"
+                            Click="BtnRefusalDismiss_Click"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
+                            FontSize="{x:Static ds:Typography.SizeCaption}"
+                            Margin="0,0,12,0"
+                            Padding="0">Keep editing</Button>
+                    <Button Name="BtnRefusalRetry"
+                            Grid.Column="2"
+                            Click="BtnRefusalRetry_Click"
+                            Background="{x:Static ds:Colors.SignalInteractionBrush}"
+                            BorderThickness="0"
+                            CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
+                            Foreground="{x:Static ds:Colors.CPaperInkBrush}"
+                            FontSize="{x:Static ds:Typography.SizeCaption}"
+                            Padding="8,4">Save</Button>
+                </Grid>
+            </Border>
+
+            <!-- Footer Row -->
+            <Grid ColumnDefinitions="Auto, *, Auto">
+                <!-- Escalation Route -->
+                <Button Name="BtnEscalate"
+                        Grid.Column="0"
+                        Click="BtnEscalate_Click"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Foreground="{x:Static ds:Colors.TextMetaBrush}"
+                        FontFamily="{x:Static ds:Typography.FontFamilyUi}"
+                        FontSize="{x:Static ds:Typography.SizeCaption}"
+                        Padding="0"
+                        VerticalAlignment="Center">Open in Writing Slate</Button>
+
+                <!-- Action Group -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+                    <!-- Quiet Action Pair: Esc Cancel -->
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <TextBlock Text="ESC"
+                                   FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                                   FontSize="{x:Static ds:Typography.SizeMicro}"
+                                   Foreground="{x:Static ds:Colors.TextMetaBrush}"
+                                   LetterSpacing="0.8"
+                                   VerticalAlignment="Center" />
+                        <Button Name="BtnCancel"
+                                Click="BtnCancel_Click"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Foreground="{x:Static ds:Colors.TextPrimaryBrush}"
+                                FontFamily="{x:Static ds:Typography.FontFamilyUi}"
+                                FontSize="{x:Static ds:Typography.SizeCaption}"
+                                Padding="8,4">Cancel</Button>
+                    </StackPanel>
+
+                    <!-- Committing Action Pair: Ctrl+Enter Save -->
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <TextBlock Text="CTRL+ENTER"
+                                   FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                                   FontSize="{x:Static ds:Typography.SizeMicro}"
+                                   Foreground="{x:Static ds:Colors.TextMetaBrush}"
+                                   LetterSpacing="0.8"
+                                   VerticalAlignment="Center" />
+                        <Button Name="BtnSave"
+                                Click="BtnSave_Click"
+                                FontFamily="{x:Static ds:Typography.FontFamilyUi}"
+                                FontSize="{x:Static ds:Typography.SizeCaption}"
+                                CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
+                                Padding="8,4">Save</Button>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+    </Border>
+</UserControl>

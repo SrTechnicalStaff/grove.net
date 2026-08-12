@@ -12,53 +12,12 @@
         <!-- PLANE 0: Infinite Spatial Grid Canvas -->
         <controls:GridCanvasControl x:Name="CanvasControl" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
 
-        <!-- PLANE 1: Floating In-Place Text Editor Overlay (Shown on Note Double-Click) -->
-        <Border Name="EditorOverlay" IsVisible="False"
-                Background="{x:Static ds:Colors.SurfaceChromeHex}"
-                BorderBrush="{x:Static ds:Colors.SignalInteractionHex}"
-                BorderThickness="2"
-                CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
-                Padding="14"
-                BoxShadow="0 8 24 #A0000000"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Top">
-            <StackPanel Spacing="10">
-                <TextBlock Text="EDIT NOTE IN PLACE"
-                           FontFamily="{x:Static ds:Typography.FontFamilyMono}"
-                           FontSize="{x:Static ds:Typography.SizeLabel}"
-                           FontWeight="Medium"
-                           Foreground="{x:Static ds:Colors.SignalInteractionHex}"
-                           LetterSpacing="1.2" />
+        <!-- PLANE 1: Information Layer Overlays -->
+        <!-- Local Editor Overlay (Anchored beside Note on Grid Plane) -->
+        <controls:LocalEditorOverlay x:Name="LocalEditor" IsVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
 
-                <TextBox Name="TxtEditor" Width="300" Height="110"
-                         AcceptsReturn="True" TextWrapping="Wrap"
-                         Background="{x:Static ds:Colors.SurfaceGridHex}"
-                         Foreground="{x:Static ds:Colors.NoteTextHex}"
-                         BorderBrush="{x:Static ds:Colors.HudSlateBorderHex}"
-                         BorderThickness="1"
-                         FontFamily="{x:Static ds:Typography.FontFamilyUi}"
-                         FontSize="{x:Static ds:Typography.SizeBody}"
-                         Padding="10"
-                         CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}" />
-
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
-                    <Button Name="BtnCancelEdit" Click="BtnCancelEdit_Click"
-                            Background="{x:Static ds:Colors.SurfaceChromeHex}"
-                            Foreground="{x:Static ds:Colors.NoteTextHex}"
-                            BorderBrush="{x:Static ds:Colors.HudSlateBorderHex}"
-                            BorderThickness="1"
-                            CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
-                            Padding="10,4">Cancel</Button>
-
-                    <Button Name="BtnSaveEdit" Click="BtnSaveEdit_Click"
-                            Background="{x:Static ds:Colors.SignalInteractionHex}"
-                            Foreground="#0E0E10"
-                            CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
-                            Padding="12,4"
-                            FontWeight="SemiBold">Commit (Ctrl+Enter)</Button>
-                </StackPanel>
-            </StackPanel>
-        </Border>
+        <!-- Quick Note Overlay (Viewport-Centered Slate) -->
+        <controls:QuickNoteOverlay x:Name="QuickNote" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center" />
 
         <!-- Minimal Grid Telemetry Strip at Bottom -->
         <Border HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Height="28"
@@ -85,7 +44,7 @@
                 </StackPanel>
 
                 <TextBlock Grid.Column="2"
-                           Text="Middle / Right Click Drag to Pan • Wheel: Zoom • Double Click Cell: Add/Edit Note • Keys 2-4: Colors • A: Anchor • Del: Delete"
+                           Text="N: Quick Note • Middle/Right Drag: Pan • Wheel: Zoom • Double Click: Edit Note • Keys 2-4: Colors • A: Anchor • Del: Delete"
                            Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
                            FontSize="{x:Static ds:Typography.SizeLabel}"
                            VerticalAlignment="Center"

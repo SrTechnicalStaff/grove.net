@@ -13,8 +13,6 @@ namespace GroveApp
 {
     public partial class MainWindow : Window
     {
-        private GridNote? _editingNote;
-
         public MainWindow()
         {
             InitializeComponent();
@@ -23,9 +21,21 @@ namespace GroveApp
             CanvasControl.NoteSelected += OnNoteSelected;
             CanvasControl.NoteDoubleClicked += OnNoteDoubleClicked;
             CanvasControl.EmptyCellDoubleClicked += OnEmptyCellDoubleClicked;
+            CanvasControl.CameraChanged += OnCameraChanged;
 
             // Handle Pointer Press on Canvas for Double Click detection
             CanvasControl.AddHandler(PointerPressedEvent, OnCanvasPointerPressed, RoutingStrategies.Tunnel);
+
+            // Wire Information Layer Overlays
+            LocalEditor.SaveRequested += OnLocalEditorSaveRequested;
+            LocalEditor.EscalationRequested += OnLocalEditorEscalationRequested;
+            LocalEditor.Closed += OnOverlayClosed;
+
+            QuickNote.SaveAndPlaceRequested += OnQuickNoteSaveAndPlaceRequested;
+            QuickNote.Closed += OnOverlayClosed;
+
+            // Handle Window Resizing for Editor Overlay anchor update
+            SizeChanged += (s, e) => UpdateLocalEditorPosition();
 
             // Handle Keyboard Input
             KeyDown += OnWindowKeyDown;
@@ -56,14 +66,31 @@ namespace GroveApp
             TxtNoteCount.Text = $"NOTES: {CanvasControl.Notes.Count}";
         }
 
+        private void OnCameraChanged()
+        {
+            UpdateLocalEditorPosition();
+        }
+
+        private void UpdateLocalEditorPosition()
+        {
+            if (LocalEditor.IsVisible && LocalEditor.TargetNote != null)
+            {
+                Rect sourceBounds = CanvasControl.GetNoteScreenBounds(LocalEditor.TargetNote);
+                LocalEditor.UpdatePosition(sourceBounds, Bounds.Size);
+            }
+        }
+
         private void OnNoteSelected(GridNote note)
         {
-            CanvasControl.Focus();
+            if (!LocalEditor.IsVisible && !QuickNote.IsVisible)
+            {
+                CanvasControl.Focus();
+            }
         }
 
         private void OnNoteDoubleClicked(GridNote note)
         {
-            StartEditingNote(note);
+            OpenLocalEditorForNote(note);
         }
 
         private void OnEmptyCellDoubleClicked(int cellX, int cellY)
@@ -71,52 +98,47 @@ namespace GroveApp
             var newNote = new GridNote(cellX, cellY, "New Note", NoteColor.Violet);
             CanvasControl.Notes.Add(newNote);
             CanvasControl.SelectedNote = newNote;
-            StartEditingNote(newNote);
+            CanvasControl.InvalidateVisual();
+            OpenLocalEditorForNote(newNote);
         }
 
-        private void StartEditingNote(GridNote note)
+        private void OpenLocalEditorForNote(GridNote note)
         {
-            _editingNote = note;
-            TxtEditor.Text = note.Text ?? "";
-
-            // Position Editor Overlay near Note on Screen
-            Point startWorld = new Point(note.CellX * GridCanvasControl.CellSize, note.CellY * GridCanvasControl.CellSize);
-            Point startScreen = CanvasControl.WorldToScreen(startWorld);
-
-            EditorOverlay.Margin = new Thickness(
-                Math.Clamp(startScreen.X, 20, Math.Max(20, Bounds.Width - 340)),
-                Math.Clamp(startScreen.Y, 50, Math.Max(50, Bounds.Height - 220)),
-                0, 0
-            );
-
-            EditorOverlay.IsVisible = true;
-            TxtEditor.Focus();
-            TxtEditor.SelectAll();
+            Rect sourceBounds = CanvasControl.GetNoteScreenBounds(note);
+            LocalEditor.OpenForNote(note, sourceBounds, Bounds.Size);
         }
 
-        private void CommitEdit()
+        private void OnLocalEditorSaveRequested(GridNote note, string newText)
         {
-            if (_editingNote != null)
-            {
-                _editingNote.Text = TxtEditor.Text ?? "";
-                _editingNote.RecalculateFootprint();
-                CanvasControl.InvalidateVisual();
-            }
-            EditorOverlay.IsVisible = false;
-            _editingNote = null;
+            note.Text = newText;
+            note.RecalculateFootprint();
+            CanvasControl.InvalidateVisual();
             CanvasControl.Focus();
         }
 
-        private void CancelEdit()
+        private void OnLocalEditorEscalationRequested(GridNote note, string text)
         {
-            EditorOverlay.IsVisible = false;
-            _editingNote = null;
+            // Update Note text upon escalation handoff
+            note.Text = text;
+            note.RecalculateFootprint();
+            CanvasControl.InvalidateVisual();
             CanvasControl.Focus();
         }
 
-        private void SetActiveTool(string toolName)
+        private void OnQuickNoteSaveAndPlaceRequested(QuickNoteItem item)
         {
-            CanvasControl.ActiveTool = toolName;
+            // Arm & place Quick Note on Grid Plane at current cell cursor
+            var newNote = new GridNote(CanvasControl.CursorCellX, CanvasControl.CursorCellY, item.Text, NoteColor.Violet, isAnchored: true);
+            CanvasControl.Notes.Add(newNote);
+            CanvasControl.SelectedNote = newNote;
+            item.IsAnchored = true;
+            CanvasControl.InvalidateVisual();
+            CanvasControl.Focus();
+        }
+
+        private void OnOverlayClosed()
+        {
+            CanvasControl.Focus();
         }
 
         private void SetSelectedNoteColor(NoteColor color)
@@ -128,29 +150,21 @@ namespace GroveApp
             }
         }
 
-        private void BtnSaveEdit_Click(object? sender, RoutedEventArgs e) => CommitEdit();
-        private void BtnCancelEdit_Click(object? sender, RoutedEventArgs e) => CancelEdit();
-
         private void OnWindowKeyDown(object? sender, KeyEventArgs e)
         {
-            // Ctrl+Enter commits edit inside overlay
-            if (EditorOverlay.IsVisible)
+            // If LocalEditor or QuickNote overlays are visible, let them process key navigation first
+            if (LocalEditor.IsVisible || QuickNote.IsVisible)
             {
-                if (e.Key == Key.Enter && e.KeyModifiers.HasFlag(KeyModifiers.Control))
-                {
-                    CommitEdit();
-                    e.Handled = true;
-                }
-                else if (e.Key == Key.Escape)
-                {
-                    CancelEdit();
-                    e.Handled = true;
-                }
                 return;
             }
 
-            // Direct Spatial Canvas Shortcuts
-            if (e.Key == Key.Escape)
+            // Global Keybindings on Spatial Canvas Plane
+            if (e.Key == Key.N)
+            {
+                QuickNote.Open();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Escape)
             {
                 if (CanvasControl.SelectedNote != null)
                 {
@@ -158,10 +172,6 @@ namespace GroveApp
                     CanvasControl.SelectedNote = null;
                     CanvasControl.InvalidateVisual();
                 }
-            }
-            else if (e.Key == Key.N)
-            {
-                OnEmptyCellDoubleClicked(CanvasControl.CursorCellX, CanvasControl.CursorCellY);
             }
             else if (e.Key == Key.A)
             {

@@ -37,7 +37,7 @@ namespace GroveApp.DesignSystem
         public const string NoteSlateBlueFieldHex = "#4E6E9C"; // --c-note-slate-blue-field (casts own fill)
         public const string NoteTextHex = "#F4F4F2";         // Text on authored note fill
 
-        // Role Hues
+        // Role Hues & Border Aliases
         public const string ToolFillHex = "#B3A9E0";
         public const string ToolBorderHex = "#5B5288";
         public const string ViewFillHex = "#9BB6E0";
@@ -48,6 +48,13 @@ namespace GroveApp.DesignSystem
         public const string EditBorderHex = "#7A3F3A";
         public const string SlateFillHex = "#CDB8D8";
         public const string SlateBorderHex = "#6B5A78";
+
+        // Explicit Role Token Aliases
+        public const string KEditBorderHex = EditBorderHex;    // --k-edit-b (#7A3F3A)
+        public const string KEditHex = EditFillHex;            // --k-edit (#E0A9A3)
+        public const string KSlateBorderHex = HudSlateBorderHex;// --k-slate-b (#2D2D2A)
+        public const string CSlateHex = SlateFillHex;          // --c-slate (#CDB8D8)
+        public const string CPaperInkHex = PaperInkHex;        // --c-paper-ink (#1A1A1A)
 
         // Semantic Surfaces
         public const string SurfaceGridHex = BaseHex;          // --surface-grid (#0E0E10)
@@ -83,6 +90,12 @@ namespace GroveApp.DesignSystem
         public static Color SignalRefusal => Color.Parse(SignalRefusalHex);
         public static Color SignalAuthoredContext => Color.Parse(SignalAuthoredContextHex);
 
+        public static Color KEditBorder => Color.Parse(KEditBorderHex);
+        public static Color KEdit => Color.Parse(KEditHex);
+        public static Color KSlateBorder => Color.Parse(KSlateBorderHex);
+        public static Color CSlate => Color.Parse(CSlateHex);
+        public static Color CPaperInk => Color.Parse(CPaperInkHex);
+
         public static Color EdgeOnColor => Color.FromArgb((byte)(255 * 0.12), 255, 255, 255); // --edge-on-color
         public static Color InkPrimary => Color.FromArgb((byte)(255 * Tokens.InkPrimary), 234, 234, 234); // --ink-primary
         public static Color InkSecondary => Color.FromArgb((byte)(255 * Tokens.InkSecondary), 234, 234, 234); // --ink-secondary
@@ -97,6 +110,7 @@ namespace GroveApp.DesignSystem
         public static IBrush SurfaceChromeBrush => new SolidColorBrush(SurfaceChrome);
         public static IBrush SurfaceNestedBrush => new SolidColorBrush(SurfaceNested);
         public static IBrush SurfacePageBrush => new SolidColorBrush(SurfacePage);
+        public static IBrush PaperInkBrush => new SolidColorBrush(Color.Parse(PaperInkHex));
 
         public static IBrush NoteVioletBrush => new SolidColorBrush(NoteViolet);
         public static IBrush NoteClayBrush => new SolidColorBrush(NoteClay);
@@ -109,6 +123,12 @@ namespace GroveApp.DesignSystem
         public static IBrush SignalActiveWorkBrush => new SolidColorBrush(SignalActiveWork);
         public static IBrush SignalRefusalBrush => new SolidColorBrush(SignalRefusal);
         public static IBrush SignalAuthoredContextBrush => new SolidColorBrush(SignalAuthoredContext);
+
+        public static IBrush KEditBorderBrush => new SolidColorBrush(KEditBorder);
+        public static IBrush KEditBrush => new SolidColorBrush(KEdit);
+        public static IBrush KSlateBorderBrush => new SolidColorBrush(KSlateBorder);
+        public static IBrush CSlateBrush => new SolidColorBrush(CSlate);
+        public static IBrush CPaperInkBrush => new SolidColorBrush(CPaperInk);
 
         public static IBrush TextPrimaryBrush => new SolidColorBrush(InkPrimary);
         public static IBrush TextSecondaryBrush => new SolidColorBrush(InkSecondary);
