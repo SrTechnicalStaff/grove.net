@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Design language</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/catalogue.css">
+<style>
+  /* deck-local helpers */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; width: 100%; }
+  .sectionlbl {
+    font-family: var(--f-mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.24em; text-transform: uppercase; color: var(--ann);
+    margin-bottom: 14px;
+  }
+  .note-under {
+    font-family: var(--f-mono); font-size: 10px; line-height: 1.8;
+    color: var(--ann); letter-spacing: 0.02em; max-width: 560px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================ 01 · COVER ============================ -->
+<section class="slide cover">
+  <div class="running"><span>GROVE · DESIGN CATALOGUE</span><span class="fig">00</span></div>
+  <div class="plane">EVERY PLANE · SHARED MATERIALS</div>
+  <h1>Design<br>language</h1>
+  <div class="rule"></div>
+  <div class="scope">
+    Palette · Role hues · Typography · Spacing · Shape · Depth ·
+    Surface classes · Refusals
+  </div>
+  <div class="folio">SOURCE: DESIGN.MD (ALPHA)</div>
+</section>
+
+<!-- ============================ 02 · SPATIAL PALETTE ============================ -->
+<section class="slide">
+  <div class="running"><span>DESIGN LANGUAGE · PALETTE</span><span class="fig">01 / 06</span></div>
+
+  <div class="stage full" style="flex-direction:column; align-items:flex-start; justify-content:center; gap:40px; padding:0 48px;">
+    <div>
+      <div class="sectionlbl">Spatial surfaces</div>
+      <div class="swatch-row">
+        <div class="swatch"><div class="chip" style="background:#0E0E10"></div><div class="tk">canvas</div><div class="hex">#0E0E10</div></div>
+        <div class="swatch"><div class="chip" style="background:#161618"></div><div class="tk">surface</div><div class="hex">#161618</div></div>
+        <div class="swatch"><div class="chip" style="background:#242428"></div><div class="tk">grid-major</div><div class="hex">#242428</div></div>
+        <div class="swatch"><div class="chip" style="background:#EAEAEA"></div><div class="tk">text</div><div class="hex">#EAEAEA</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="sectionlbl">Print surfaces</div>
+      <div class="swatch-row">
+        <div class="swatch"><div class="chip" style="background:#F5F5F5"></div><div class="tk">paper</div><div class="hex">#F5F5F5</div></div>
+        <div class="swatch"><div class="chip" style="background:#1A1A1A"></div><div class="tk">paper-ink</div><div class="hex">#1A1A1A</div></div>
+      </div>
+    </div>
+    <div class="note-under">
+      NEAR-BLACK SURFACES KEEP AUTHORED CONTENT AS THE BRIGHTEST THING ON SCREEN.
+      TONALITY SEPARATES GRID CONTEXT FROM CHROME; PAPER CARRIES AUTHORED PAGES —
+      DOCUMENT SHEETS ON THE GRID AND READING EDITIONS — SO A LIGHT SURFACE
+      ALWAYS MEANS A PAGE, NEVER CHROME.
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 03 · ROLE HUES ============================ -->
+<section class="slide">
+  <div class="running"><span>DESIGN LANGUAGE · ROLE HUES</span><span class="fig">02 / 06</span></div>
+
+  <div class="stage" style="flex-direction:column; align-items:flex-start; justify-content:center; gap:36px;">
+    <div>
+      <div class="sectionlbl">Signals</div>
+      <div class="swatch-row">
+        <div class="swatch"><div class="chip" style="background:#96B6F8"></div><div class="tk">interaction</div><div class="hex">#96B6F8</div></div>
+        <div class="swatch"><div class="chip" style="background:#E8B964"></div><div class="tk">marquee</div><div class="hex">#E8B964</div></div>
+        <div class="swatch"><div class="chip" style="background:#E2625C"></div><div class="tk">invalid</div><div class="hex">#E2625C</div></div>
+        <div class="swatch"><div class="chip" style="background:#9E8CEA"></div><div class="tk">anchor-indigo</div><div class="hex">#9E8CEA</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="sectionlbl">Operation families · fill over border</div>
+      <div class="swatch-row">
+        <div class="swatch"><div class="chip" style="background:linear-gradient(180deg,#B3A9E0 50%,#5B5288 50%)"></div><div class="tk">tool</div><div class="hex">#B3A9E0 / #5B5288</div></div>
+        <div class="swatch"><div class="chip" style="background:linear-gradient(180deg,#9BB6E0 50%,#3F5F8A 50%)"></div><div class="tk">view</div><div class="hex">#9BB6E0 / #3F5F8A</div></div>
+        <div class="swatch"><div class="chip" style="background:linear-gradient(180deg,#E2A6C6 50%,#8A3F63 50%)"></div><div class="tk">layer</div><div class="hex">#E2A6C6 / #8A3F63</div></div>
+        <div class="swatch"><div class="chip" style="background:linear-gradient(180deg,#E0A9A3 50%,#7A3F3A 50%)"></div><div class="tk">edit</div><div class="hex">#E0A9A3 / #7A3F3A</div></div>
+        <div class="swatch"><div class="chip" style="background:linear-gradient(180deg,#CDB8D8 50%,#6B5A78 50%)"></div><div class="tk">slate</div><div class="hex">#CDB8D8 / #6B5A78</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>One accent per meaning</b>A new screen never gets a new color. If an existing role applies, it is used; if none applies, the design is questioned before the palette is.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Hue is never alone</b>Every state a hue signals is also carried by position, outline, text, or structure. Color-blind reading of any screen is complete.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Anchor indigo is fixed</b>Authored context is always this hue, everywhere it appears. It is not a category color a person can pick.</span></div>
+  </div>
+  <div class="folio">TOKENS: DESIGN.MD → CSS/TOKENS.CSS</div>
+</section>
+
+<!-- ============================ 04 · TYPOGRAPHY ============================ -->
+<section class="slide">
+  <div class="running"><span>DESIGN LANGUAGE · TYPOGRAPHY</span><span class="fig">03 / 06</span></div>
+
+  <div class="stage" style="flex-direction:column; align-items:flex-start; justify-content:center; gap:44px;">
+    <div>
+      <div class="sectionlbl">Display · Oswald 500 · +0.02em</div>
+      <div style="font-family:var(--f-display); font-size:56px; font-weight:500; letter-spacing:0.02em; text-transform:uppercase; line-height:1.05;">Memory Slate</div>
+    </div>
+    <div>
+      <div class="sectionlbl">UI · Inter 400 · line 1.5</div>
+      <div style="font-family:var(--f-ui); font-size:17px; line-height:1.5; max-width:600px;">
+        Met with Jamie — discussed launch timing and messaging. Align on audience
+        and core benefit before the next review.
+      </div>
+    </div>
+    <div>
+      <div class="sectionlbl">Mono · JetBrains Mono 500 · +0.07em</div>
+      <div style="font-family:var(--f-mono); font-size:12px; font-weight:500; letter-spacing:0.07em; color:rgba(234,234,234,0.6);">JPG · 5472 × 3648 · 8.2 MB · MAY 12 · 7:42 PM</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Display is sparse</b>Short titles and spatial identity only. It never sets a sentence.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>UI carries content</b>Authored text — notes, controls, explanations — always reads in UI type. It is the default voice.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Mono supports, never leads</b>Labels, shortcuts, coordinates, metadata. Reduced ink, small size. It is never the primary reading voice.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Uppercase is a label format</b>Caps and tracking are reserved for short labels — long content never wears them.</span></div>
+  </div>
+</section>
+
+<!-- ============================ 05 · SHAPE · SPACING · DEPTH ============================ -->
+<section class="slide">
+  <div class="running"><span>DESIGN LANGUAGE · SHAPE · SPACING · DEPTH</span><span class="fig">04 / 06</span></div>
+
+  <div class="stage" style="flex-direction:column; align-items:flex-start; justify-content:center; gap:40px;">
+    <div>
+      <div class="sectionlbl">Radius · the only two values</div>
+      <div style="display:flex; gap:24px; align-items:flex-end;">
+        <div>
+          <div style="width:120px; height:64px; background:var(--surface); border:1px solid var(--hairline);"></div>
+          <div class="note-under" style="margin-top:8px;">NONE · 0PX</div>
+        </div>
+        <div>
+          <div style="width:120px; height:64px; background:var(--surface); border:1px solid var(--hairline); border-radius:2px;"></div>
+          <div class="note-under" style="margin-top:8px;">SM · 2PX</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="sectionlbl">Spacing scale</div>
+      <div style="display:flex; gap:20px; align-items:flex-end;">
+        <div><div style="width:4px; height:4px; background:var(--interaction);"></div><div class="note-under" style="margin-top:8px;">XS 4</div></div>
+        <div><div style="width:8px; height:8px; background:var(--interaction);"></div><div class="note-under" style="margin-top:8px;">SM 8</div></div>
+        <div><div style="width:16px; height:16px; background:var(--interaction);"></div><div class="note-under" style="margin-top:8px;">MD 16</div></div>
+        <div><div style="width:24px; height:24px; background:var(--interaction);"></div><div class="note-under" style="margin-top:8px;">LG 24</div></div>
+        <div><div style="width:32px; height:32px; background:var(--interaction);"></div><div class="note-under" style="margin-top:8px;">XL 32</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Architectural sharpness</b>2px is the entire corner language. Larger radii do not exist in Grove chrome; a pill or rounded card is a foreign object.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Spacing has jobs</b>Generous separation between content and controls. Compact spacing inside a control group. Clear empty space around one primary action.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Borders contain, shadows separate</b>A 1px border establishes focus, containment, or refusal. A shadow only lifts a surface off the Grid — soft and subordinate, never a glow.</span></div>
+  </div>
+</section>
+
+<!-- ============================ 06 · SURFACE CLASSES ============================ -->
+<section class="slide">
+  <div class="running"><span>DESIGN LANGUAGE · SURFACE CLASSES</span><span class="fig">05 / 06</span></div>
+
+  <div class="stage full" style="align-items:center; gap:28px; padding:0 48px;">
+    <!-- Slate -->
+    <div style="flex:1;">
+      <div class="sectionlbl">Slate · HUD</div>
+      <div style="height:340px; background:var(--surface); border:1px solid rgba(205,184,216,0.35); border-radius:2px; padding:24px; display:flex; flex-direction:column;">
+        <div style="font-family:var(--f-display); font-size:13px; letter-spacing:0.12em; text-transform:uppercase; color:var(--slate); margin-bottom:16px;">Gallery</div>
+        <div style="flex:1; display:flex; gap:8px;">
+          <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+            <div style="height:64px; background:#26262A;"></div>
+            <div style="height:96px; background:#26262A;"></div>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+            <div style="height:110px; background:#26262A;"></div>
+            <div style="height:50px; background:#26262A;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="note-under" style="margin-top:10px;">OPAQUE FILL · 1PX QUIET BORDER · LG PADDING · SLATE HUE IN HEADER · NEVER DIMS THE GRID CONTEXT</div>
+    </div>
+    <!-- Local editor -->
+    <div style="flex:1;">
+      <div class="sectionlbl">Local editor · beside its source</div>
+      <div style="height:340px; position:relative;">
+        <div style="position:absolute; left:0; top:60px; width:120px; height:120px; background:#1C1C20; border:1px solid var(--hairline);"></div>
+        <div style="position:absolute; left:140px; top:24px; right:0; height:230px; background:var(--surface); border:1px solid #7A3F3A; border-radius:2px; padding:16px; box-shadow:0 8px 24px rgba(0,0,0,0.35);">
+          <div style="font-family:var(--f-ui); font-size:12px; line-height:1.6; color:var(--text); opacity:0.85;">Clarity is the first kind action we can offer our future selves.</div>
+          <div style="position:absolute; bottom:16px; right:16px; display:flex; gap:8px;">
+            <div style="padding:6px 12px; font-family:var(--f-ui); font-size:11px; color:var(--text);">Cancel</div>
+            <div style="padding:6px 12px; font-family:var(--f-ui); font-size:11px; background:var(--interaction); color:var(--paper-ink); border-radius:2px;">Save</div>
+          </div>
+        </div>
+      </div>
+      <div class="note-under" style="margin-top:10px;">COMPACT FRAME · SOURCE STAYS VISIBLE · ROLE-TINTED BORDER (EDIT / VIEW) · MD PADDING · SOFT SHADOW</div>
+    </div>
+    <!-- Menu + inline confirm -->
+    <div style="flex:1;">
+      <div class="sectionlbl">Menu · inline confirm</div>
+      <div style="height:340px; display:flex; flex-direction:column; gap:20px;">
+        <div style="background:var(--surface); border:1px solid var(--hairline); border-radius:2px; padding:6px 0;">
+          <div style="display:flex; justify-content:space-between; padding:7px 14px; font-size:12px;"><span>Open</span><span style="font-family:var(--f-mono); font-size:10px; color:var(--ann);">O</span></div>
+          <div style="display:flex; justify-content:space-between; padding:7px 14px; font-size:12px;"><span>Trace</span><span style="font-family:var(--f-mono); font-size:10px; color:var(--ann);">T</span></div>
+          <div style="height:1px; background:var(--hairline); margin:6px 0;"></div>
+          <div style="display:flex; justify-content:space-between; padding:7px 14px; font-size:12px; color:var(--invalid);"><span>Remove</span><span style="font-family:var(--f-mono); font-size:10px; color:var(--ann);">⌫</span></div>
+        </div>
+        <div style="background:var(--surface); border:1px solid var(--hairline); border-radius:2px; padding:12px 14px;">
+          <div style="font-size:12px; margin-bottom:10px;">Discard unsaved changes?</div>
+          <div style="display:flex; gap:8px; justify-content:flex-end;">
+            <div style="padding:5px 10px; font-size:11px;">Keep editing</div>
+            <div style="padding:5px 10px; font-size:11px; background:var(--invalid); color:var(--paper-ink); border-radius:2px;">Discard</div>
+          </div>
+        </div>
+      </div>
+      <div class="note-under" style="margin-top:10px;">ROWS: LABEL LEFT UI TYPE · QUICK KEY RIGHT MONO · HAIRLINE GROUPS · DESTRUCTIVE ISOLATED — CONFIRMS LIVE INSIDE THE ASKING SURFACE</div>
+    </div>
+  </div>
+  <div class="folio">AN OVERLAY OUTSIDE THESE CLASSES IS A DEFECT, NOT A PATTERN</div>
+</section>
+
+<!-- ============================ 07 · REFUSALS ============================ -->
+<section class="slide">
+  <div class="running"><span>DESIGN LANGUAGE · REFUSALS</span><span class="fig">06 / 06</span></div>
+
+  <div class="stage full" style="padding:0 48px;">
+    <div style="display:grid; grid-template-columns:1fr 1fr; column-gap:64px; row-gap:30px; width:100%;">
+      <div class="ann"><span class="n" style="color:var(--invalid);">×</span><span><b>No scrim, no centered dialog</b>Nothing floats center-screen detached from what it serves. Confirmations are inline in the surface that asked.</span></div>
+      <div class="ann"><span class="n" style="color:var(--invalid);">×</span><span><b>No truncation, no crops</b>Content is never shrunk, clipped, or ellipsized to fit a container. Collections keep complete frames; editions paginate.</span></div>
+      <div class="ann"><span class="n" style="color:var(--invalid);">×</span><span><b>No card-ification</b>The Grid is not a card layout. Not every surface is a card, a pill, or a tile; persistent chrome does not compensate for missing behavior.</span></div>
+      <div class="ann"><span class="n" style="color:var(--invalid);">×</span><span><b>No invented accents</b>A screen with a new color is a screen that skipped the role table.</span></div>
+      <div class="ann"><span class="n" style="color:var(--invalid);">×</span><span><b>No system vocabulary in copy</b>One architectural noun in user-visible copy fails review. A label names what a person can do — or says nothing.</span></div>
+      <div class="ann"><span class="n" style="color:var(--invalid);">×</span><span><b>No meaning that lives only in motion</b>The settled frame carries the same information as the transition. Reduced motion swaps animation for instant state at identical thresholds.</span></div>
+    </div>
+  </div>
+  <div class="folio">END · DESIGN LANGUAGE</div>
+</section>
+
+</body>
+</html>

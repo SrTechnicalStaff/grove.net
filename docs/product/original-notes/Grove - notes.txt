@@ -1,0 +1,6 @@
+08.05 13:37
+Grove - notes
+Notes are quick methods of jotting down information.
+Creating a note on canvas should be simple and seamless. One action to complete. 
+Notes should completely embody the world model of a sticky note in physical reality, and emulate that in its behavior on grid.
+

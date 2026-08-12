@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Quick Note</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/catalogue.css">
+<style>
+  /* ---- deck-local: the Quick Note fixed capture surface ---- */
+
+  .qn {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.35);
+  }
+
+  .qn-head {
+    padding: 16px 20px 12px;
+    font-family: var(--f-display);
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+
+  .composer {
+    margin: 0 16px;
+    background: #1A1A1E;
+    border: 1px solid var(--interaction);
+    border-radius: var(--r);
+    padding: 14px 16px;
+    font-family: var(--f-ui);
+    color: var(--text);
+    line-height: 1.55;
+  }
+
+  .composer.idle { border-color: rgba(234,234,234,0.16); }
+
+  .caret {
+    display: inline-block;
+    width: 2px; height: 1.05em;
+    background: var(--interaction);
+    vertical-align: -0.15em;
+    margin-left: 1px;
+  }
+
+  .keyhints {
+    margin: 8px 16px 0;
+    display: flex;
+    gap: 18px;
+    font-family: var(--f-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.04em;
+    color: rgba(234,234,234,0.42);
+    white-space: nowrap;
+  }
+  .keyhints .kh b { font-weight: 500; color: rgba(234,234,234,0.60); }
+
+  .feed {
+    margin: 18px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+  }
+
+  .fitem {
+    background: #19191C;
+    border: 1px solid rgba(234,234,234,0.07);
+    border-radius: var(--r);
+    padding: 10px 14px 12px;
+  }
+
+  .fmeta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+
+  .fstamp {
+    font-family: var(--f-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.07em;
+    color: rgba(234,234,234,0.40);
+  }
+
+  .facts {
+    display: flex;
+    gap: 14px;
+    font-family: var(--f-ui);
+    font-size: 10.5px;
+    color: rgba(234,234,234,0.42);
+  }
+
+  .ftext {
+    font-family: var(--f-ui);
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: rgba(234,234,234,0.86);
+  }
+
+  .btnrow { display: flex; gap: 8px; justify-content: flex-end; }
+  .btn {
+    padding: 6px 14px;
+    font-family: var(--f-ui);
+    font-size: 11.5px;
+    border-radius: var(--r);
+    color: var(--text);
+  }
+  .btn.primary { background: var(--interaction); color: var(--paper-ink); font-weight: 500; }
+  .btn.quiet { color: rgba(234,234,234,0.75); }
+
+  .sectionlbl {
+    font-family: var(--f-mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.24em; text-transform: uppercase; color: var(--ann);
+    margin-bottom: 12px;
+  }
+
+  .reason {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    line-height: 1.7;
+    letter-spacing: 0.02em;
+    color: var(--ann);
+    margin-top: 10px;
+  }
+
+  /* grey-box Grid context context (allowed for context only) */
+  .ws {
+    position: relative;
+    background: var(--canvas);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r);
+    background-image:
+      linear-gradient(var(--grid-major) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-major) 1px, transparent 1px);
+    background-size: 56px 56px;
+    overflow: hidden;
+  }
+  .ws .memo {
+    position: absolute;
+    background: #1C1C20;
+    border: 1px solid rgba(234,234,234,0.10);
+    border-radius: var(--r);
+    padding: 8px 10px;
+    font-family: var(--f-ui);
+    font-size: 9px;
+    line-height: 1.5;
+    color: rgba(234,234,234,0.70);
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================ 01 · COVER ============================ -->
+<section class="slide cover">
+  <div class="running"><span>GROVE · DESIGN CATALOGUE</span><span class="fig">03</span></div>
+  <div class="plane">INFORMATION PLANE · FIXED CAPTURE</div>
+  <h1>Quick<br>Note</h1>
+  <div class="rule"></div>
+  <div class="scope">
+    The capture feed — several thoughts recorded before any organizing.
+    Composer · Session feed · Key grammar · Durable Memories · Refusals
+  </div>
+  <div class="folio">SOURCE: WIREFRAME STATE CONTRACT · DESIGN.MD</div>
+</section>
+
+<!-- ============================ 02 · ANATOMY ============================ -->
+<section class="slide">
+  <div class="running"><span>QUICK NOTE · ANATOMY</span><span class="fig">01 / 05</span></div>
+
+  <div class="stage">
+    <div class="qn" style="width:480px; height:510px;">
+      <div class="qn-head">Quick Note</div>
+
+      <div class="composer" style="font-size:17px;">
+        Pricing page idea — lead with the yearly plan and show the
+        monthly cost beside it, so the saving is visible without
+        a calculator.<span class="caret"></span>
+      </div>
+      <div class="keyhints">
+        <span class="kh"><b>Enter</b> line break</span>
+        <span class="kh"><b>Shift+Enter</b> save · next note</span>
+        <span class="kh"><b>Ctrl+Enter</b> save · actions</span>
+      </div>
+
+      <div class="feed">
+        <div class="fitem">
+          <div class="fmeta"><span class="fstamp">10:42 AM</span>
+            <span class="facts"><span>Edit</span><span>Discard</span></span></div>
+          <div class="ftext">Met with Jamie — discussed launch timing and messaging.
+            Align on audience and core benefit before the next review.</div>
+        </div>
+        <div class="fitem">
+          <div class="fmeta"><span class="fstamp">10:18 AM</span>
+            <span class="facts"><span>Edit</span><span>Discard</span></span></div>
+          <div class="ftext">Idea: a simple daily checkpoint to record wins and
+            unblockers. Keep it under sixty seconds.</div>
+        </div>
+        <div class="fitem">
+          <div class="fmeta"><span class="fstamp">9:47 AM</span>
+            <span class="facts"><span>Edit</span><span>Discard</span></span></div>
+          <div class="ftext">Research: behavior change frameworks. Focus on tiny
+            habits and consistency loops.</div>
+        </div>
+      </div>
+
+      <div class="mark" style="top:16px; left:118px;">1</div>
+      <div class="mark" style="top:76px; right:-9px;">2</div>
+      <div class="mark" style="top:185px; left:196px;">3</div>
+      <div class="mark" style="top:236px; right:-9px;">4</div>
+      <div class="mark" style="top:330px; left:-9px;">5</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Restrained identity</b>Surface title in display type at label scale. The name is the smallest claim on the page; input is the point.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Composer first, largest</b>Multiline, content-first, caret visible, interaction-hue focus border. The largest type on the surface is the thought being typed — never chrome.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Quiet key grammar</b>Mono hints at reduced ink sit under the composer. They inform without competing with content.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Complete saved Notes</b>The session feed shows full multiline text in UI type. No one-line previews — reading a Note never requires opening it.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Fixed, not beside-source</b>Opaque fill, quiet border, no role-tinted edge. A fixed capture surface reads differently from a local editor anchored to a source.</span></div>
+  </div>
+  <div class="folio">TIMESTAMPS IN QUIET MONO · EDIT / DISCARD PER ITEM</div>
+</section>
+
+<!-- ============================ 03 · KEY GRAMMAR ============================ -->
+<section class="slide">
+  <div class="running"><span>QUICK NOTE · KEY GRAMMAR</span><span class="fig">02 / 05</span></div>
+
+  <div class="stage">
+    <div style="width:640px; position:relative;">
+      <div class="qn" style="width:640px; padding-bottom:20px;">
+        <div class="qn-head">Quick Note</div>
+        <div class="composer" style="font-size:19px; line-height:1.6;">
+          Follow up with the design team on the empty state.<br>
+          Two candidates so far — pick one before Friday.<span class="caret"></span>
+        </div>
+        <div class="keyhints" style="font-size:10.5px; gap:26px; margin-top:10px;">
+          <span class="kh"><b>Enter</b> line break</span>
+          <span class="kh"><b>Shift+Enter</b> save · next note</span>
+          <span class="kh"><b>Ctrl+Enter</b> save · actions</span>
+        </div>
+        <div class="mark" style="bottom:-9px; left:60px;">1</div>
+        <div class="mark" style="bottom:-9px; left:236px;">2</div>
+        <div class="mark" style="bottom:-9px; left:452px;">3</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Enter — line break</b>The default key extends the thought. A note is multiline by nature; committing it is never an accident of typing.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Shift+Enter — save, start next</b>One chord commits the Note and returns an empty composer. The hands never leave the keyboard between thoughts.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Ctrl+Enter — save, then act</b>Commits the Note and surfaces its follow-up actions. Acting on a thought is opt-in, one chord away — never forced.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Momentum owns the keys</b>Every chord ends with the composer ready again. Capture is a stream of entries, so the key grammar optimizes the next entry, not the current one's ceremony.</span></div>
+  </div>
+  <div class="folio">HINTS RENDERED IN PRODUCT · MONO · REDUCED INK</div>
+</section>
+
+<!-- ============================ 04 · FEED STATES ============================ -->
+<section class="slide">
+  <div class="running"><span>QUICK NOTE · FEED STATES</span><span class="fig">03 / 05</span></div>
+
+  <div class="stage">
+    <div class="qn" style="width:480px; height:455px;">
+      <div class="qn-head">Quick Note</div>
+
+      <div class="composer" style="font-size:16px;">
+        Met with Jamie — discussed launch timing and messaging.
+        Align on audience and core benefit before the next review.
+        Bring the positioning doc.<span class="caret"></span>
+        <div class="btnrow" style="margin-top:14px;">
+          <div class="btn quiet">Cancel</div>
+          <div class="btn primary">Save</div>
+        </div>
+      </div>
+      <div class="keyhints">
+        <span class="kh"><b>Ctrl+Enter</b> save</span>
+        <span class="kh"><b>Esc</b> cancel</span>
+      </div>
+
+      <div class="feed">
+        <div class="fitem">
+          <div class="fmeta"><span class="fstamp">10:18 AM</span>
+            <span class="facts"><span>Edit</span><span>Discard</span></span></div>
+          <div class="ftext">Idea: a simple daily checkpoint to record wins and
+            unblockers. Keep it under sixty seconds.</div>
+        </div>
+        <div class="fitem">
+          <div class="fmeta"><span class="fstamp">9:47 AM</span>
+            <span class="facts"><span>Edit</span><span>Discard</span></span></div>
+          <div class="ftext">Research: behavior change frameworks. Focus on tiny
+            habits and consistency loops.</div>
+        </div>
+      </div>
+
+      <div class="mark" style="top:96px; right:-9px;">1</div>
+      <div class="mark" style="top:196px; left:360px;">2</div>
+      <div class="mark" style="top:330px; right:-9px;">3</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Edit returns to the composer</b>Choosing Edit on a saved Note moves its full text back into the composer. There is one editing place on this surface, and it is the composer.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Save updates, never duplicates</b>Save commits the change to the same Memory. Cancel returns the Note to the feed unchanged. A second copy is never created.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Discard is surgical</b>Discard removes only its own item. Other saved Notes and the composer draft are untouched — there is no bulk destructive path here.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Explicit exits while editing</b>Save and Cancel are visible; escape cancels only the active edit. Saved Memories are never at risk from dismissal.</span></div>
+  </div>
+  <div class="folio">ONE COMPOSER · SAME MEMORY · NEVER A SECOND</div>
+</section>
+
+<!-- ============================ 05 · SESSION CLOSE ============================ -->
+<section class="slide">
+  <div class="running"><span>QUICK NOTE · SESSION CLOSE</span><span class="fig">04 / 05</span></div>
+
+  <div class="stage" style="gap:36px; align-items:center;">
+    <div style="width:400px;">
+      <div class="sectionlbl">At close · three saved, composer empty</div>
+      <div class="qn" style="width:400px; height:440px;">
+        <div class="qn-head">Quick Note</div>
+        <div class="composer idle" style="font-size:15px; min-height:56px; color:rgba(234,234,234,0.35);">
+          <span class="caret" style="background:rgba(234,234,234,0.35);"></span>
+        </div>
+        <div class="feed">
+          <div class="fitem">
+            <div class="fmeta"><span class="fstamp">10:42 AM</span>
+              <span class="facts"><span>Edit</span><span>Discard</span></span></div>
+            <div class="ftext" style="font-size:11px;">Met with Jamie — discussed launch timing and messaging. Align on audience and core benefit before the next review.</div>
+          </div>
+          <div class="fitem">
+            <div class="fmeta"><span class="fstamp">10:18 AM</span>
+              <span class="facts"><span>Edit</span><span>Discard</span></span></div>
+            <div class="ftext" style="font-size:11px;">Idea: a simple daily checkpoint to record wins and unblockers. Keep it under sixty seconds.</div>
+          </div>
+          <div class="fitem">
+            <div class="fmeta"><span class="fstamp">9:47 AM</span>
+              <span class="facts"><span>Edit</span><span>Discard</span></span></div>
+            <div class="ftext" style="font-size:11px;">Research: behavior change frameworks. Focus on tiny habits and consistency loops.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:380px;">
+      <div class="sectionlbl">After close · the Memories persist</div>
+      <div class="ws" style="width:380px; height:440px;">
+        <div class="memo" style="top:52px; left:36px; width:180px;">Met with Jamie — discussed launch timing and messaging. Align on audience and core benefit before the next review.</div>
+        <div class="memo" style="top:180px; left:120px; width:170px;">Idea: a simple daily checkpoint to record wins and unblockers. Keep it under sixty seconds.</div>
+        <div class="memo" style="top:300px; left:56px; width:170px;">Research: behavior change frameworks. Focus on tiny habits and consistency loops.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Durable without a destination</b>Each saved Note is already a Memory the moment it is saved. Nothing about closing decides whether the work survives.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Close clears only transients</b>Closing discards the empty composer state and the session feed view — never a saved Memory.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Capture never owns placement</b>Where a Memory goes later — a Layer, a Document, an Anchor — is an explicit action taken afterward, never a question asked during capture.</span></div>
+  </div>
+  <div class="folio">SAVED MEANS SAVED · PLACEMENT IS A LATER, EXPLICIT ACT</div>
+</section>
+
+<!-- ============================ 06 · REFUSALS ============================ -->
+<section class="slide">
+  <div class="running"><span>QUICK NOTE · REFUSALS</span><span class="fig">05 / 05</span></div>
+
+  <div class="stage full">
+    <div style="display:grid; grid-template-columns:1fr 1fr; column-gap:48px; row-gap:26px; width:100%;">
+
+      <!-- A · ellipsized row -->
+      <div>
+        <span class="verdict refuse" style="position:static;">✕ &nbsp;ONE-LINE PREVIEW ROWS</span>
+        <div class="panel" style="margin-top:10px; padding:12px 14px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="ftext" style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Met with Jamie — discussed launch timing and mess…</div>
+            <div style="padding:2px 8px; border:1px solid var(--hairline); border-radius:2px; font-family:var(--f-ui); font-size:9.5px; color:rgba(234,234,234,0.55);">3 items</div>
+            <div style="padding:2px 8px; border:1px solid var(--hairline); border-radius:2px; font-family:var(--f-ui); font-size:9.5px; color:rgba(234,234,234,0.55);">Work</div>
+          </div>
+        </div>
+        <div class="reason">A ROW THAT HIDES ITS OWN TEXT MAKES READING A SECOND STEP. A SAVED NOTE STAYS COMPLETE IN THE FEED — CANON FORBIDS TRUNCATION.</div>
+      </div>
+
+      <!-- B · centered dialog + scrim -->
+      <div>
+        <span class="verdict refuse" style="position:static;">✕ &nbsp;CENTERED DIALOG WITH SCRIM</span>
+        <div class="panel" style="margin-top:10px; height:120px; position:relative; overflow:hidden; background:var(--canvas);">
+          <div style="position:absolute; inset:0; background:rgba(0,0,0,0.55);"></div>
+          <div style="position:absolute; top:26px; left:50%; transform:translateX(-50%); width:220px; background:var(--surface); border:1px solid var(--hairline); border-radius:2px; padding:12px 14px;">
+            <div style="font-family:var(--f-ui); font-size:11.5px; margin-bottom:10px;">Save this note?</div>
+            <div class="btnrow"><div class="btn quiet" style="font-size:10.5px; padding:4px 10px;">Cancel</div><div class="btn primary" style="font-size:10.5px; padding:4px 10px;">Save</div></div>
+          </div>
+        </div>
+        <div class="reason">NOTHING FLOATS CENTER-SCREEN BEHIND A SCRIM — GROVE HAS NO MODAL. SAVING IS A KEYSTROKE IN THE COMPOSER, NOT AN INTERRUPTION.</div>
+      </div>
+
+      <!-- C · two filled primaries -->
+      <div>
+        <span class="verdict refuse" style="position:static;">✕ &nbsp;TWO COMPETING PRIMARY BUTTONS</span>
+        <div class="panel" style="margin-top:10px; padding:12px 14px;">
+          <div class="ftext" style="margin-bottom:10px;">Idea: a simple daily checkpoint to record wins and unblockers.</div>
+          <div class="btnrow">
+            <div class="btn primary" style="font-size:10.5px;">Save</div>
+            <div class="btn primary" style="font-size:10.5px;">Save and close</div>
+          </div>
+        </div>
+        <div class="reason">TWO FILLED BUTTONS ASK THE PERSON TO RANK THEM. ONE ACTION IS PRIMARY; EVERY OTHER EXIT IS QUIET TEXT.</div>
+      </div>
+
+      <!-- D · destination picker -->
+      <div>
+        <span class="verdict refuse" style="position:static;">✕ &nbsp;DESTINATION PICKER INSIDE CAPTURE</span>
+        <div class="panel" style="margin-top:10px; padding:12px 14px;">
+          <div class="ftext" style="margin-bottom:10px;">Research: behavior change frameworks. Focus on tiny habits.</div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <div style="flex:1; border:1px solid var(--hairline); border-radius:2px; padding:6px 10px; font-family:var(--f-ui); font-size:10.5px; color:rgba(234,234,234,0.65); display:flex; justify-content:space-between;"><span>Save to: Ideas</span><span style="color:rgba(234,234,234,0.4);">▾</span></div>
+            <div class="btn primary" style="font-size:10.5px;">Save</div>
+          </div>
+        </div>
+        <div class="reason">CAPTURE NEVER ASKS WHERE A THOUGHT BELONGS. A SAVED NOTE IS DURABLE WITH NO DESTINATION; PLACEMENT IS A LATER, EXPLICIT ACT.</div>
+      </div>
+
+    </div>
+  </div>
+  <div class="folio">END · QUICK NOTE</div>
+</section>
+
+</body>
+</html>

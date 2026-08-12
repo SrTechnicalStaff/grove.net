@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Slate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/catalogue.css">
+<style>
+  /* deck-local helpers */
+  .scene { position: relative; width: 100%; height: 100%; }
+
+  /* dim Grid context */
+  .ws {
+    position: absolute;
+    background: var(--canvas);
+    background-image:
+      linear-gradient(var(--grid-major) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-major) 1px, transparent 1px);
+    background-size: 56px 56px;
+    background-position: 12px 10px;
+  }
+  .viewport {
+    position: absolute;
+    border: 1px solid var(--hairline);
+    border-radius: var(--r);
+    overflow: hidden;
+  }
+  /* dim placed Grid context content (context only, never the subject) */
+  .prop { position: absolute; background: #1A1A1D; border: 1px solid var(--hairline); border-radius: var(--r); }
+  .prop .pline { height: 3px; background: rgba(234,234,234,0.10); margin: 10px 12px 0; }
+  .camchip {
+    position: absolute;
+    font-family: var(--f-mono); font-size: 9px; font-weight: 500;
+    letter-spacing: 0.08em; color: rgba(234,234,234,0.35);
+  }
+
+  /* the slate class */
+  .slate-frame {
+    position: absolute;
+    background: var(--surface);
+    border: 1px solid rgba(205,184,216,0.28);
+    border-radius: var(--r);
+    padding: 24px;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .slate-hd { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex: none; }
+  .idn {
+    font-family: var(--f-display); font-size: 16px; font-weight: 500;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--slate);
+    line-height: 1.35;
+  }
+  .hostbtns { display: flex; gap: 10px; }
+  .hbtn {
+    font-family: var(--f-ui); font-size: 11.5px; color: rgba(234,234,234,0.85);
+    border: 1px solid var(--hairline); border-radius: var(--r); padding: 5px 14px;
+  }
+
+  /* memory cards — content first, no title rows */
+  .mcard {
+    background: #1C1C20; border: 1px solid var(--hairline); border-radius: var(--r);
+    padding: 16px;
+    font-family: var(--f-ui); font-size: 13px; line-height: 1.55;
+    color: rgba(234,234,234,0.88);
+  }
+  .meta {
+    font-family: var(--f-mono); font-size: 9px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: rgba(234,234,234,0.42); margin-top: 8px;
+  }
+  /* a Document card is its own front page in miniature */
+  .doc-card { background: var(--paper); color: var(--paper-ink); border-radius: var(--r); padding: 14px; }
+  .doc-title { font-family: var(--f-ui); font-weight: 600; font-size: 12px; line-height: 1.3; margin-bottom: 4px; }
+  .doc-fm { font-family: var(--f-ui); font-size: 8px; color: rgba(26,26,26,0.55); margin-bottom: 8px; }
+  .doc-abs { font-family: var(--f-ui); font-size: 8.5px; line-height: 1.6; color: rgba(26,26,26,0.72); text-align: justify; }
+
+  /* thin scroll track, per pane */
+  .sb { position: absolute; width: 3px; background: rgba(234,234,234,0.06); border-radius: 1px; }
+  .sb .th { position: absolute; left: 0; width: 3px; background: rgba(234,234,234,0.22); border-radius: 1px; }
+
+  /* menu class */
+  .menu {
+    position: absolute; width: 238px;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r);
+    padding: 6px 0;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+    z-index: 3;
+  }
+  .mrow { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; font-family: var(--f-ui); font-size: 12px; color: var(--text); }
+  .mrow.focus { background: rgba(150,182,248,0.10); }
+  .msep { height: 1px; background: var(--hairline); margin: 6px 0; }
+  .gl { width: 32px; height: 18px; border: 1px solid var(--hairline); border-radius: 1px; display: flex; gap: 1px; padding: 1px; }
+  .gl .c { flex: 1; }
+  .gl .c.new { background: rgba(150,182,248,0.80); }
+  .gl .c.occ { background: rgba(205,184,216,0.30); }
+  .dprev { margin: 10px 14px 8px; height: 44px; display: flex; gap: 2px; }
+  .dprev .dcell {
+    flex: 1; border: 1px solid var(--hairline); border-radius: 1px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--f-ui); font-size: 9px; color: rgba(234,234,234,0.5);
+  }
+  .dprev .dcell.new { background: rgba(150,182,248,0.12); border-color: rgba(150,182,248,0.45); }
+
+  /* refusal cells */
+  .rgrid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 48px; row-gap: 32px; width: 100%; }
+  .rcell .rscene { position: relative; height: 200px; border: 1px solid var(--hairline); border-radius: var(--r); overflow: hidden; }
+  .rcap { margin-top: 12px; font-family: var(--f-mono); font-size: 10px; line-height: 1.7; color: var(--ann); letter-spacing: 0.02em; }
+  .rcap .verdict { position: static; display: block; margin-bottom: 4px; }
+
+  .qlbl {
+    font-family: var(--f-mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.24em; text-transform: uppercase; color: var(--ann);
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================ 01 · COVER ============================ -->
+<section class="slide cover">
+  <div class="running"><span>GROVE · DESIGN CATALOGUE · HUD</span><span class="fig">00</span></div>
+  <div class="plane">HUD PLANE · SURFACE CLASS</div>
+  <h1>Slate</h1>
+  <div class="rule"></div>
+  <div class="scope">
+    Class anatomy · Full-width host · Assignment ·
+    Peer panes · Collapse &amp; swap · Refusals
+  </div>
+  <div class="folio">SOURCE: DESIGN.MD · MULTI-SLATE HOST (MH-00…MH-05)</div>
+</section>
+
+<!-- ============================ 02 · CLASS ANATOMY ============================ -->
+<section class="slide">
+  <div class="running"><span>SLATE · CLASS ANATOMY</span><span class="fig">01 / 06</span></div>
+
+  <div class="stage">
+    <div class="scene">
+      <!-- dim Grid context, fully visible behind -->
+      <div class="ws" style="inset:0; border:1px solid var(--hairline); border-radius:2px;"></div>
+      <div class="prop" style="left:16px; top:112px; width:150px; height:96px;"><div class="pline" style="width:70%"></div><div class="pline" style="width:52%"></div><div class="pline" style="width:60%"></div></div>
+      <div class="prop" style="left:148px; top:238px; width:150px; height:98px;"><div class="pline" style="width:64%"></div><div class="pline" style="width:78%"></div></div>
+      <div class="prop" style="left:28px; top:414px; width:164px; height:92px;"><div class="pline" style="width:56%"></div><div class="pline" style="width:44%"></div><div class="pline" style="width:68%"></div></div>
+
+      <!-- the slate -->
+      <div class="slate-frame" style="left:212px; top:10px; right:8px; bottom:10px;">
+        <div class="slate-hd">
+          <div class="idn">Gallery</div>
+          <div class="hbtn">Close</div>
+        </div>
+        <div style="flex:1; display:flex; gap:8px; overflow:hidden;">
+          <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+            <div>
+              <div class="plate cool" style="height:240px; border-radius:2px;"></div>
+              <div class="meta">JPG · 5472 × 3648</div>
+            </div>
+            <div>
+              <div class="plate warm" style="height:158px; border-radius:2px;"></div>
+              <div class="meta">JPG · 3024 × 4032</div>
+            </div>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+            <div>
+              <div class="plate moss" style="height:296px; border-radius:2px;"></div>
+              <div class="meta">GIF · 640 × 360</div>
+            </div>
+            <div>
+              <div class="plate dusk" style="height:86px; border-radius:2px;"></div>
+              <div class="meta">JPG · 2048 × 1365</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- marks -->
+      <div class="mark" style="left:218px; top:262px;">1</div>
+      <div class="mark" style="left:819px; top:150px;">2</div>
+      <div class="mark" style="left:203px; top:1px;">3</div>
+      <div class="mark" style="left:430px; top:546px;">4</div>
+      <div class="mark" style="left:322px; top:29px;">5</div>
+      <div class="mark" style="left:36px; top:36px;">6</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Opaque fill</b>surface #161618 at full opacity. The Grid context reads around the slate, never through it.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>One quiet border</b>A single 1px slate-tinted hairline contains the surface. No glow, no double stroke, no halo.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>2px corner</b>The only radius in Grove chrome. A rounded card here is a foreign object.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>lg padding · 24px</b>Content never touches the frame on any side, and the gutter between columns is the small step, 8px.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Header identity</b>Slate hue #CDB8D8 in display type — the only place the hue appears. Body content stays neutral.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>No scrim</b>The Grid context stays fully lit and legible behind. Dimming would claim a modality the slate does not have.</span></div>
+  </div>
+  <div class="folio">SLATE CLASS · DESIGN.MD SURFACE CLASSES</div>
+</section>
+
+<!-- ============================ 03 · HOST · FULL WIDTH ============================ -->
+<section class="slide">
+  <div class="running"><span>SLATE · HOST · FULL WIDTH</span><span class="fig">02 / 06</span></div>
+
+  <div class="stage">
+    <div class="scene">
+      <div class="viewport" style="inset:0;">
+        <div class="ws" style="inset:0;"></div>
+        <div class="prop" style="left:36px; top:8px; width:150px; height:40px;"><div class="pline" style="width:60%"></div></div>
+        <div class="prop" style="left:600px; top:4px; width:130px; height:46px;"><div class="pline" style="width:52%"></div><div class="pline" style="width:40%"></div></div>
+        <div class="prop" style="left:250px; top:534px; width:170px; height:40px;"><div class="pline" style="width:64%"></div></div>
+        <div class="camchip" style="left:16px; bottom:12px;">1240, −380 · 100%</div>
+
+        <!-- full-width slate, fixed to the viewport -->
+        <div class="slate-frame" style="left:24px; right:24px; top:64px; bottom:56px;">
+          <div class="slate-hd">
+            <div class="idn">Memories</div>
+            <div class="hostbtns"><div class="hbtn">Add</div><div class="hbtn">Close</div></div>
+          </div>
+          <div style="flex:1; display:flex; gap:16px; overflow:hidden;">
+            <div style="flex:1; display:flex; flex-direction:column; gap:12px; min-width:0;">
+              <div>
+                <div class="mcard">What worked: the demo-first pitch, and cutting the setup slide entirely. What did not: the follow-up note went out three days late, after the room had cooled.</div>
+                <div class="meta">Note · May 12</div>
+              </div>
+              <div>
+                <div class="plate cool" style="height:128px; border-radius:2px;"></div>
+                <div class="meta">JPG · 5472 × 3648</div>
+              </div>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; gap:12px; min-width:0;">
+              <div>
+                <div class="mcard">Discussed launch timing and messaging with Jamie. Agree on the audience and the core benefit before the next review — everything else can wait until then.</div>
+                <div class="meta">Note · May 14</div>
+              </div>
+              <div>
+                <div class="plate moss" style="height:140px; border-radius:2px;"></div>
+                <div class="meta">GIF · 640 × 360</div>
+              </div>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; gap:12px; min-width:0;">
+              <div>
+                <div class="doc-card">
+                  <div class="doc-title">Shoreline Erosion Survey</div>
+                  <div class="doc-fm">R. Okafor · Field Team North · April 2025</div>
+                  <div class="doc-abs">Seasonal observation of the north shoreline shows erosion concentrating at the tide line after winter storms. We compare bank profiles from four field visits and note where planting held the slope.</div>
+                </div>
+                <div class="meta">Document · Apr 28</div>
+              </div>
+              <div>
+                <div class="plate warm" style="height:170px; border-radius:2px;"></div>
+                <div class="meta">JPG · 3024 × 4032</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- marks -->
+      <div class="mark" style="left:404px; top:55px;">1</div>
+      <div class="mark" style="left:150px; top:538px;">2</div>
+      <div class="mark" style="left:436px; top:538px;">3</div>
+      <div class="mark" style="left:740px; top:44px;">4</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Default is full width</b>MH-00: one open slate takes the whole strip. Half width exists only when a second peer is assigned — never as a default.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Camera-blind</b>Fixed to the viewport. Panning or zooming changes the scene behind; the slate never moves, scales, or reflows with the camera.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>The Grid never resizes</b>Opening a slate overlays the Grid; it does not squeeze it into a smaller viewport. Closing restores nothing, because nothing moved.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Host commands</b>Add assigns a second slate; Close returns to the invoking surface. Product verbs only, in the header — no chrome elsewhere.</span></div>
+  </div>
+  <div class="folio">MH-00 · MULTI-SLATE HOST</div>
+</section>
+
+<!-- ============================ 04 · ASSIGNMENT MENU ============================ -->
+<section class="slide">
+  <div class="running"><span>SLATE · ASSIGNMENT</span><span class="fig">03 / 06</span></div>
+
+  <div class="stage">
+    <div class="scene">
+      <div class="viewport" style="inset:0;">
+        <div class="ws" style="inset:0;"></div>
+        <div class="camchip" style="left:16px; bottom:12px;">1240, −380 · 100%</div>
+
+        <div class="slate-frame" style="left:24px; right:24px; top:64px; bottom:56px;">
+          <div class="slate-hd">
+            <div class="idn">Memories</div>
+            <div class="hostbtns"><div class="hbtn" style="border-color:rgba(150,182,248,0.55);">Add</div><div class="hbtn">Close</div></div>
+          </div>
+          <div style="flex:1; display:flex; gap:16px; overflow:hidden;">
+            <div style="flex:1; display:flex; flex-direction:column; gap:12px; min-width:0;">
+              <div>
+                <div class="mcard">What worked: the demo-first pitch, and cutting the setup slide entirely. What did not: the follow-up note went out three days late, after the room had cooled.</div>
+                <div class="meta">Note · May 12</div>
+              </div>
+              <div>
+                <div class="plate cool" style="height:128px; border-radius:2px;"></div>
+                <div class="meta">JPG · 5472 × 3648</div>
+              </div>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; gap:12px; min-width:0;">
+              <div>
+                <div class="plate dusk" style="height:198px; border-radius:2px;"></div>
+                <div class="meta">JPG · 3024 × 4032</div>
+              </div>
+              <div>
+                <div class="mcard">Golden hour along the ridge path — look for the leading lines and the long shadows.</div>
+                <div class="meta">Note · May 30</div>
+              </div>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; gap:12px; min-width:0;">
+              <div>
+                <div class="plate moss" style="height:180px; border-radius:2px;"></div>
+                <div class="meta">GIF · 640 × 360</div>
+              </div>
+              <div>
+                <div class="plate warm" style="height:106px; border-radius:2px;"></div>
+                <div class="meta">JPG · 2048 × 1365</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- assignment menu, anchored to Add -->
+        <div class="menu" style="left:480px; top:118px;">
+          <div class="mrow"><span>Left</span><div class="gl"><div class="c new"></div><div class="c occ"></div></div></div>
+          <div class="mrow focus"><span>Right</span><div class="gl"><div class="c occ"></div><div class="c new"></div></div></div>
+          <div class="mrow"><span>Full</span><div class="gl"><div class="c new"></div></div></div>
+          <div class="msep"></div>
+          <div class="dprev">
+            <div class="dcell">Memories</div>
+            <div class="dcell new"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- marks -->
+      <div class="mark" style="left:686px; top:70px;">1</div>
+      <div class="mark" style="left:458px; top:142px;">2</div>
+      <div class="mark" style="left:722px; top:174px;">3</div>
+      <div class="mark" style="left:458px; top:250px;">4</div>
+      <div class="mark" style="left:760px; top:330px;">5</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Explicit entry</b>MH-01: Add is the only way a second slate arrives. Nothing is auto-assigned, nothing appears on hover.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Three placements</b>Left · Right · Full is the entire choice. Menu class anatomy: label left in UI type, placement glyph right.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Occupancy is shown</b>The glyph marks where the new slate lands (interaction) against what already sits there (slate hue). No blind commit.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Divider preview</b>The resulting split is previewed before commit — the occupied side keeps its name; the new side reads as arriving.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Cancel changes nothing</b>Esc or a click outside dismisses. An occupied side is never silently replaced; replacement is always this explicit choice.</span></div>
+  </div>
+  <div class="folio">MH-01 · ASSIGNMENT · NO SCRIM BEHIND THE MENU</div>
+</section>
+
+<!-- ============================ 05 · TWO PEER PANES ============================ -->
+<section class="slide">
+  <div class="running"><span>SLATE · PEER PANES</span><span class="fig">04 / 06</span></div>
+
+  <div class="stage">
+    <div class="scene">
+      <div class="viewport" style="inset:0;">
+        <div class="ws" style="inset:0;"></div>
+
+        <!-- left pane · Memories · inactive -->
+        <div class="slate-frame" style="left:20px; top:20px; bottom:20px; width:390px; border-color:var(--hairline);">
+          <div class="slate-hd">
+            <div class="idn" style="color:rgba(205,184,216,0.55);">Memories</div>
+            <div class="hbtn" style="color:rgba(234,234,234,0.55);">Close</div>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; gap:12px; overflow:hidden; padding-right:14px;">
+            <div>
+              <div class="mcard">What worked: the demo-first pitch, and cutting the setup slide entirely. What did not: the follow-up note went out three days late.</div>
+              <div class="meta">Note · May 12</div>
+            </div>
+            <div>
+              <div class="mcard">Discussed launch timing and messaging with Jamie. Agree on the audience and the core benefit before the next review.</div>
+              <div class="meta">Note · May 14</div>
+            </div>
+            <div>
+              <div class="plate warm" style="height:200px; border-radius:2px;"></div>
+              <div class="meta">JPG · 3024 × 4032</div>
+            </div>
+          </div>
+          <div class="sb" style="top:70px; bottom:24px; right:10px;"><div class="th" style="top:0; height:48%;"></div></div>
+        </div>
+
+        <!-- right pane · Gallery · active -->
+        <div class="slate-frame" style="right:20px; top:20px; bottom:20px; width:390px; border-color:rgba(150,182,248,0.55);">
+          <div class="slate-hd">
+            <div class="idn">Gallery</div>
+            <div class="hbtn">Close</div>
+          </div>
+          <div style="flex:1; display:flex; gap:8px; overflow:hidden; padding-right:14px;">
+            <div style="flex:1; display:flex; flex-direction:column; gap:8px; min-width:0;">
+              <div>
+                <div class="plate cool" style="height:150px; border-radius:2px;"></div>
+                <div class="meta">JPG · 5472 × 3648</div>
+              </div>
+              <div style="margin:4px 4px 0;">
+                <div class="plate dusk" style="height:212px; border-radius:2px; outline:1px solid var(--interaction); outline-offset:4px;"></div>
+                <div class="meta" style="color:rgba(234,234,234,0.80);">JPG · 3024 × 4032</div>
+              </div>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; gap:8px; min-width:0;">
+              <div>
+                <div class="plate moss" style="height:214px; border-radius:2px;"></div>
+                <div class="meta">GIF · 640 × 360</div>
+              </div>
+              <div>
+                <div class="plate warm" style="height:160px; border-radius:2px;"></div>
+                <div class="meta">JPG · 2048 × 1365</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- marks -->
+      <div class="mark" style="left:409px; top:250px;">1</div>
+      <div class="mark" style="left:150px; top:34px;">2</div>
+      <div class="mark" style="left:806px; top:11px;">3</div>
+      <div class="mark" style="left:604px; top:364px;">4</div>
+      <div class="mark" style="left:409px; top:494px;">5</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Peers, not primary/secondary</b>Deliberate divergence from HIG split view: neither pane owns the other. No master list drives a detail view; the gap between them shows live Grid context.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>State is per pane</b>Identity, scroll, selection, filter, draft, playback — each pane keeps its own. Nothing is shared or proxied across the divider.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Focus is structural</b>Active pane: interaction border and full header ink. Inactive: hairline and reduced ink. A grayscale read still finds focus.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Selection stays local</b>Interaction outline outside the frame, in the active pane only. The image itself is never restyled.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Command routing</b>Assignment and close belong to the host; scroll, selection, and content verbs go to the active pane. One rule, no exceptions.</span></div>
+  </div>
+  <div class="folio">MH-02 · TWO PEER PANES</div>
+</section>
+
+<!-- ============================ 06 · COLLAPSE · SWAP ============================ -->
+<section class="slide">
+  <div class="running"><span>SLATE · COLLAPSE · SWAP</span><span class="fig">05 / 06</span></div>
+
+  <div class="stage">
+    <div class="scene">
+      <!-- narrow viewport: one pane expands, the other becomes a rail -->
+      <div class="viewport" style="left:0; top:8px; width:400px; height:560px;">
+        <div class="ws" style="inset:0;"></div>
+        <div class="slate-frame" style="left:12px; top:12px; bottom:12px; right:70px;">
+          <div class="slate-hd">
+            <div class="idn">Memories</div>
+            <div class="hbtn">Close</div>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; gap:12px; overflow:hidden; padding-right:14px;">
+            <div>
+              <div class="mcard">What worked: the demo-first pitch, and cutting the setup slide entirely. What did not: the follow-up note went out three days late.</div>
+              <div class="meta">Note · May 12</div>
+            </div>
+            <div>
+              <div class="mcard">Discussed launch timing and messaging with Jamie. Agree on the audience and the core benefit before the next review.</div>
+              <div class="meta">Note · May 14</div>
+            </div>
+            <div>
+              <div class="plate cool" style="height:190px; border-radius:2px;"></div>
+              <div class="meta">JPG · 5472 × 3648</div>
+            </div>
+          </div>
+          <div class="sb" style="top:70px; bottom:24px; right:10px;"><div class="th" style="top:0; height:52%;"></div></div>
+        </div>
+        <!-- preserved rail -->
+        <div class="slate-frame" style="right:12px; top:12px; bottom:12px; width:46px; padding:16px 0; align-items:center;">
+          <div class="idn" style="writing-mode:vertical-rl; font-size:12px; letter-spacing:0.22em; color:rgba(205,184,216,0.75);">Gallery</div>
+        </div>
+      </div>
+
+      <!-- swap: identity and state move together -->
+      <div style="position:absolute; left:452px; top:56px; width:384px;">
+        <div class="qlbl" style="margin-bottom:14px;">MH-05 · SWAP</div>
+        <div class="viewport" style="position:relative; width:384px; height:196px;">
+          <div class="ws" style="inset:0;"></div>
+          <div class="slate-frame" style="left:14px; top:14px; bottom:14px; width:170px; padding:14px;">
+            <div class="idn" style="font-size:11px;">Memories</div>
+            <div style="margin-top:12px;">
+              <div style="height:6px; background:rgba(234,234,234,0.12); margin-bottom:6px;"></div>
+              <div style="height:6px; background:rgba(234,234,234,0.12); width:74%; margin-bottom:14px;"></div>
+              <div style="height:6px; background:rgba(234,234,234,0.12); margin-bottom:6px;"></div>
+              <div style="height:6px; background:rgba(234,234,234,0.12); width:58%;"></div>
+            </div>
+          </div>
+          <div class="slate-frame" style="right:14px; top:14px; bottom:14px; width:170px; padding:14px; border-color:rgba(150,182,248,0.55);">
+            <div class="idn" style="font-size:11px;">Gallery</div>
+            <div style="margin-top:12px; display:flex; gap:8px;">
+              <div class="plate cool" style="width:60px; height:48px; outline:1px solid var(--interaction); outline-offset:3px;"></div>
+              <div class="plate moss" style="width:60px; height:48px;"></div>
+            </div>
+          </div>
+        </div>
+        <div style="margin:14px 0; text-align:center; font-family:var(--f-mono); font-size:14px; color:var(--ann-line); letter-spacing:0.4em;">↓ ↑</div>
+        <div class="viewport" style="position:relative; width:384px; height:196px;">
+          <div class="ws" style="inset:0;"></div>
+          <div class="slate-frame" style="left:14px; top:14px; bottom:14px; width:170px; padding:14px; border-color:rgba(150,182,248,0.55);">
+            <div class="idn" style="font-size:11px;">Gallery</div>
+            <div style="margin-top:12px; display:flex; gap:8px;">
+              <div class="plate cool" style="width:60px; height:48px; outline:1px solid var(--interaction); outline-offset:3px;"></div>
+              <div class="plate moss" style="width:60px; height:48px;"></div>
+            </div>
+          </div>
+          <div class="slate-frame" style="right:14px; top:14px; bottom:14px; width:170px; padding:14px;">
+            <div class="idn" style="font-size:11px;">Memories</div>
+            <div style="margin-top:12px;">
+              <div style="height:6px; background:rgba(234,234,234,0.12); margin-bottom:6px;"></div>
+              <div style="height:6px; background:rgba(234,234,234,0.12); width:74%; margin-bottom:14px;"></div>
+              <div style="height:6px; background:rgba(234,234,234,0.12); margin-bottom:6px;"></div>
+              <div style="height:6px; background:rgba(234,234,234,0.12); width:58%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- marks -->
+      <div class="mark" style="left:344px; top:280px;">1</div>
+      <div class="mark" style="left:150px; top:16px;">2</div>
+      <div class="mark" style="left:446px; top:288px;">3</div>
+      <div class="mark" style="left:306px; top:34px;">4</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Rail, not removal</b>MH-03: below the two-pane minimum, one pane expands and the other parks as a rail. Scroll, selection, filters, and drafts all survive there.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Full measure returns</b>The expanded pane gets the whole width — no squeezed columns, no truncation to keep both visible.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Swap is predictable</b>MH-05: identity and state move together. The selection travels with Gallery to the left slot; nothing resets on either side.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Last close returns</b>MH-04: closing one pane leaves the other exactly as it was. Closing the last returns to the surface that invoked the slate.</span></div>
+  </div>
+  <div class="folio">MH-03 · MH-04 · MH-05</div>
+</section>
+
+<!-- ============================ 07 · REFUSALS ============================ -->
+<section class="slide">
+  <div class="running"><span>SLATE · REFUSALS</span><span class="fig">06 / 06</span></div>
+
+  <div class="stage full" style="align-items:center;">
+    <div class="rgrid">
+
+      <!-- refuse: scrim -->
+      <div class="rcell">
+        <div class="rscene">
+          <div class="ws" style="inset:0;"></div>
+          <div style="position:absolute; inset:0; background:rgba(0,0,0,0.55);"></div>
+          <div class="slate-frame" style="left:130px; right:130px; top:30px; bottom:30px; padding:16px;">
+            <div class="idn" style="font-size:12px;">Memories</div>
+            <div style="margin-top:14px; display:flex; gap:8px;">
+              <div style="flex:1; height:100px; background:#1C1C20; border:1px solid var(--hairline); border-radius:2px;"></div>
+              <div style="flex:1; height:100px; background:#1C1C20; border:1px solid var(--hairline); border-radius:2px;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="rcap">
+          <span class="verdict refuse">NO SCRIM · NO DIMMING</span>
+          A slate is ambient, not modal. The Grid context behind stays fully lit; darkening it claims an interruption the surface does not make.
+        </div>
+      </div>
+
+      <!-- refuse: floats free -->
+      <div class="rcell">
+        <div class="rscene">
+          <div class="ws" style="inset:0;"></div>
+          <div class="slate-frame" style="left:180px; top:44px; width:230px; height:128px; padding:14px; box-shadow:0 16px 40px rgba(0,0,0,0.6);">
+            <div class="idn" style="font-size:12px;">Gallery</div>
+            <div style="margin-top:12px; display:flex; gap:8px;">
+              <div class="plate cool" style="flex:1; height:56px; border-radius:2px;"></div>
+              <div class="plate dusk" style="flex:1; height:56px; border-radius:2px;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="rcap">
+          <span class="verdict refuse">NEVER FLOATS FREE</span>
+          No center-screen dialog, no draggable window. A slate exists only composed by its host: full width, or a Left / Right peer.
+        </div>
+      </div>
+
+      <!-- refuse: image viewer as pane -->
+      <div class="rcell">
+        <div class="rscene">
+          <div class="ws" style="inset:0;"></div>
+          <div class="slate-frame" style="left:14px; top:14px; bottom:14px; width:250px; padding:14px;">
+            <div class="idn" style="font-size:12px;">Memories</div>
+            <div style="margin-top:14px;">
+              <div style="height:6px; background:rgba(234,234,234,0.12); margin-bottom:6px;"></div>
+              <div style="height:6px; background:rgba(234,234,234,0.12); width:70%; margin-bottom:16px;"></div>
+              <div style="height:6px; background:rgba(234,234,234,0.12); margin-bottom:6px;"></div>
+              <div style="height:6px; background:rgba(234,234,234,0.12); width:54%;"></div>
+            </div>
+          </div>
+          <div class="slate-frame" style="right:14px; top:14px; bottom:14px; width:250px; padding:14px;">
+            <div class="plate warm" style="position:absolute; inset:14px 14px 42px; border-radius:2px;"></div>
+            <div style="position:absolute; left:14px; right:14px; bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+              <div class="qk" style="font-size:9.5px;">mountain-dusk.jpg</div>
+              <div style="display:flex; gap:6px; align-items:center;">
+                <div class="hbtn" style="padding:1px 7px; font-size:10px;">−</div>
+                <div class="qk" style="font-size:9.5px;">47%</div>
+                <div class="hbtn" style="padding:1px 7px; font-size:10px;">+</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="rcap">
+          <span class="verdict refuse">IMAGE VIEWER IS NEVER A PANE</span>
+          The viewer is an Information-Plane local editor, opened beside its source. The composable set is Memory, Gallery, and Writing slates only.
+        </div>
+      </div>
+
+      <!-- refuse: three panes -->
+      <div class="rcell">
+        <div class="rscene">
+          <div class="ws" style="inset:0;"></div>
+          <div class="slate-frame" style="left:14px; top:14px; bottom:14px; width:166px; padding:14px;">
+            <div class="idn" style="font-size:12px;">Memories</div>
+          </div>
+          <div class="slate-frame" style="left:190px; top:14px; bottom:14px; width:166px; padding:14px;">
+            <div class="idn" style="font-size:12px;">Gallery</div>
+          </div>
+          <div class="slate-frame" style="left:366px; top:14px; bottom:14px; width:166px; padding:14px; border-color:rgba(226,98,92,0.55);">
+            <div class="idn" style="font-size:12px;">Field guide</div>
+          </div>
+        </div>
+        <div class="rcap">
+          <span class="verdict refuse">TWO SLATES, NO MORE</span>
+          Left · Right · Full is the entire placement vocabulary — no third slot, no corners, no quadrants. A third view replaces, by explicit choice.
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <div class="folio">END · SLATE</div>
+</section>
+
+</body>
+</html>

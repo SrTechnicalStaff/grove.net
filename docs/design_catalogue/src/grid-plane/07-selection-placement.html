@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Selection and placement</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/catalogue.css">
+<style>
+  /* ---- deck-local: a projected patch of the Grid ---- */
+  .gridfield {
+    --cell: 40px;
+    position: relative;
+    background-color: var(--canvas);
+    background-image:
+      linear-gradient(var(--grid-major) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+      linear-gradient(rgba(234,234,234,0.040) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(234,234,234,0.040) 1px, transparent 1px);
+    background-size:
+      calc(var(--cell) * 4) calc(var(--cell) * 4),
+      calc(var(--cell) * 4) calc(var(--cell) * 4),
+      var(--cell) var(--cell), var(--cell) var(--cell);
+    border: 1px solid var(--hairline);
+    overflow: hidden;
+  }
+
+  /* cell-addressed box: --x/--y cell origin, --w/--h cell extent */
+  .cp {
+    position: absolute;
+    left: calc(var(--x) * var(--cell));
+    top: calc(var(--y) * var(--cell));
+    width: calc(var(--w, 1) * var(--cell));
+    height: calc(var(--h, 1) * var(--cell));
+  }
+
+  /* ---- content forms, as they render at working zoom ---- */
+
+  .sticky {
+    z-index: 3; display: flex; align-items: flex-start; padding: 14px 13px;
+    color: #F4F4F2; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
+    font-family: var(--f-ui); font-size: 13px; font-weight: 500; line-height: 1.42;
+  }
+  .sticky.sm { padding: 10px 10px; font-size: 11px; }
+
+  .sheet {
+    z-index: 3; position: absolute; background: var(--paper); color: var(--paper-ink);
+    padding: 18px 19px; display: flex; flex-direction: column;
+    box-shadow: inset 0 0 0 1px rgba(26,26,26,0.10);
+  }
+  .sheet::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(26,26,26,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(26,26,26,0.05) 1px, transparent 1px),
+      linear-gradient(rgba(26,26,26,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(26,26,26,0.08) 1px, transparent 1px);
+    background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
+  }
+  .sheet > * { position: relative; }
+  .sheet .lbl  { font-family: var(--f-mono); font-size: 6.5px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(26,26,26,0.48); }
+  .sheet .ttl  { font-family: var(--f-display); font-weight: 500; font-size: 20px; line-height: 0.98; letter-spacing: 0.03em; text-transform: uppercase; color: var(--paper-ink); margin-top: 6px; }
+  .sheet .rule { height: 1px; background: rgba(26,26,26,0.16); margin: 10px 0; }
+  .sheet .body { font-family: var(--f-ui); font-size: 8px; line-height: 1.65; color: rgba(26,26,26,0.62); }
+  .sheet .spacer { flex: 1; }
+  .sheet .handle { position: absolute; right: 3px; bottom: 3px; width: 14px; height: 14px; }
+  .sheet .handle::after {
+    content: ''; position: absolute; right: 2px; bottom: 2px; width: 10px; height: 10px;
+    border-right: 2px solid rgba(26,26,26,0.72); border-bottom: 2px solid rgba(26,26,26,0.72);
+  }
+
+  /* a picture: complete frame, quiet 1px edge, no chrome */
+  .pic {
+    z-index: 3; overflow: hidden; border: 1px solid rgba(234,234,234,0.16); border-radius: var(--r);
+    background:
+      radial-gradient(ellipse 5% 7% at 70% 17%, rgba(250,242,224,0.92) 55%, transparent 100%),
+      radial-gradient(120% 50% at 68% 16%, rgba(234,234,234,0.24), transparent 56%),
+      linear-gradient(180deg, #5A4A60 0%, #44506A 40%, #2A3450 62%, #10141C 100%);
+  }
+  .pic::before, .pic::after { content: ''; position: absolute; left: -2%; right: -2%; bottom: 0; }
+  .pic::before {
+    height: 56%; background: linear-gradient(180deg, #2E3A52, #1A2232 70%, #141A26);
+    clip-path: polygon(0 42%, 12% 24%, 26% 38%, 40% 12%, 55% 34%, 70% 18%, 84% 32%, 100% 22%, 100% 100%, 0 100%);
+  }
+  .pic::after {
+    height: 36%; background: linear-gradient(180deg, #171D29, #0C1016);
+    clip-path: polygon(0 55%, 15% 30%, 33% 52%, 52% 24%, 71% 46%, 88% 34%, 100% 44%, 100% 100%, 0 100%);
+  }
+
+  /* ---- working chrome ---- */
+
+  /* selection: interaction outline outside the content edge */
+  .sel { outline: 2px solid var(--interaction); outline-offset: 3px; }
+
+  /* structural response: the cells around a selection brighten, hard-edged */
+  .fcell { position: absolute; z-index: 1; }
+
+  /* marquee: an active sweep, thin edge and low-alpha fill */
+  .marquee {
+    position: absolute; z-index: 9;
+    background: rgba(232,185,100,0.08);
+    border: 1.5px solid rgba(232,185,100,0.78);
+  }
+
+  /* placement preview: complete footprint, dashed and transparent */
+  .preview {
+    z-index: 8;
+    background: rgba(150,182,248,0.06);
+    box-shadow: inset 0 0 0 2px rgba(150,182,248,0.60);
+    border: 1px dashed rgba(150,182,248,0.80);
+  }
+  .preview .glabel {
+    position: absolute; top: 6px; left: 8px;
+    font-family: var(--f-mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.12em; text-transform: uppercase; color: rgba(150,182,248,0.92);
+  }
+  .preview.invalid {
+    background: rgba(226,98,92,0.12);
+    box-shadow: inset 0 0 0 2px rgba(226,98,92,0.85);
+    border-color: rgba(226,98,92,0.90);
+  }
+  .preview.invalid .glabel { color: rgba(226,98,92,0.95); }
+
+  /* blocked cells: refusal carried by structure, not by hue alone */
+  .blocked {
+    z-index: 7;
+    background: repeating-linear-gradient(45deg,
+      rgba(226,98,92,0.22) 0 4px, transparent 4px 12px);
+    box-shadow: inset 0 0 0 1px rgba(226,98,92,0.45);
+  }
+
+  /* origin: where the content still sits until release */
+  .origin {
+    z-index: 2; border: 1px dashed rgba(234,234,234,0.30);
+  }
+  .origin .inner {
+    position: absolute; inset: 0; opacity: 0.3;
+    font-family: var(--f-ui); font-size: 13px; font-weight: 500; line-height: 1.42;
+    color: #F4F4F2; padding: 14px 13px;
+  }
+
+  /* the local strip that carries the sentence and the actions */
+  .strip {
+    position: absolute; z-index: 10;
+    background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r);
+    padding: 11px 13px; display: flex; align-items: center; gap: 18px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.40);
+  }
+  .strip .say { font-family: var(--f-ui); font-size: 12px; color: var(--text); }
+  .strip .acts { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .strip .quiet { font-family: var(--f-ui); font-size: 11px; color: rgba(234,234,234,0.72); padding: 5px 10px; }
+  .strip .off {
+    font-family: var(--f-ui); font-size: 11px; color: rgba(234,234,234,0.28);
+    padding: 5px 10px; border: 1px solid rgba(234,234,234,0.10); border-radius: var(--r);
+  }
+
+  /* annotation-layer figure labels laid inside a field */
+  .under {
+    position: absolute; z-index: 11;
+    font-family: var(--f-mono); font-size: 9px; font-weight: 500;
+    letter-spacing: 0.16em; color: var(--ann); text-transform: uppercase; white-space: nowrap;
+  }
+
+  .sectionlbl {
+    font-family: var(--f-mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.24em; text-transform: uppercase; color: var(--ann);
+    margin-bottom: 12px;
+  }
+  .reason {
+    font-family: var(--f-mono); font-size: 10px; line-height: 1.8;
+    letter-spacing: 0.02em; color: var(--ann); margin-top: 14px;
+  }
+  .reason b { display: block; font-weight: 500; color: var(--ann-strong); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 2px; }
+  .refusecol { display: flex; flex-direction: column; }
+  .refusecol .verdict { position: static; display: block; margin-bottom: 10px; }
+  .job {
+    font-family: var(--f-mono); font-size: 10px; line-height: 1.8;
+    letter-spacing: 0.02em; color: var(--ann); margin-top: 14px;
+  }
+  .job b { display: block; font-weight: 500; color: var(--ann-strong); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ============================ 01 · COVER ============================ -->
+<section class="slide cover">
+  <div class="running"><span>GROVE · DESIGN CATALOGUE · GRID</span><span class="fig">07</span></div>
+  <div class="plane">GRID PLANE · WORKING CHROME</div>
+  <h1>Selection &amp;<br>placement</h1>
+  <div class="rule"></div>
+  <div class="scope">
+    Selection anatomy · Marquee · Placement preview ·
+    Refusal · Signal roles · Refusals
+  </div>
+  <div class="folio">SOURCE: IW-00 .. IW-04 · DESIGN.MD</div>
+</section>
+
+<!-- ============================ 02 · SELECTION ANATOMY ============================ -->
+<section class="slide">
+  <div class="running"><span>SELECTION &amp; PLACEMENT · ANATOMY</span><span class="fig">01 / 06</span></div>
+
+  <div class="stage">
+    <div class="gridfield" style="width:800px; height:520px; --cell:40px;">
+
+      <!-- structural response: cells around each selection brighten -->
+      <div class="fcell" style="left:80px;  top:40px;  width:120px; height:40px;  background:rgba(150,182,248,0.13);"></div>
+      <div class="fcell" style="left:80px;  top:200px; width:120px; height:40px;  background:rgba(150,182,248,0.13);"></div>
+      <div class="fcell" style="left:40px;  top:80px;  width:40px;  height:120px; background:rgba(150,182,248,0.13);"></div>
+      <div class="fcell" style="left:200px; top:80px;  width:40px;  height:120px; background:rgba(150,182,248,0.13);"></div>
+      <div class="fcell" style="left:40px;  top:40px;  width:40px;  height:40px;  background:rgba(150,182,248,0.06);"></div>
+      <div class="fcell" style="left:200px; top:40px;  width:40px;  height:40px;  background:rgba(150,182,248,0.06);"></div>
+      <div class="fcell" style="left:40px;  top:200px; width:40px;  height:40px;  background:rgba(150,182,248,0.06);"></div>
+      <div class="fcell" style="left:200px; top:200px; width:40px;  height:40px;  background:rgba(150,182,248,0.06);"></div>
+
+      <div class="fcell" style="left:280px; top:40px;  width:160px; height:40px;  background:rgba(150,182,248,0.13);"></div>
+      <div class="fcell" style="left:280px; top:280px; width:160px; height:40px;  background:rgba(150,182,248,0.13);"></div>
+      <div class="fcell" style="left:240px; top:80px;  width:40px;  height:200px; background:rgba(150,182,248,0.13);"></div>
+      <div class="fcell" style="left:440px; top:80px;  width:40px;  height:200px; background:rgba(150,182,248,0.13);"></div>
+      <div class="fcell" style="left:240px; top:40px;  width:40px;  height:40px;  background:rgba(150,182,248,0.06);"></div>
+      <div class="fcell" style="left:440px; top:40px;  width:40px;  height:40px;  background:rgba(150,182,248,0.06);"></div>
+      <div class="fcell" style="left:240px; top:280px; width:40px;  height:40px;  background:rgba(150,182,248,0.06);"></div>
+      <div class="fcell" style="left:440px; top:280px; width:40px;  height:40px;  background:rgba(150,182,248,0.06);"></div>
+
+      <div class="fcell" style="left:520px; top:80px;  width:160px; height:40px;  background:rgba(150,182,248,0.13);"></div>
+      <div class="fcell" style="left:520px; top:240px; width:160px; height:40px;  background:rgba(150,182,248,0.13);"></div>
+      <div class="fcell" style="left:480px; top:120px; width:40px;  height:120px; background:rgba(150,182,248,0.13);"></div>
+      <div class="fcell" style="left:680px; top:120px; width:40px;  height:120px; background:rgba(150,182,248,0.13);"></div>
+      <div class="fcell" style="left:480px; top:80px;  width:40px;  height:40px;  background:rgba(150,182,248,0.06);"></div>
+      <div class="fcell" style="left:680px; top:80px;  width:40px;  height:40px;  background:rgba(150,182,248,0.06);"></div>
+      <div class="fcell" style="left:480px; top:240px; width:40px;  height:40px;  background:rgba(150,182,248,0.06);"></div>
+      <div class="fcell" style="left:680px; top:240px; width:40px;  height:40px;  background:rgba(150,182,248,0.06);"></div>
+
+      <!-- selected: a Note -->
+      <div class="cp sticky sel" style="--x:2; --y:2; --w:3; --h:3; background:#6E62A6;">Ask Mel about the north wall hang.</div>
+
+      <!-- selected: a Document -->
+      <div class="cp sheet sel" style="--x:7; --y:2; --w:4; --h:5;">
+        <div class="lbl">Document</div>
+        <div class="ttl">Hanging<br>order</div>
+        <div class="rule"></div>
+        <div class="body">Twelve frames, one wall, no glass. The room does the rest.
+          What follows is the order they hang in and the reason it holds.</div>
+        <div class="spacer"></div>
+        <div class="handle"></div>
+      </div>
+
+      <!-- selected: an Image -->
+      <div class="cp pic sel" style="--x:13; --y:3; --w:4; --h:3;"></div>
+
+      <!-- not selected -->
+      <div class="cp sticky sm" style="--x:13; --y:8; --w:2; --h:2; background:#B0524E;">Call Ray</div>
+      <div class="cp sticky sm" style="--x:3; --y:9; --w:3; --h:2; background:#4E6E9C;">Van booked for the 12th.</div>
+
+      <div class="mark" style="left:71px;  top:71px;">01</div>
+      <div class="mark" style="left:251px; top:171px;">02</div>
+      <div class="mark" style="left:711px; top:111px;">03</div>
+      <div class="mark" style="left:511px; top:311px;">04</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>The outline sits outside</b>A 2px interaction outline runs clear of the content edge. The Note, the Document, the picture — none of them is restyled, tinted, or dimmed to say it is selected.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>The field answers</b>The cells around each selection brighten, hard-edged like every other cell value. Outline, field, and accent carry the state together, so it survives without colour.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Many at once, one grammar</b>Every selected placement wears the same outline and the same field response, whatever form it holds. No badges, no counts riding on the content.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Never a property of content</b>Unselected placements are untouched. Selection lasts as long as the work does — it is never saved with a Note, a Document, or a picture.</span></div>
+  </div>
+  <div class="folio">STATE: IW-00 · SELECTION IS INTERACTION, NOT STORAGE</div>
+</section>
+
+<!-- ============================ 03 · MARQUEE ============================ -->
+<section class="slide">
+  <div class="running"><span>SELECTION &amp; PLACEMENT · MARQUEE</span><span class="fig">02 / 06</span></div>
+
+  <div class="stage">
+    <div class="gridfield" style="width:800px; height:520px; --cell:40px;">
+
+      <!-- caught placements answer in the interaction role -->
+      <div class="fcell" style="left:80px;  top:40px;  width:120px; height:40px;  background:rgba(150,182,248,0.11);"></div>
+      <div class="fcell" style="left:80px;  top:200px; width:120px; height:40px;  background:rgba(150,182,248,0.11);"></div>
+      <div class="fcell" style="left:40px;  top:80px;  width:40px;  height:120px; background:rgba(150,182,248,0.11);"></div>
+      <div class="fcell" style="left:200px; top:80px;  width:40px;  height:120px; background:rgba(150,182,248,0.11);"></div>
+
+      <div class="fcell" style="left:280px; top:80px;  width:160px; height:40px;  background:rgba(150,182,248,0.11);"></div>
+      <div class="fcell" style="left:280px; top:320px; width:160px; height:40px;  background:rgba(150,182,248,0.11);"></div>
+      <div class="fcell" style="left:240px; top:120px; width:40px;  height:200px; background:rgba(150,182,248,0.11);"></div>
+      <div class="fcell" style="left:440px; top:120px; width:40px;  height:200px; background:rgba(150,182,248,0.11);"></div>
+
+      <div class="fcell" style="left:480px; top:40px;  width:80px;  height:40px;  background:rgba(150,182,248,0.11);"></div>
+      <div class="fcell" style="left:480px; top:160px; width:80px;  height:40px;  background:rgba(150,182,248,0.11);"></div>
+      <div class="fcell" style="left:440px; top:80px;  width:40px;  height:80px;  background:rgba(150,182,248,0.11);"></div>
+      <div class="fcell" style="left:560px; top:80px;  width:40px;  height:80px;  background:rgba(150,182,248,0.11);"></div>
+
+      <!-- inside the sweep -->
+      <div class="cp sticky sel" style="--x:2; --y:2; --w:3; --h:3; background:#6E62A6;">Ask Mel about the north wall hang.</div>
+      <div class="cp sheet sel" style="--x:7; --y:3; --w:4; --h:5;">
+        <div class="lbl">Document</div>
+        <div class="ttl">Hanging<br>order</div>
+        <div class="rule"></div>
+        <div class="body">Twelve frames, one wall, no glass. The room does the rest.
+          What follows is the order they hang in and the reason it holds.</div>
+        <div class="spacer"></div>
+      </div>
+      <div class="cp sticky sm sel" style="--x:12; --y:2; --w:2; --h:2; background:#B0524E;">Call Ray</div>
+
+      <!-- outside the sweep -->
+      <div class="cp pic" style="--x:15; --y:7; --w:4; --h:3;"></div>
+      <div class="cp sticky sm" style="--x:3; --y:9; --w:3; --h:2; background:#4E6E9C;">Van booked for the 12th.</div>
+
+      <!-- the sweep in progress -->
+      <div class="marquee" style="left:56px; top:52px; width:540px; height:248px;"></div>
+
+      <svg style="position:absolute; left:590px; top:296px; z-index:10;" width="15" height="20" viewBox="0 0 15 20">
+        <path d="M1,1 L1,15.5 L4.6,12.2 L7.2,18.6 L9.8,17.5 L7.3,11.2 L12.2,11 Z" fill="#EAEAEA" stroke="#0E0E10" stroke-width="1"/>
+      </svg>
+
+      <div class="under" style="left:614px; top:246px;">SWEEP IN PROGRESS</div>
+      <div class="under" style="left:614px; top:412px;">UNTOUCHED</div>
+
+      <div class="mark" style="left:47px;  top:43px;">01</div>
+      <div class="mark" style="left:451px; top:131px;">02</div>
+      <div class="mark" style="left:587px; top:243px;">03</div>
+      <div class="mark" style="left:567px; top:63px;">04</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Amber means work in progress</b>The sweep is drawn in the marquee role: a thin edge and a low-alpha fill. It marks a gesture happening now, and nothing durable.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Caught while you sweep</b>Placements inside the rectangle answer at once in the interaction role — outline and field together. Nobody has to release and hope.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>The rectangle is free, the result is not</b>The sweep follows the pointer exactly, at any angle of travel. What it catches is always whole placements on whole cells.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Amber hands over</b>On release the rectangle disappears and only the interaction accent remains. Two hues, two jobs, and never both for one meaning.</span></div>
+  </div>
+  <div class="folio">STATE: IW-02 · MARQUEE #E8B964 → INTERACTION #96B6F8</div>
+</section>
+
+<!-- ============================ 04 · PLACEMENT PREVIEW ============================ -->
+<section class="slide">
+  <div class="running"><span>SELECTION &amp; PLACEMENT · PREVIEW</span><span class="fig">03 / 06</span></div>
+
+  <div class="stage">
+    <div class="gridfield" style="width:800px; height:520px; --cell:40px;">
+
+      <!-- the source, still in place until release -->
+      <div class="cp origin" style="--x:2; --y:6; --w:3; --h:3;">
+        <div class="inner">Ask Mel about the north wall hang.</div>
+      </div>
+
+      <!-- context -->
+      <div class="cp sheet" style="--x:15; --y:2; --w:4; --h:5;">
+        <div class="lbl">Document</div>
+        <div class="ttl">Hanging<br>order</div>
+        <div class="rule"></div>
+        <div class="body">Twelve frames, one wall, no glass. The room does the rest.
+          What follows is the order they hang in and the reason it holds.</div>
+        <div class="spacer"></div>
+      </div>
+      <div class="cp sticky sm" style="--x:5; --y:10; --w:2; --h:2; background:#B0524E;">Call Ray</div>
+
+      <!-- travel, drawn in the annotation layer -->
+      <svg style="position:absolute; inset:0; z-index:4; pointer-events:none;" width="800" height="520" viewBox="0 0 800 520">
+        <defs>
+          <marker id="ah7" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="rgba(150,182,248,0.55)"/>
+          </marker>
+        </defs>
+        <line x1="146" y1="292" x2="392" y2="184" stroke="rgba(150,182,248,0.55)" stroke-width="1" stroke-dasharray="4 5" marker-end="url(#ah7)"/>
+      </svg>
+
+      <!-- the complete footprint under the pointer -->
+      <div class="cp preview" style="--x:10; --y:3; --w:3; --h:3;">
+        <div class="glabel">3 × 3</div>
+      </div>
+
+      <svg style="position:absolute; left:452px; top:172px; z-index:10;" width="15" height="20" viewBox="0 0 15 20">
+        <path d="M1,1 L1,15.5 L4.6,12.2 L7.2,18.6 L9.8,17.5 L7.3,11.2 L12.2,11 Z" fill="#EAEAEA" stroke="#0E0E10" stroke-width="1"/>
+      </svg>
+
+      <div class="under" style="left:80px; top:372px;">ORIGIN · UNCHANGED UNTIL RELEASE</div>
+      <div class="under" style="left:400px; top:266px;">PREVIEW · CLEAR TO PLACE</div>
+
+      <div class="mark" style="left:511px; top:111px;">01</div>
+      <div class="mark" style="left:391px; top:231px;">02</div>
+      <div class="mark" style="left:71px;  top:231px;">03</div>
+      <div class="mark" style="left:571px; top:151px;">04</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>The whole footprint, before commit</b>The preview covers every cell the content will occupy — complete cells, at the pointer, at the current scale. Size is stated in the corner, quietly.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Never mistakable for content</b>A dashed edge and a transparent fill. The preview carries no text, no surface treatment, and no weight of its own: it is a promise about cells, not a thing on the Grid.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>The source keeps its place</b>The origin is marked and left alone. Nothing durable moves while the gesture is open, so letting go early costs nothing.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Validity is live</b>The preview answers on every cell it crosses, so the answer arrives while the hand is still moving. A refusal is never a surprise at the end.</span></div>
+  </div>
+  <div class="folio">STATE: IW-01 · PREVIEW ≠ CONTENT</div>
+</section>
+
+<!-- ============================ 05 · REFUSAL ============================ -->
+<section class="slide">
+  <div class="running"><span>SELECTION &amp; PLACEMENT · REFUSAL</span><span class="fig">04 / 06</span></div>
+
+  <div class="stage">
+    <div class="gridfield" style="width:800px; height:520px; --cell:40px;">
+
+      <!-- the source, untouched -->
+      <div class="cp origin" style="--x:2; --y:7; --w:3; --h:3;">
+        <div class="inner">Ask Mel about the north wall hang.</div>
+      </div>
+
+      <!-- the space that is already taken -->
+      <div class="cp sheet" style="--x:10; --y:1; --w:4; --h:5;">
+        <div class="lbl">Document</div>
+        <div class="ttl">Hanging<br>order</div>
+        <div class="rule"></div>
+        <div class="body">Twelve frames, one wall, no glass. The room does the rest.
+          What follows is the order they hang in and the reason it holds.</div>
+        <div class="spacer"></div>
+      </div>
+
+      <svg style="position:absolute; inset:0; z-index:4; pointer-events:none;" width="800" height="520" viewBox="0 0 800 520">
+        <line x1="146" y1="332" x2="336" y2="156" stroke="rgba(150,182,248,0.40)" stroke-width="1" stroke-dasharray="4 5"/>
+      </svg>
+
+      <!-- refused preview: hue, structure, and words together -->
+      <div class="cp preview invalid" style="--x:8; --y:2; --w:4; --h:3;">
+        <div class="glabel">Occupied</div>
+      </div>
+      <div class="cp blocked" style="--x:10; --y:2; --w:2; --h:3;"></div>
+
+      <svg style="position:absolute; left:352px; top:146px; z-index:11;" width="15" height="20" viewBox="0 0 15 20">
+        <path d="M1,1 L1,15.5 L4.6,12.2 L7.2,18.6 L9.8,17.5 L7.3,11.2 L12.2,11 Z" fill="#EAEAEA" stroke="#0E0E10" stroke-width="1"/>
+      </svg>
+
+      <!-- one plain sentence, beside the thing being refused -->
+      <div class="strip" style="left:320px; top:264px; width:340px;">
+        <span class="say">This space is occupied</span>
+        <span class="acts">
+          <span class="quiet">Cancel</span>
+          <span class="off">Place</span>
+        </span>
+      </div>
+
+      <div class="under" style="left:80px; top:412px;">ORIGIN · NOTHING MOVED</div>
+      <div class="under" style="left:320px; top:336px;">REFUSED FOOTPRINT · 4 × 3 · NOTHING COMMITTED</div>
+
+      <div class="mark" style="left:311px; top:71px;">01</div>
+      <div class="mark" style="left:391px; top:131px;">02</div>
+      <div class="mark" style="left:306px; top:279px;">03</div>
+      <div class="mark" style="left:71px;  top:271px;">04</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Invalid names the refusal</b>The preview edge turns to the invalid role the moment the footprint stops fitting. One hue, one meaning, used nowhere else.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Structure says it too</b>The cells that cannot take the content are hatched. Read with no colour at all, the blocked cells still read as blocked.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Words at the point of action</b>One plain sentence sits with the thing being refused, and the action that would commit is present but unavailable. No dialog, no scrim, nothing center-screen.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>No partial state</b>Refusal leaves nothing half-done. The content keeps its place, the Grid is exactly as it was, and there is nothing to undo.</span></div>
+  </div>
+  <div class="folio">STATE: IW-03 · REFUSAL IS COMPLETE, NOT PARTIAL</div>
+</section>
+
+<!-- ============================ 06 · SIGNAL ROLES ============================ -->
+<section class="slide">
+  <div class="running"><span>SELECTION &amp; PLACEMENT · SIGNAL ROLES</span><span class="fig">05 / 06</span></div>
+
+  <div class="stage full" style="align-items:flex-start; padding-top:20px; gap:40px;">
+
+    <div class="refusecol" style="flex:1;">
+      <div class="sectionlbl">Interaction · #96B6F8</div>
+      <div class="gridfield" style="width:100%; height:380px; --cell:44px;">
+        <div class="fcell" style="left:88px;  top:88px;  width:132px; height:44px; background:rgba(150,182,248,0.13);"></div>
+        <div class="fcell" style="left:88px;  top:220px; width:132px; height:44px; background:rgba(150,182,248,0.13);"></div>
+        <div class="fcell" style="left:44px;  top:132px; width:44px;  height:88px; background:rgba(150,182,248,0.13);"></div>
+        <div class="fcell" style="left:220px; top:132px; width:44px;  height:88px; background:rgba(150,182,248,0.13);"></div>
+        <div class="cp sticky sm sel" style="--x:2; --y:3; --w:3; --h:2; background:#6E62A6;">Ask Mel about the north wall hang.</div>
+      </div>
+      <div class="job"><b>Selection and focus</b>THE ONLY HUE FOR "THIS IS THE THING YOU ARE WORKING ON". OUTLINE OUTSIDE THE EDGE, PLUS THE FIELD RESPONSE UNDER IT.</div>
+    </div>
+
+    <div class="refusecol" style="flex:1;">
+      <div class="sectionlbl">Marquee · #E8B964</div>
+      <div class="gridfield" style="width:100%; height:380px; --cell:44px;">
+        <div class="cp sticky sm sel" style="--x:1; --y:2; --w:3; --h:2; background:#4E6E9C;">Van booked for the 12th.</div>
+        <div class="cp sticky sm" style="--x:5; --y:4; --w:2; --h:2; background:#B0524E;">Call Ray</div>
+        <div class="marquee" style="left:26px; top:64px; width:250px; height:150px;"></div>
+      </div>
+      <div class="job"><b>Active selection work</b>ONLY WHILE A GESTURE IS OPEN. IT NEVER MARKS A RESULT, A WARNING, OR A CATEGORY — WHEN THE HAND STOPS, THE AMBER GOES.</div>
+    </div>
+
+    <div class="refusecol" style="flex:1;">
+      <div class="sectionlbl">Invalid · #E2625C</div>
+      <div class="gridfield" style="width:100%; height:380px; --cell:44px;">
+        <div class="cp sticky sm" style="--x:3; --y:3; --w:3; --h:2; background:#4E6E9C;">Van booked for the 12th.</div>
+        <div class="cp preview invalid" style="--x:2; --y:2; --w:4; --h:3;"><div class="glabel">Occupied</div></div>
+        <div class="cp blocked" style="--x:3; --y:3; --w:3; --h:2;"></div>
+      </div>
+      <div class="job"><b>Refusal</b>ONLY WHERE SOMETHING CANNOT HAPPEN. ALWAYS PAIRED WITH STRUCTURE AND A PLAIN SENTENCE — NEVER THE ONLY CARRIER OF THE ANSWER.</div>
+    </div>
+  </div>
+  <div class="folio">THREE SIGNALS · THREE JOBS · NO OVERLAP</div>
+</section>
+
+<!-- ============================ 07 · REFUSALS ============================ -->
+<section class="slide">
+  <div class="running"><span>SELECTION &amp; PLACEMENT · REFUSALS</span><span class="fig">06 / 06</span></div>
+
+  <div class="stage full" style="align-items:flex-start; padding-top:22px; gap:32px;">
+
+    <!-- A · selection as an interior wash -->
+    <div class="refusecol" style="flex:1;">
+      <span class="verdict refuse">REFUSE · FILL WASH</span>
+      <div class="panel" style="position:relative; height:400px; background:var(--canvas); overflow:hidden;">
+        <div class="gridfield" style="position:absolute; inset:0; border:none; --cell:44px;">
+          <div class="cp sticky sm" style="--x:2; --y:2; --w:4; --h:3; background:#6E62A6;">Ask Mel about the north wall hang.</div>
+          <div class="cp" style="--x:2; --y:2; --w:4; --h:3; z-index:6; background:rgba(150,182,248,0.42);"></div>
+        </div>
+      </div>
+      <div class="reason"><b>Selection is not a coat of paint</b>A wash over the body restyles the content to say something about the pointer. It changes how the Note reads, hides its own colour, and leaves nothing for a second selected item to look different by.</div>
+    </div>
+
+    <!-- B · preview identical to placed content -->
+    <div class="refusecol" style="flex:1;">
+      <span class="verdict refuse">REFUSE · SOLID PREVIEW</span>
+      <div class="panel" style="position:relative; height:400px; background:var(--canvas); overflow:hidden;">
+        <div class="gridfield" style="position:absolute; inset:0; border:none; --cell:44px;">
+          <div class="cp sticky sm" style="--x:1; --y:1; --w:3; --h:2; background:#6E62A6;">Ask Mel about the north wall hang.</div>
+          <div class="cp sticky sm" style="--x:4; --y:4; --w:3; --h:2; background:#6E62A6;">Ask Mel about the north wall hang.</div>
+          <svg style="position:absolute; left:264px; top:220px; z-index:9;" width="15" height="20" viewBox="0 0 15 20">
+            <path d="M1,1 L1,15.5 L4.6,12.2 L7.2,18.6 L9.8,17.5 L7.3,11.2 L12.2,11 Z" fill="#EAEAEA" stroke="#0E0E10" stroke-width="1"/>
+          </svg>
+        </div>
+      </div>
+      <div class="reason"><b>A promise must not look like a fact</b>Two identical Notes, one of which does not exist yet. Nothing in the frame says which will survive letting go, so the only way to find out is to commit and check.</div>
+    </div>
+
+    <!-- C · center-screen error toast -->
+    <div class="refusecol" style="flex:1;">
+      <span class="verdict refuse">REFUSE · CENTER-SCREEN ALERT</span>
+      <div class="panel" style="position:relative; height:400px; background:var(--canvas); overflow:hidden;">
+        <div class="gridfield" style="position:absolute; inset:0; border:none; --cell:44px;">
+          <div class="cp sticky sm" style="--x:1; --y:1; --w:3; --h:2; background:#4E6E9C;">Van booked for the 12th.</div>
+          <div class="cp sticky sm" style="--x:5; --y:5; --w:2; --h:2; background:#B0524E;">Call Ray</div>
+        </div>
+        <div style="position:absolute; inset:0; background:rgba(14,14,16,0.62); z-index:8;"></div>
+        <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:9; width:250px;
+                    background:var(--surface); border:1px solid rgba(226,98,92,0.55); border-radius:2px; padding:16px 16px 14px; text-align:center;
+                    box-shadow:0 16px 40px rgba(0,0,0,0.6);">
+          <div style="font-family:var(--f-ui); font-size:12.5px; color:var(--text);">This space is occupied</div>
+          <div style="margin-top:12px; display:inline-block; padding:5px 14px; font-family:var(--f-ui); font-size:11px;
+                      background:var(--invalid); color:var(--paper-ink); border-radius:2px;">OK</div>
+        </div>
+      </div>
+      <div class="reason"><b>Refusal belongs where the work is</b>A dimmed Grid context and a floating alert take the hand off the cells that were refused, then ask for a click to give it back. The answer already had a place: beside the footprint it was about.</div>
+    </div>
+  </div>
+  <div class="folio">END · SELECTION &amp; PLACEMENT</div>
+</section>
+
+</body>
+</html>

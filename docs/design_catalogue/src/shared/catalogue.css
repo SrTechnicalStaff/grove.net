@@ -1,0 +1,287 @@
+/* Grove design catalogue — shared deck stylesheet.
+   Slides are 1280x720. Every visual value traces to DESIGN.md tokens.
+   Two layers per slide: the design (product-faithful rendering) and the
+   annotation layer (monospace, visually distinct, never product copy). */
+
+:root {
+  /* DESIGN.md tokens */
+  --canvas: #0E0E10;
+  --surface: #161618;
+  --grid-major: #242428;
+  --text: #EAEAEA;
+  --paper: #F5F5F5;
+  --paper-ink: #1A1A1A;
+  --interaction: #96B6F8;
+  --invalid: #E2625C;
+  --marquee: #E8B964;
+  --anchor-indigo: #9E8CEA;
+  --tool: #B3A9E0;      --tool-border: #5B5288;
+  --view: #9BB6E0;      --view-border: #3F5F8A;
+  --layer: #E2A6C6;     --layer-border: #8A3F63;
+  --edit: #E0A9A3;      --edit-border: #7A3F3A;
+  --slate: #CDB8D8;     --slate-border: #6B5A78;
+
+  --f-display: 'Oswald', 'Arial Narrow', sans-serif;
+  --f-ui: 'Inter', system-ui, sans-serif;
+  --f-mono: 'JetBrains Mono', 'Consolas', monospace;
+
+  --r: 2px;             /* the only radius in Grove chrome */
+  --sp-xs: 4px; --sp-sm: 8px; --sp-md: 16px; --sp-lg: 24px; --sp-xl: 32px;
+
+  /* annotation layer ink (catalogue-only, never product copy) */
+  --ann: rgba(234, 234, 234, 0.50);
+  --ann-strong: rgba(234, 234, 234, 0.78);
+  --ann-line: rgba(150, 182, 248, 0.55);
+  --hairline: rgba(234, 234, 234, 0.10);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { background: var(--canvas); }
+
+body {
+  font-family: var(--f-ui);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.slide {
+  position: relative;
+  width: 1280px;
+  height: 720px;
+  overflow: hidden;
+  background: var(--canvas);
+  page-break-after: always;
+  break-after: page;
+}
+
+/* ---- running header: one line, mono, never a title ---- */
+
+.running {
+  position: absolute;
+  top: 28px; left: 48px; right: 48px;
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  color: var(--ann);
+  text-transform: uppercase;
+}
+
+.running .fig { color: var(--ann); }
+
+/* ---- cover ---- */
+
+.cover { display: flex; flex-direction: column; justify-content: center; padding: 0 96px; }
+
+.cover .plane {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  color: var(--interaction);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.cover h1 {
+  font-family: var(--f-display);
+  font-size: 96px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.04;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.cover .rule {
+  width: 120px; height: 1px;
+  background: var(--interaction);
+  margin: 36px 0;
+}
+
+.cover .scope {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--ann);
+  max-width: 560px;
+  line-height: 2.1;
+  text-transform: uppercase;
+}
+
+/* ---- annotation layer ---- */
+
+.ann-col {
+  position: absolute;
+  top: 88px; bottom: 56px;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.ann-col.right { right: 48px; }
+.ann-col.left { left: 48px; }
+
+.ann {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  column-gap: 12px;
+  font-family: var(--f-mono);
+  font-size: 10.5px;
+  line-height: 1.75;
+  color: var(--ann);
+  letter-spacing: 0.02em;
+}
+
+.ann .n {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--interaction);
+  letter-spacing: 0.1em;
+  padding-top: 1px;
+}
+
+.ann b, .ann strong {
+  display: block;
+  font-weight: 500;
+  color: var(--ann-strong);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+/* numbered markers placed over the design layer */
+.mark {
+  position: absolute;
+  width: 18px; height: 18px;
+  border: 1px solid var(--ann-line);
+  border-radius: 50%;
+  background: rgba(14, 14, 16, 0.82);
+  color: var(--interaction);
+  font-family: var(--f-mono);
+  font-size: 9px;
+  font-weight: 500;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 5;
+}
+
+/* thin leader line (positioned per use) */
+.leader { position: absolute; background: var(--ann-line); z-index: 4; }
+.leader.h { height: 1px; }
+.leader.v { width: 1px; }
+
+/* ---- stage: where the design artifact sits ---- */
+
+.stage {
+  position: absolute;
+  top: 88px; left: 48px; bottom: 56px;
+  right: 396px; /* leaves room for .ann-col.right */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stage.full { right: 48px; }
+
+/* plate: the design owns the slide; notes follow on the next page */
+.stage.bleed {
+  position: absolute;
+  inset: 72px 48px 52px;
+  right: 48px;
+  display: block;
+}
+.stage.bleed .mark { width: 20px; height: 20px; font-size: 10px; }
+
+.notes {
+  position: absolute;
+  top: 88px; left: 48px; right: 48px; bottom: 64px;
+  column-count: 3;
+  column-gap: 44px;
+}
+.notes.two { column-count: 2; }
+.notes .ann {
+  break-inside: avoid;
+  margin-bottom: 26px;
+}
+
+/* ---- token / specimen slides ---- */
+
+.swatch-row { display: flex; gap: var(--sp-md); }
+
+.swatch { width: 132px; }
+.swatch .chip {
+  height: 72px;
+  border-radius: var(--r);
+  border: 1px solid var(--hairline);
+  margin-bottom: 10px;
+}
+.swatch .tk {
+  font-family: var(--f-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--ann-strong);
+  text-transform: uppercase;
+}
+.swatch .hex {
+  font-family: var(--f-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--ann);
+}
+
+/* ---- do / don't ---- */
+
+.verdict {
+  position: absolute;
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+.verdict.keep { color: var(--interaction); }
+.verdict.refuse { color: var(--invalid); }
+
+/* hairline frame used to bound example panels on comparison slides */
+.panel {
+  border: 1px solid var(--hairline);
+  border-radius: var(--r);
+  background: var(--surface);
+}
+
+/* ---- photographic stand-in plates ----
+   Decks carry no raster assets; plates read as photographs at catalogue
+   fidelity while staying token-derived. Vary --plate-a/--plate-b per use. */
+
+.plate {
+  --plate-a: #3E4650;
+  --plate-b: #14161A;
+  background:
+    radial-gradient(120% 90% at 20% 12%, rgba(234,234,234,0.14), transparent 55%),
+    linear-gradient(160deg, var(--plate-a), var(--plate-b));
+}
+.plate.warm { --plate-a: #6B5540; --plate-b: #1A1410; }
+.plate.cool { --plate-a: #3C4A62; --plate-b: #10141C; }
+.plate.moss { --plate-a: #46543E; --plate-b: #121610; }
+.plate.dusk { --plate-a: #55465C; --plate-b: #151018; }
+
+/* quick key chip used inside rendered chrome */
+.qk {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  color: rgba(234,234,234,0.45);
+}
+
+/* page footer index */
+.folio {
+  position: absolute;
+  bottom: 28px; right: 48px;
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--ann);
+}

@@ -1,0 +1,6 @@
+08.05 13:05
+Grove - Field ledger
+The Field ledger pertains to aura fields, aura fields are the property that all content holds on the grid. 
+Field ledger is the method in which relationships are stored as information.
+On the grid, every cell has an innate value related to information. This value is at a default that is non-zero, because the simple existence of the cell itself is also valuable information. Relationships between content are innate, simply being on the grid establishes a piece of content's bearing on all other content. In this way we acknowledge how the grid behaves like space time, and the visualization of fields mirrors that of a weak force, such as gravity. 
+

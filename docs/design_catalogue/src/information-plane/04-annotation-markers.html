@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reading markers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/catalogue.css">
+<style>
+  /* ---------------------------------------------------------------
+     Deck-local rendering helpers. Every value traces to DESIGN.md
+     tokens or to the runtime projection of those tokens.
+     --------------------------------------------------------------- */
+
+  /* interaction hue at paper contrast — the same accent darkened so it
+     stays legible as ink on a page. Not a new accent. */
+  :root { --paper-accent: #314A75; }
+
+  /* ---- Grid context scene: dark canvas, grid lines, cell-quantized field ---- */
+  .scene {
+    position: absolute; inset: 0; overflow: hidden;
+    background-color: var(--canvas);
+    background-image:
+      repeating-linear-gradient(0deg, #242428 0 1px, transparent 1px 176px),
+      repeating-linear-gradient(90deg, #242428 0 1px, transparent 1px 176px),
+      repeating-linear-gradient(0deg, rgba(36,36,40,0.42) 0 1px, transparent 1px 44px),
+      repeating-linear-gradient(90deg, rgba(36,36,40,0.42) 0 1px, transparent 1px 44px);
+  }
+  .scene.pane { inset: auto; }
+  .scene.framed { border: 1px solid var(--hairline); }
+  .fc { position: absolute; }                 /* one field cell, hard edges */
+  .pl { position: absolute; }                 /* one placement footprint */
+  .pl.doc  { background: #DEDEDA; }
+  .pl.img  { background: linear-gradient(160deg, #3C4A62, #10141C); }
+  .pl.img2 { background: linear-gradient(160deg, #6B5540, #1A1410); }
+  .pl.img3 { background: linear-gradient(160deg, #46543E, #121610); }
+  .pl.n0 { background: #B0524E; }
+  .pl.n1 { background: #6E62A6; }
+  .pl.n2 { background: #4E6E9C; }
+
+  /* ---- blip: the resting marker (14px, screen space, never scales) ---- */
+  .blip {
+    position: absolute; width: 14px; height: 14px; transform: translate(-50%,-50%);
+    border: 1px solid rgba(150,182,248,0.7); border-radius: 50%;
+    background: rgba(150,182,248,0.2);
+    box-shadow: 0 0 0 5px rgba(150,182,248,0.05), 0 0 18px rgba(150,182,248,0.24);
+    z-index: 3;
+  }
+  .blip::after { content:""; position:absolute; inset:3px; border-radius:50%; background: rgba(150,182,248,0.82); }
+  .blip.eng {
+    border-color: rgba(234,234,234,0.92); background: rgba(150,182,248,0.35);
+    box-shadow: 0 0 0 7px rgba(150,182,248,0.1), 0 0 24px rgba(150,182,248,0.34);
+  }
+  /* magnified specimen of the same construction */
+  .blip-spec { position:absolute; width:98px; height:98px; border-radius:50%;
+    border:7px solid rgba(150,182,248,0.7); background: rgba(150,182,248,0.2);
+    box-shadow: 0 0 0 35px rgba(150,182,248,0.05), 0 0 126px rgba(150,182,248,0.24); }
+  .blip-spec::after { content:""; position:absolute; inset:14px; border-radius:50%; background: rgba(150,182,248,0.82); }
+
+  /* ---- active marker cue card ---- */
+  .mcard {
+    position: absolute; width: 270px; padding: 14px 15px;
+    background: rgba(22,22,25,0.96); border: 1px solid rgba(150,182,248,0.42);
+    border-radius: var(--r);
+    box-shadow: 0 18px 54px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.05);
+    z-index: 3;
+  }
+  .eyebrow { font: 600 9px var(--f-mono); letter-spacing: 0.15em; text-transform: uppercase; color: rgba(150,182,248,0.88); }
+  .mcard .t { margin-top: 6px; font: 500 22px/1.12 var(--f-display); letter-spacing: 0.02em; text-transform: uppercase; color: rgba(234,234,234,0.94); }
+  .mcard .t .anchordot { display:inline-block; width:7px; height:7px; margin-right:7px; background: var(--anchor-indigo); vertical-align: 3px; }
+  .mcard .excerpt { margin-top: 7px; font: 400 12.5px/1.5 var(--f-ui); color: rgba(234,234,234,0.86); }
+  .mcard .d { margin-top: 6px; font: 500 10px var(--f-mono); color: rgba(234,234,234,0.52); }
+  .mcard .thumbrow { display:flex; align-items:center; gap:11px; margin-top:10px; }
+  .mcard .thumbrow .t { margin-top: 0; font-size: 19px; }
+  .mcard .thumb { width: 54px; height: 42px; border: 1px solid rgba(234,234,234,0.14); flex: none; }
+  .mcard .open {
+    margin-top: 13px; padding: 9px 10px; text-align: center;
+    font: 600 9px var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase;
+    color: #17171B; background: rgba(150,182,248,0.9);
+    border: 1px solid rgba(150,182,248,0.95); border-radius: var(--r);
+  }
+
+  /* ---- local reading surface ---- */
+  .rdr {
+    position: absolute; width: 430px; padding: 18px;
+    background: rgba(22,22,25,0.96); border: 1px solid rgba(150,182,248,0.36);
+    border-radius: var(--r);
+    box-shadow: 0 22px 70px rgba(0,0,0,0.46), inset 0 1px 0 rgba(255,255,255,0.05);
+    z-index: 3;
+  }
+  .rdr .head { display: flex; align-items: flex-start; gap: 14px; }
+  .rdr h2 { margin-top: 5px; font: 500 27px/1 var(--f-display); letter-spacing: 0.02em; text-transform: uppercase; color: rgba(234,234,234,0.94); }
+  .rdr .x { margin-left: auto; font: 400 25px/1 var(--f-ui); color: rgba(234,234,234,0.52); }
+  .rdr .status { min-height: 17px; margin: 12px 0 8px; font: 500 10px/1.6 var(--f-mono); letter-spacing: 0.03em; color: rgba(234,234,234,0.55); }
+  .rdr .status.bad { color: rgba(226,98,92,0.9); }
+  .rdr .acts { display: flex; justify-content: flex-end; margin: 0 0 10px; }
+  .pinbtn {
+    padding: 7px 9px; font: 600 9px var(--f-mono); letter-spacing: 0.07em; text-transform: uppercase;
+    color: rgba(234,234,234,0.72); background: rgba(255,255,255,0.045);
+    border: 1px solid rgba(150,182,248,0.32); border-radius: var(--r);
+  }
+  .pinbtn.on { color: #17171B; background: rgba(150,182,248,0.9); border-color: rgba(150,182,248,0.95); }
+  .pinbtn.no { color: rgba(226,98,92,0.9); border-color: rgba(226,98,92,0.46); }
+
+  .page { padding: 14px; background: var(--paper); color: var(--paper-ink); border: 1px solid rgba(14,14,16,0.18); display: grid; gap: 14px; align-content: start; }
+  .frame { padding: 0 0 12px 12px; border-left: 2px solid rgba(49,74,117,0.62); border-bottom: 1px solid rgba(14,14,16,0.12); }
+  .frame:last-child { padding-bottom: 0; border-bottom: 0; }
+  .frame.bad { border-left-color: rgba(226,98,92,0.68); }
+  .frame .lbl { font: 500 15px/1.15 var(--f-display); letter-spacing: 0.03em; text-transform: uppercase; }
+  .frame .prov { margin-top: 5px; font: 500 9px var(--f-mono); letter-spacing: 0.05em; text-transform: uppercase; color: rgba(49,74,117,0.88); }
+  .frame p { margin-top: 10px; font: 400 12.5px/1.6 var(--f-ui); color: #2A2A30; }
+  .frame .miss { margin-top: 10px; font: 400 12px/1.5 var(--f-ui); color: #7A2E2A; }
+  .frame .shot { width: 76%; height: 92px; margin-top: 10px; }
+  .routes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .route { padding: 5px 6px; font: 600 8px var(--f-mono); letter-spacing: 0.04em; text-transform: uppercase;
+           color: rgba(49,74,117,0.9); border: 1px solid rgba(49,74,117,0.5); border-radius: var(--r); }
+  .pag { display: flex; justify-content: space-between; align-items: center; margin-top: 12px;
+         font: 500 10px var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: rgba(234,234,234,0.55); }
+
+  /* ---- return marker ---- */
+  .retm {
+    position: absolute; width: 190px; padding: 10px 12px;
+    background: rgba(22,22,25,0.96); border: 1px solid rgba(150,182,248,0.48); border-radius: var(--r);
+    box-shadow: 0 16px 42px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.05); z-index: 3;
+  }
+  .retm .l { margin-top: 4px; font: 500 15px/1 var(--f-display); letter-spacing: 0.03em; text-transform: uppercase; color: rgba(234,234,234,0.94); }
+
+  /* ---- annotation layer (never product copy) ---- */
+  .notes .ann { font-size: 12.4px; line-height: 1.85; margin-bottom: 28px; }
+  .notes .ann .n { font-size: 10.5px; }
+  .ann.wide { grid-template-columns: 58px 1fr; }
+  .lbl-m { font: 500 9.5px/1.7 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ann); }
+  .lbl-m.strong { color: var(--ann-strong); }
+  .lbl-m.acc { color: var(--interaction); }
+  .rulebox { border: 1px solid var(--hairline); border-radius: var(--r); }
+  .node { border: 1px solid var(--hairline); border-radius: var(--r); background: var(--surface); padding: 9px 10px; }
+  .node .id { font: 600 9px var(--f-mono); letter-spacing: 0.14em; color: var(--interaction); }
+  .node .nm { margin-top: 3px; font: 500 10.5px var(--f-mono); letter-spacing: 0.05em; color: var(--ann-strong); text-transform: uppercase; }
+  .arrow { position: absolute; height: 1px; background: var(--ann-line); }
+  .arrow::after { content: ""; position: absolute; right: -1px; top: -2.5px; border-left: 5px solid var(--ann-line); border-top: 3px solid transparent; border-bottom: 3px solid transparent; }
+  .arrow.rev::after { right: auto; left: -1px; border-left: 0; border-right: 5px solid var(--ann-line); }
+  .vline { position: absolute; width: 1px; background: var(--ann-line); }
+  .cap { font: 500 9px/1.7 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ann); }
+  .swatchline { display: flex; align-items: center; gap: 9px; }
+  .swatchline i { display: block; width: 22px; height: 12px; }
+</style>
+</head>
+<body>
+
+<!-- ======================= 01 · COVER ======================= -->
+<section class="slide cover">
+  <div class="running"><span>GROVE · DESIGN CATALOGUE</span><span class="fig">04</span></div>
+  <div class="plane">INFORMATION PLANE · APPROACH</div>
+  <h1>Reading<br>markers</h1>
+  <div class="rule"></div>
+  <div class="scope">
+    Quiet field · The gate · Blips, whole area and local · Engagement and the
+    cue hierarchy · The staircase · The open reading · Pin, return, stale ·
+    Refusals
+  </div>
+  <div class="folio">SOURCE: GROVE — ANNOTATIONS · D-ANNOTATION-01…04 · AM-00…AM-04 · APN-00…APN-03</div>
+</section>
+
+<!-- ======================= 02 · PLATE: QUIET FIELD ======================= -->
+<section class="slide">
+  <div class="running"><span>READING MARKERS · QUIET FIELD</span><span class="fig">01 / 18</span></div>
+  <div class="stage bleed">
+    <div class="scene" id="sceneA"></div>
+
+    <div class="blip" style="left:296px; top:200px;"></div>
+    <div class="blip" style="left:900px; top:310px;"></div>
+
+    <span class="mark" style="left:318px; top:166px;">1</span>
+    <span class="mark" style="left:160px; top:122px;">2</span>
+    <span class="mark" style="left:442px; top:128px;">3</span>
+    <span class="mark" style="left:112px; top:474px;">4</span>
+    <span class="mark" style="left:448px; top:238px;">5</span>
+    <span class="mark" style="left:976px; top:182px;">6</span>
+    <span class="mark" style="left:922px; top:276px;">7</span>
+    <span class="mark" style="left:1016px; top:356px;">8</span>
+  </div>
+  <div class="folio">AM-00 · QUIET FIELD</div>
+</section>
+
+<!-- ======================= 03 · NOTES ON 01 ======================= -->
+<section class="slide">
+  <div class="running"><span>READING MARKERS · NOTES ON 01</span><span class="fig">02 / 18</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>Quiet is the default</b>A blip appears only where gathered material has already passed the gate. The absence of a marker is information: nothing here is worth opening yet.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Cells, not clouds</b>The field is painted one cell at a time with hard edges, because the measure behind it is a per-cell fact. A soft glow would promise a precision the measure does not have.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>The perimeter is the group</b>Cells above the contour draw a 1px edge only where the neighbouring cell falls outside the set. That outline is the shape of what a marker would gather.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Below the gate, nothing happens</b>Two scattered pieces make a field but not a reading. Grove neither invents a marker to reward proximity nor shows the numbers it used to decide.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Presence survives distance</b>Every placement holds its true position in a simpler form: a Note keeps its colour, a Document keeps paper, an Image keeps its plate. Distance removes chrome, then detail — never presence.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>The field takes the material's own hue</b>Cells carry the mixed hue of the sources feeding them: neutral for Documents and Images, the Note's own colour for Notes, Anchor indigo where authored context exists. Annotation invents no hue of its own.</span></div>
+    <div class="ann"><span class="n">07</span><span><b>A second concentration is a second candidate</b>Separated groups qualify on their own evidence and carry their own marker. One reading per group; neighbours never merge into one.</span></div>
+    <div class="ann"><span class="n">08</span><span><b>Depth is part of the field</b>Placements on nearby Layers contribute through the same falloff, so a group can be built across Layers without the drawing pretending they sit on one.</span></div>
+  </div>
+  <div class="folio">GROVE — ANNOTATIONS · DESIGN.MD SCALE &amp; DISTANCE</div>
+</section>
+
+<!-- ======================= 04 · QUALIFICATION GEOMETRY ======================= -->
+<section class="slide">
+  <div class="running"><span>READING MARKERS · QUALIFICATION</span><span class="fig">03 / 18</span></div>
+
+  <div class="stage bleed">
+    <!-- calibration surface -->
+    <div style="position:absolute; left:0; top:6px;">
+      <div class="lbl-m strong">1920 × 1080 CALIBRATION SURFACE · 220 PX CELL · SHOWN AT 0.42</div>
+      <div id="gateSurface" style="position:relative; width:806px; height:454px; margin-top:10px; border:1px solid var(--hairline); background:var(--canvas);"></div>
+
+      <div style="display:flex; gap:38px; margin-top:16px;">
+        <div class="swatchline"><i style="background:rgba(234,234,234,0.13); border:1px solid rgba(234,234,234,0.26);"></i><span class="lbl-m"><span class="lbl-m acc">24</span> SUPPORTED</span></div>
+        <div class="swatchline"><i style="border:1px solid rgba(234,234,234,0.09);"></i><span class="lbl-m">8 NOT SUPPORTED</span></div>
+        <div class="swatchline"><i style="background:repeating-linear-gradient(135deg,rgba(234,234,234,0.06) 0 5px,transparent 5px 10px); border:1px solid rgba(234,234,234,0.09);"></i><span class="lbl-m">PARTIAL CELLS DO NOT COUNT</span></div>
+        <div class="swatchline"><i style="border:1px solid rgba(150,182,248,0.55);"></i><span class="lbl-m">8 × 4 = 32 FULL CELLS</span></div>
+      </div>
+
+      <div class="lbl-m" style="margin-top:14px; max-width:800px; letter-spacing:0.09em;">
+        THE FLOOR IS 24 OF 32 SUPPORTED CELLS — 75%. THE LEDGER IS CENTRED ON THE
+        CANDIDATE, NOT ON THE VIEW, SO PANNING AND ZOOMING CANNOT MAKE THE SAME
+        MATERIAL QUALIFY OR DISAPPEAR. 24/32 IS A FIXTURE AND AN EVIDENCE TARGET;
+        IT IS NEVER SHOWN TO A PERSON.
+      </div>
+    </div>
+
+    <!-- right column: three qualification rules -->
+    <div style="position:absolute; right:0; top:0; width:330px; display:flex; flex-direction:column; gap:14px;">
+
+      <div class="rulebox" style="padding:12px 14px;">
+        <div class="lbl-m strong">OVERLAP GROUPS · ADJACENCY DOES NOT</div>
+        <div style="position:relative; height:76px; margin-top:10px;">
+          <div class="scene pane" id="gateOverlap" style="left:0; top:0; width:302px; height:76px; border:1px solid var(--hairline);"></div>
+        </div>
+        <div class="cap" style="margin-top:6px; color:var(--interaction);">FIELDS OVERLAP · ONE CANDIDATE</div>
+        <div style="position:relative; height:76px; margin-top:12px;">
+          <div class="scene pane" id="gateAdjacent" style="left:0; top:0; width:302px; height:76px; border:1px solid var(--hairline);"></div>
+        </div>
+        <div class="cap" style="margin-top:6px; color:var(--invalid);">CELLS BETWEEN BELONG TO NEITHER · TWO, NOT ONE</div>
+      </div>
+
+      <div class="rulebox" style="padding:12px 14px;">
+        <div class="lbl-m strong">DEPTH ENTERS THROUGH FALLOFF</div>
+        <div style="margin-top:10px; display:flex; flex-direction:column; gap:7px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="cap" style="width:66px;">SAME</span>
+            <div style="flex:1; height:12px; background:rgba(234,234,234,0.30);"></div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="cap" style="width:66px;">±1 LAYER</span>
+            <div style="flex:1; height:12px; background:rgba(234,234,234,0.14);"></div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="cap" style="width:66px;">±2 LAYERS</span>
+            <div style="flex:1; height:12px; background:rgba(234,234,234,0.055);"></div>
+          </div>
+        </div>
+        <div class="cap" style="margin-top:9px;">A GROUP MAY CROSS LAYERS · DISTANCE COSTS SUPPORT</div>
+      </div>
+
+      <div class="rulebox" style="padding:12px 14px;">
+        <div class="lbl-m strong">ONE LONG DOCUMENT CAN QUALIFY</div>
+        <div style="position:relative; height:76px; margin-top:10px;">
+          <div class="scene pane" id="gateSingle" style="left:0; top:0; width:302px; height:76px; border:1px solid var(--hairline);"></div>
+        </div>
+        <div class="cap" style="margin-top:9px;">SOURCE MASS <span style="color:var(--interaction);">D ≥ 1.0</span> · NO ITEM-COUNT RULE</div>
+      </div>
+    </div>
+  </div>
+  <div class="folio">D-ANNOTATION-04 · FIELD SATURATION GATE</div>
+</section>
+
+<!-- ======================= 05 · PLATE: BLIPS ======================= -->
+<section class="slide">
+  <div class="running"><span>READING MARKERS · BLIPS</span><span class="fig">04 / 18</span></div>
+  <div class="stage bleed">
+    <div class="scene" id="sceneB"></div>
+
+    <div class="blip" style="left:396px; top:264px;"></div>
+    <div class="blip" style="left:233px; top:163px;"></div>
+    <div class="blip" style="left:532px; top:374px;"></div>
+    <div class="blip" style="left:924px; top:172px;"></div>
+
+    <!-- magnified specimen of the same construction -->
+    <div style="position:absolute; right:0; bottom:0; width:300px; height:214px; border:1px solid var(--hairline); background:rgba(14,14,16,0.9);">
+      <div class="blip-spec" style="left:101px; top:58px;"></div>
+    </div>
+
+    <span class="mark" style="left:418px; top:232px;">1</span>
+    <span class="mark" style="left:255px; top:131px;">2</span>
+    <span class="mark" style="left:554px; top:342px;">3</span>
+    <span class="mark" style="left:756px; top:120px;">4</span>
+    <span class="mark" style="left:946px; top:140px;">5</span>
+    <span class="mark" style="left:898px; top:392px;">6</span>
+    <span class="mark" style="left:1150px; top:552px;">7</span>
+    <span class="mark" style="left:620px; top:452px;">8</span>
+  </div>
+  <div class="folio">AM-00 · WHOLE-AREA AND LOCAL CANDIDATES</div>
+</section>
+
+<!-- ======================= 06 · NOTES ON 04 ======================= -->
+<section class="slide">
+  <div class="running"><span>READING MARKERS · NOTES ON 04</span><span class="fig">05 / 18</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>Two tiers, one grammar</b>A whole-area candidate covers everything one concentration holds. A local candidate covers one dense group inside it. They differ in what they gather, never in how they look.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>One marker per group</b>Groups are found first, then exactly one marker is assigned to each. Without that rule a busy area would sprout a marker for every pair of pieces.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>The dense group keeps its own</b>A tight group inside a larger area is still worth reading on its own terms, so it carries a marker as well as the area around it.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Separation makes a neighbour</b>Concentrations held apart by relative distance stay separate candidates — neighbouring systems inside one galaxy, not one body.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Groups are found by overlap</b>Pieces join when their fields overlap on the same target Layer. Sitting next to each other is not a relationship, and guessing the topic is not used at all.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Quiet construction</b>A 1px interaction ring at 0.7, fill at 0.2, a solid core inset 3px, and a soft halo. Enough to notice at rest; nothing that pulses for attention.</span></div>
+    <div class="ann"><span class="n">07</span><span><b>No counts, no scores, no badges</b>The blip carries no number and no saturation value. What it gathered is answered by engaging it, not by decorating it.</span></div>
+    <div class="ann"><span class="n">08</span><span><b>The blip does not scale</b>The marker belongs to the reading layer, not the Grid. It keeps its size and its place as the view moves, cannot be selected, and never becomes a placed object.</span></div>
+  </div>
+  <div class="folio">GROVE — ANNOTATIONS · D-ANNOTATION-02 (THE MARKER IS A BLIP)</div>
+</section>
+
+<!-- ======================= 07 · PLATE: ENGAGEMENT AND CUES ======================= -->
+<section class="slide">
+  <div class="running"><span>READING MARKERS · ENGAGEMENT AND CUE</span><span class="fig">06 / 18</span></div>
+  <div class="stage bleed">
+    <div class="scene pane framed" id="sceneC" style="left:0; top:0; width:580px; height:596px;"></div>
+
+    <!-- the engagement region: the concentration and the pieces it gathered -->
+    <div style="position:absolute; left:88px; top:44px; width:352px; height:308px; border:1px solid rgba(150,182,248,0.28); z-index:2;"></div>
+    <div class="blip eng" style="left:264px; top:214px;"></div>
+    <div class="blip" style="left:420px; top:492px;"></div>
+
+    <!-- pointer resting on a gathered piece, not on the dot -->
+    <div style="position:absolute; left:196px; top:286px; width:16px; height:16px; z-index:5;">
+      <svg width="16" height="16" viewBox="0 0 16 16"><path d="M1 1 L1 13 L4.6 9.6 L7 15 L9.4 14 L7 8.8 L12 8.6 Z" fill="rgba(234,234,234,0.94)" stroke="rgba(14,14,16,0.9)" stroke-width="0.8"/></svg>
+    </div>
+
+    <!-- cue ladder: the four cues the active marker can carry, in order -->
+    <div class="mcard" style="left:620px; top:140px;">
+      <div class="eyebrow">One group nearby</div>
+      <div class="t"><span class="anchordot"></span>Harbour survey</div>
+      <div class="d">6 pieces gathered nearby</div>
+      <div class="open">Open reading</div>
+    </div>
+    <div class="mcard" style="left:914px; top:140px;">
+      <div class="eyebrow">Everything nearby</div>
+      <div class="t">Pier rebuild notes</div>
+      <div class="d">11 pieces gathered nearby</div>
+      <div class="open">Open reading</div>
+    </div>
+    <div class="mcard" style="left:620px; top:326px;">
+      <div class="eyebrow">One group nearby</div>
+      <div class="thumbrow">
+        <div class="thumb plate cool"></div>
+        <div class="t">Slipway<br>at dusk</div>
+      </div>
+      <div class="d">4 pieces gathered nearby</div>
+      <div class="open">Open reading</div>
+    </div>
+    <div class="mcard" style="left:914px; top:326px;">
+      <div class="eyebrow">One group nearby</div>
+      <div class="excerpt">Rebuilt the tide ledger from the 1974 survey; the gauge readings still need checking.</div>
+      <div class="d">3 pieces gathered nearby</div>
+      <div class="open">Open reading</div>
+    </div>
+
+    <span class="mark" style="left:214px; top:308px;">1</span>
+    <span class="mark" style="left:286px; top:182px;">2</span>
+    <span class="mark" style="left:66px; top:38px;">3</span>
+    <span class="mark" style="left:442px; top:460px;">4</span>
+    <span class="mark" style="left:592px; top:142px;">5</span>
+    <span class="mark" style="left:892px; top:142px;">6</span>
+    <span class="mark" style="left:592px; top:328px;">7</span>
+    <span class="mark" style="left:892px; top:328px;">8</span>
+    <span class="mark" style="left:892px; top:452px;">9</span>
+  </div>
+  <div class="folio">AM-01 · ACTIVE MARKER · ANCHOR → TITLE → IMAGE → TEXT</div>
+</section>
+
+<!-- ======================= 08 · NOTES ON 06 ======================= -->
+<section class="slide">
+  <div class="running"><span>READING MARKERS · NOTES ON 06</span><span class="fig">07 / 18</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>Proximity engages, not aim</b>The pointer never has to hit the dot. Resting over a piece the marker gathered engages it, because the cue is for material the person is already near.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>The concentration engages too</b>The dense cells the marker was built from are part of its reach. Hovering the area works even where nothing is placed.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Hover engages, choosing opens</b>Engagement is free and reversible; opening the reading is deliberate. Escape returns to the quiet state and touches neither the Grid nor the view.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>One active at a time</b>Moving to another candidate replaces the active one, and its neighbours stay quiet blips. Cues never accumulate on screen.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Anchor first</b>If a gathered piece carries authored context, that context is the cue, marked in Anchor indigo. A person's own words about their material outrank anything Grove could derive.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Then a title</b>Otherwise the title of the nearest piece on the same Layer names the group — the closest thing to a name the material already has.</span></div>
+    <div class="ann"><span class="n">07</span><span><b>Then the picture</b>With no Anchor and no title, an Image shows a thumbnail beside its name, so a visual group stays visually identifiable.</span></div>
+    <div class="ann"><span class="n">08</span><span><b>Then the words themselves</b>Last, a short passage from the nearest text, set in reading type and wrapped. A sentence is not a title: it is never set in display caps and never cut off with an ellipsis.</span></div>
+    <div class="ann"><span class="n">09</span><span><b>One action, no menu</b>The cue answers "what is here" and offers a single way in. Destinations for individual pieces belong to the reading, where each piece can be named.</span></div>
+  </div>
+  <div class="folio">AM-01 · T-AN01 CUE HIERARCHY</div>
+</section>
+
+<!-- ======================= 09 · PLATE: THE STAIRCASE ======================= -->
+<section class="slide">
+  <div class="running"><span>READING MARKERS · THE APPROACH</span><span class="fig">08 / 18</span></div>
+  <div class="stage bleed">
+    <div class="scene" id="sceneD"></div>
+
+    <svg style="position:absolute; left:0; top:0; width:1184px; height:596px; z-index:3;" viewBox="0 0 1184 596">
+      <path d="M330 366 L392 366 L392 316 L462 316 L462 266 L536 266 L536 216 L616 216"
+            fill="none" stroke="rgba(150,182,248,0.55)" stroke-width="1"/>
+    </svg>
+    <div class="blip eng" style="left:330px; top:366px;"></div>
+    <div class="blip" style="left:892px; top:452px;"></div>
+
+    <div class="mcard" style="left:616px; top:150px;">
+      <div class="eyebrow">Everything nearby</div>
+      <div class="t">Harbour survey</div>
+      <div class="d">9 pieces gathered nearby</div>
+      <div class="open">Open reading</div>
+    </div>
+
+    <span class="mark" style="left:300px; top:398px;">1</span>
+    <span class="mark" style="left:428px; top:284px;">2</span>
+    <span class="mark" style="left:566px; top:184px;">3</span>
+    <span class="mark" style="left:214px; top:296px;">4</span>
+    <span class="mark" style="left:914px; top:420px;">5</span>
+    <span class="mark" style="left:892px; top:152px;">6</span>
+    <span class="mark" style="left:66px; top:38px;">7</span>
+  </div>
+  <div class="folio">GROVE — ANNOTATIONS · STAIRCASE LINE, NO ANCHORS</div>
+</section>
+
+<!-- ======================= 10 · NOTES ON 08 ======================= -->
+<section class="slide">
+  <div class="running"><span>READING MARKERS · NOTES ON 08</span><span class="fig">09 / 18</span></div>
+  <div class="notes two">
+    <div class="ann"><span class="n">01</span><span><b>The line starts at the centre of the material</b>Its foot sits where the gathered fields overlap most; ties break toward the smallest distance between the pieces themselves. The cue points at the material's centre of gravity, not at a cell someone chose.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>A staircase, not a leader line</b>Steps read as a route to somewhere rather than a pin stuck into the Grid. The line carries no anchors, no arrowhead, and no terminal dot.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>The cue sits at the head of the route</b>The card is the destination of the line, so the connection between what is drawn and what is named needs no label to explain it.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>It overlaps the field it belongs to</b>Drawn over its own concentration, the line says which material the cue is about without covering the pieces it gathered.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Only one route is drawn</b>The other candidates stay as blips. Two staircases at once would turn the Grid into a diagram of itself.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Motion is courtesy, not message</b>The line draws on approach and settles. With reduced motion it simply appears at the same threshold, and the settled frame carries exactly the same meaning.</span></div>
+    <div class="ann"><span class="n">07</span><span><b>Nothing here is a Grid object</b>Line, blip, and cue live on the reading layer. They occupy no cells, join no selection, enter no history — and the view is never re-framed to show them.</span></div>
+  </div>
+  <div class="folio">GROVE — ANNOTATIONS · CAMERA OBSERVER BOUNDARY</div>
+</section>
+
+<!-- ======================= 11 · PLATE: THE OPEN READING ======================= -->
+<section class="slide">
+  <div class="running"><span>READING MARKERS · THE OPEN READING</span><span class="fig">10 / 18</span></div>
+  <div class="stage bleed">
+    <div class="scene" id="sceneE"></div>
+
+    <div class="rdr" style="left:594px; top:6px;">
+      <div class="head">
+        <div>
+          <div class="eyebrow">Nearby reading</div>
+          <h2>Brochure reading</h2>
+        </div>
+        <div class="x">×</div>
+      </div>
+      <div class="status">5 pieces gathered nearby</div>
+      <div class="acts"><span class="pinbtn">Pin reading</span></div>
+      <div class="page">
+        <div class="frame">
+          <div class="lbl">Slipway at dusk</div>
+          <div class="prov">Harbour · 1 placement</div>
+          <div class="shot plate cool"></div>
+        </div>
+        <div class="frame">
+          <div class="lbl">Pier rebuild notes</div>
+          <div class="prov">Harbour · 2 placements</div>
+          <div class="routes">
+            <span class="route">Grid placement</span>
+            <span class="route">Core Memory</span>
+            <span class="route">Writing Slate</span>
+          </div>
+        </div>
+        <div class="frame">
+          <div class="lbl">Tide ledger</div>
+          <div class="prov">Survey · 1 placement</div>
+          <p>Gauge readings from the 1974 survey, rebuilt against the new
+             datum. The north pier figures continue on the next page.</p>
+        </div>
+      </div>
+      <div class="pag"><span>Previous</span><span>1 / 2</span><span>Next</span></div>
+    </div>
+
+    <span class="mark" style="left:556px; top:240px;">1</span>
+    <span class="mark" style="left:1038px; top:30px;">2</span>
+    <span class="mark" style="left:1038px; top:150px;">3</span>
+    <span class="mark" style="left:1038px; top:212px;">4</span>
+    <span class="mark" style="left:1038px; top:344px;">5</span>
+    <span class="mark" style="left:1038px; top:378px;">6</span>
+    <span class="mark" style="left:1038px; top:470px;">7</span>
+    <span class="mark" style="left:1038px; top:548px;">8</span>
+    <span class="mark" style="left:150px; top:96px;">9</span>
+  </div>
+  <div class="folio">AM-02 / AR-00…AR-04 · LOCAL READING BESIDE ITS SOURCE</div>
+</section>
+
+<!-- ======================= 12 · NOTES ON 10 ======================= -->
+<section class="slide">
+  <div class="running"><span>READING MARKERS · NOTES ON 10</span><span class="fig">11 / 18</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>It opens beside its source</b>The reading is framed next to the material it was made from, and that material stays visible. It is not centred, and nothing behind it is dimmed.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Escape is always the way back</b>Escape closes this reading only, and focus returns to whatever invoked it. Closing a destination comes back here while its route is still valid.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>The page is paper</b>Editions read as print: paper fill, ink text, a readable measure, steady rhythm. In Grove a light surface always means a page, never chrome.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Every piece keeps its form</b>Notes and Documents stay text; Images and GIFs keep complete frames at their own proportions. Nothing is flattened into one generic card or re-encoded to fit.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Footer notes name the origin</b>Each piece carries the Layer it came from and how many placements it has, the way a magazine keeps its running credits. Provenance is part of the reading.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Four named destinations</b>Grid placement returns to where the piece was put; Core Memory opens the record itself; Writing Slate takes text; Image Viewer takes pictures. Grove never infers a destination from the form.</span></div>
+    <div class="ann"><span class="n">07</span><span><b>Pages, never cuts</b>When material exceeds the page it continues onto the next one. Nothing is truncated, summarized, or shrunk below the readable measure to make a page fit.</span></div>
+    <div class="ann"><span class="n">08</span><span><b>Paging is the whole navigation</b>Page context stays in quiet monospace at the foot. There is no scrollbar race, no zoom control, and no second reading opened alongside.</span></div>
+    <div class="ann"><span class="n">09</span><span><b>Reading changes nothing</b>Opening, paging, and returning create no Memory, move no Placement, write no history — and never re-centre the view. The source stays exactly where the person put it.</span></div>
+  </div>
+  <div class="folio">D-ANNOTATION-01 · SOURCE ROUTING AND MEDIA BOUNDARY</div>
+</section>
+
+<!-- ======================= 13 · PLATE: PIN AND RETURN ======================= -->
+<section class="slide">
+  <div class="running"><span>READING MARKERS · PIN AND RETURN</span><span class="fig">12 / 18</span></div>
+  <div class="stage bleed">
+    <!-- the source in view: the reading is kept beside it -->
+    <div class="scene pane framed" id="sceneF1" style="left:0; top:0; width:574px; height:596px;"></div>
+    <div class="rdr" style="left:240px; top:70px; width:320px; padding:15px;">
+      <div class="head">
+        <div>
+          <div class="eyebrow">Nearby reading</div>
+          <h2 style="font-size:22px;">Brochure reading</h2>
+        </div>
+        <div class="x">×</div>
+      </div>
+      <div class="status">Pinned reading stays here while you look around.</div>
+      <div class="acts"><span class="pinbtn on">Pinned</span></div>
+      <div class="page">
+        <div class="frame">
+          <div class="lbl">Slipway at dusk</div>
+          <div class="prov">Harbour · 1 placement</div>
+          <div class="shot plate cool" style="height:72px;"></div>
+        </div>
+        <div class="frame">
+          <div class="lbl">Tide ledger</div>
+          <div class="prov">Survey · 1 placement</div>
+          <p>Gauge readings from the 1974 survey, rebuilt against the new datum.</p>
+        </div>
+      </div>
+      <div class="pag"><span>Previous</span><span>1 / 2</span><span>Next</span></div>
+    </div>
+
+    <!-- the view moved: only the return marker remains -->
+    <div class="scene pane framed" id="sceneF2" style="left:610px; top:0; width:574px; height:596px;"></div>
+    <div class="retm" style="left:634px; top:494px;">
+      <div class="eyebrow">Reading saved</div>
+      <div class="l">Return to reading</div>
+    </div>
+
+    <span class="mark" style="left:196px; top:300px;">1</span>
+    <span class="mark" style="left:216px; top:78px;">2</span>
+    <span class="mark" style="left:566px; top:152px;">3</span>
+    <span class="mark" style="left:838px; top:502px;">4</span>
+    <span class="mark" style="left:1000px; top:212px;">5</span>
+    <span class="mark" style="left:712px; top:96px;">6</span>
+    <span class="mark" style="left:66px; top:38px;">7</span>
+  </div>
+  <div class="folio">APN-01 / APN-02 · AM-03 / AM-04 · ONE PINNED READING</div>
+</section>
+
+<!-- ======================= 14 · NOTES ON 12 ======================= -->
+<section class="slide">
+  <div class="running"><span>READING MARKERS · NOTES ON 12</span><span class="fig">13 / 18</span></div>
+  <div class="notes two">
+    <div class="ann"><span class="n">01</span><span><b>The source stays in view beside it</b>A pinned reading is still a local one. It sits next to the material it was made from, and that material is never covered or moved to make room.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Pin is a deliberate keep</b>An active reading follows engagement and disappears with it. Pinning says: hold this one while I look around. It is not a promotion to a fixed panel at the edge of the screen.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>The action states its own state</b>The control reads Pin reading before and Pinned after, taking the interaction fill so the kept reading is legible at a glance. One reading is kept at a time; a second request is answered in words, never by a silent swap.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>The return marker appears only when needed</b>While the source is in view the reading speaks for itself. When the source leaves view, one restrained marker remains — and choosing it restores the same page, the same piece, and the same routes back to source.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>The pinned reading does not follow the view</b>It stays with its material rather than riding along at a fixed screen position. Moving away is how the person left it; it is not how they lose it.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Returning does not move the view</b>The reading comes back to the person. The Grid context is never re-framed, no placement is disturbed, and nothing is selected on the way.</span></div>
+    <div class="ann"><span class="n">07</span><span><b>A pin is not a record</b>Pinned state lasts the session. It creates no Memory, changes no Placement, and leaves nothing behind to clean up. Dismissing releases the pin and returns focus.</span></div>
+  </div>
+  <div class="folio">T-AN08 · ANNOTATION PINNING</div>
+</section>
+
+<!-- ======================= 15 · PLATE: RECOVERY ======================= -->
+<section class="slide">
+  <div class="running"><span>READING MARKERS · WHEN IT CANNOT</span><span class="fig">14 / 18</span></div>
+  <div class="stage bleed">
+    <div style="position:absolute; inset:0; display:flex; gap:48px; align-items:center;">
+
+      <div class="rdr" style="position:relative; left:auto; top:auto; width:340px; padding:16px;">
+        <div class="head">
+          <div>
+            <div class="eyebrow">Nearby reading</div>
+            <h2 style="font-size:23px;">Brochure reading</h2>
+          </div>
+          <div class="x">×</div>
+        </div>
+        <div class="status bad">Only one reading can be pinned at a time. Close it before pinning another.</div>
+        <div class="acts"><span class="pinbtn no">Pin reading</span></div>
+        <div class="page">
+          <div class="frame">
+            <div class="lbl">Slipway at dusk</div>
+            <div class="prov">Harbour · 1 placement</div>
+            <div class="shot plate cool" style="height:80px;"></div>
+          </div>
+          <div class="frame">
+            <div class="lbl">Tide ledger</div>
+            <div class="prov">Survey · 1 placement</div>
+            <p>Gauge readings from the 1974 survey, rebuilt against the new datum.</p>
+          </div>
+        </div>
+        <div class="pag"><span>Previous</span><span>1 / 2</span><span>Next</span></div>
+      </div>
+
+      <div class="rdr" style="position:relative; left:auto; top:auto; width:340px; padding:16px;">
+        <div class="head">
+          <div>
+            <div class="eyebrow">Nearby reading</div>
+            <h2 style="font-size:23px;">Reading unavailable</h2>
+          </div>
+          <div class="x">×</div>
+        </div>
+        <div class="status">The nearby material changed. Close this reading to return.</div>
+        <div class="acts"><span class="pinbtn no">Pinned</span></div>
+        <div class="page">
+          <div class="frame bad">
+            <div class="lbl">Tide ledger</div>
+            <div class="prov">Survey · 0 placements</div>
+            <div class="miss">This source is unavailable. The original remains safe.</div>
+          </div>
+          <div class="frame">
+            <div class="lbl">Pier rebuild notes</div>
+            <div class="prov">Harbour · 2 placements</div>
+            <p>The north pier figures continue on the next page, with the
+               contractor's revised dates.</p>
+          </div>
+        </div>
+        <div class="pag"><span>Previous</span><span>1 / 1</span><span>Next</span></div>
+      </div>
+
+      <div class="rdr" style="position:relative; left:auto; top:auto; width:340px; padding:16px;">
+        <div class="head">
+          <div>
+            <div class="eyebrow">Nearby reading</div>
+            <h2 style="font-size:23px;">Brochure reading</h2>
+          </div>
+          <div class="x">×</div>
+        </div>
+        <div class="status">4 pieces gathered nearby</div>
+        <div class="acts"><span class="pinbtn">Pin reading</span></div>
+        <div class="page">
+          <div class="frame bad">
+            <div class="lbl">Slipway at dusk</div>
+            <div class="prov">Harbour · 1 placement</div>
+            <div class="miss">Image unavailable. The original remains safe.</div>
+          </div>
+          <div class="frame">
+            <div class="lbl">Tide ledger</div>
+            <div class="prov">Survey · 1 placement</div>
+            <p>Gauge readings from the 1974 survey, rebuilt against the new
+               datum, with the corrected chart figures.</p>
+          </div>
+        </div>
+        <div class="pag"><span>Previous</span><span>1 / 2</span><span>Next</span></div>
+      </div>
+    </div>
+
+    <span class="mark" style="left:348px; top:118px;">1</span>
+    <span class="mark" style="left:348px; top:166px;">2</span>
+    <span class="mark" style="left:736px; top:118px;">3</span>
+    <span class="mark" style="left:736px; top:238px;">4</span>
+    <span class="mark" style="left:736px; top:352px;">5</span>
+    <span class="mark" style="left:1126px; top:238px;">6</span>
+    <span class="mark" style="left:1126px; top:352px;">7</span>
+  </div>
+  <div class="folio">AM-02 RECOVERY · APN-03 · T-AN08 REFUSAL</div>
+</section>
+
+<!-- ======================= 16 · NOTES ON 14 ======================= -->
+<section class="slide">
+  <div class="running"><span>READING MARKERS · NOTES ON 14</span><span class="fig">15 / 18</span></div>
+  <div class="notes two">
+    <div class="ann"><span class="n">01</span><span><b>A second pin is refused in words</b>With one pin available, asking for another explains the limit instead of quietly replacing the reading the person chose to keep. The wording says what to do next rather than what went wrong.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Refusal wears the invalid role, and nothing else does</b>Only the pin control and its explanation change; the reading itself stays open and fully usable. Refusal is not an error state and never becomes a floating alert.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Stale is explained, not hidden</b>When the gathered material changes underneath a reading, the reading says so and offers the way back. It does not rearrange itself without warning or vanish while the person is reading it.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>An unavailable piece keeps its place</b>A source that cannot be shown stays in the page with its name, its origin, and an invalid edge. Dropping it would quietly rewrite what was gathered.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>One piece failing does not fail the page</b>The rest of the reading continues around it, in order. Only the frame that cannot be shown is marked.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>The original is always safe — and says so</b>Recovery wording answers the person's first question directly, because a missing frame inside a reading looks exactly like lost work.</span></div>
+    <div class="ann"><span class="n">07</span><span><b>The failure is named where it happened</b>Explanations live inline in the reading that failed, beside the piece that failed. Grove has no dialog box, no scrim, and no floating confirmation.</span></div>
+  </div>
+  <div class="folio">T-AN01 / T-AN08 RECOVERY AND FAILURE BEHAVIOUR</div>
+</section>
+
+<!-- ======================= 17 · STATES AND RETURNS ======================= -->
+<section class="slide">
+  <div class="running"><span>READING MARKERS · STATES AND RETURNS</span><span class="fig">16 / 18</span></div>
+  <div class="stage bleed">
+    <div style="position:absolute; left:0; top:4px;" class="lbl-m strong">APPROACH</div>
+    <div style="position:absolute; left:0; top:196px;" class="lbl-m strong">READING</div>
+    <div style="position:absolute; left:0; top:408px;" class="lbl-m strong">KEEPING</div>
+
+    <!-- approach lane -->
+    <div class="node" style="position:absolute; left:0; top:56px; width:186px;"><div class="id">AM-00</div><div class="nm">Quiet field</div></div>
+    <div class="arrow" style="left:186px; top:80px; width:60px;"></div>
+    <div class="node" style="position:absolute; left:246px; top:56px; width:186px;"><div class="id">AM-01</div><div class="nm">Active marker</div></div>
+    <div class="arrow" style="left:432px; top:80px; width:60px;"></div>
+    <div class="node" style="position:absolute; left:492px; top:56px; width:186px;"><div class="id">AM-02</div><div class="nm">Local reading</div></div>
+    <div class="cap" style="position:absolute; left:190px; top:36px;">POINTER NEAR</div>
+    <div class="cap" style="position:absolute; left:436px; top:36px;">OPEN</div>
+    <div class="cap" style="position:absolute; left:0px; top:126px;">BELOW THE GATE THERE IS NO CANDIDATE AND NO MARKER — AR-00</div>
+
+    <!-- reading lane -->
+    <div class="node" style="position:absolute; left:0; top:248px; width:186px;"><div class="id">AR-01</div><div class="nm">Edition reading</div></div>
+    <div class="arrow" style="left:186px; top:272px; width:60px;"></div>
+    <div class="node" style="position:absolute; left:246px; top:248px; width:186px;"><div class="id">AR-02</div><div class="nm">Source action</div></div>
+    <div class="arrow" style="left:432px; top:272px; width:60px;"></div>
+    <div class="node" style="position:absolute; left:492px; top:248px; width:186px;"><div class="id">—</div><div class="nm">Grid · Memory · Slate</div></div>
+    <div class="vline" style="left:678px; top:296px; height:26px;"></div>
+    <div class="arrow rev" style="left:60px; top:322px; width:618px;"></div>
+    <div class="vline" style="left:60px; top:296px; height:26px;"></div>
+    <div class="cap" style="position:absolute; left:66px; top:330px;">AR-03 · CLOSING A DESTINATION RETURNS TO THE INVOKING READING</div>
+
+    <!-- keeping lane -->
+    <div class="node" style="position:absolute; left:0; top:460px; width:186px;"><div class="id">APN-00</div><div class="nm">Active reader</div></div>
+    <div class="arrow" style="left:186px; top:484px; width:60px;"></div>
+    <div class="node" style="position:absolute; left:246px; top:460px; width:186px;"><div class="id">APN-01 · AM-03</div><div class="nm">Pinned reader</div></div>
+    <div class="arrow" style="left:432px; top:484px; width:60px;"></div>
+    <div class="node" style="position:absolute; left:492px; top:460px; width:186px;"><div class="id">APN-02 · AM-04</div><div class="nm">Return marker</div></div>
+    <div class="vline" style="left:678px; top:508px; height:26px;"></div>
+    <div class="arrow rev" style="left:330px; top:534px; width:348px;"></div>
+    <div class="vline" style="left:330px; top:508px; height:26px;"></div>
+    <div class="cap" style="position:absolute; left:336px; top:542px;">RETURN RESTORES THE SAME PAGE AND PIECE · NO VIEW CHANGE</div>
+    <div class="cap" style="position:absolute; left:190px; top:440px;">PIN</div>
+    <div class="cap" style="position:absolute; left:436px; top:440px;">SOURCE LEAVES VIEW</div>
+
+    <!-- one way back -->
+    <div style="position:absolute; right:0; top:56px; width:406px; height:490px; border-left:1px solid var(--hairline); padding-left:36px;">
+      <div class="lbl-m strong">EVERY STATE HAS ONE WAY BACK</div>
+      <div class="ann wide" style="margin-top:20px;"><span class="n">ESC</span><span><b>Escape dismisses one surface</b>The topmost reading closes and only that one. Focus returns to whatever invoked it; the Grid and the view are untouched.</span></div>
+      <div class="ann wide" style="margin-top:18px;"><span class="n">APN-03</span><span><b>Replace or dismiss is explicit</b>A kept reading is never silently lost. This release refuses a second pin in words; an explicit replacement choice is the accepted direction.</span></div>
+      <div class="ann wide" style="margin-top:18px;"><span class="n">AM-02</span><span><b>An invalid source explains itself</b>A source that fails mid-approach dismisses the marker through the reading with an explanation, never in silence.</span></div>
+      <div class="ann wide" style="margin-top:18px;"><span class="n">AR-04</span><span><b>Dismissal is local</b>Closing the reading returns focus and leaves Memory, Placement, selection, and the view exactly as they were.</span></div>
+    </div>
+  </div>
+  <div class="folio">WIREFRAME STATE CONTRACTS · MARKERS · READING · PINNING</div>
+</section>
+
+<!-- ======================= 18 · REFUSALS, RENDERED ======================= -->
+<section class="slide">
+  <div class="running"><span>READING MARKERS · REFUSALS</span><span class="fig">17 / 18</span></div>
+  <div class="stage bleed">
+    <div style="position:absolute; inset:0; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:auto auto; column-gap:34px; row-gap:24px; align-content:center;">
+
+      <!-- keep row -->
+      <div>
+        <div class="verdict keep" style="position:relative;">KEEP · BESIDE ITS SOURCE</div>
+        <div class="scene framed" id="refKeep1" style="position:relative; height:224px; margin-top:10px;"></div>
+      </div>
+      <div>
+        <div class="verdict keep" style="position:relative;">KEEP · QUIET AND WORDLESS</div>
+        <div class="scene framed" id="refKeep2" style="position:relative; height:224px; margin-top:10px;"></div>
+      </div>
+      <div>
+        <div class="verdict keep" style="position:relative;">KEEP · IT CONTINUES</div>
+        <div style="position:relative; height:224px; margin-top:10px; background:var(--paper); color:var(--paper-ink); border:1px solid rgba(14,14,16,0.18); padding:14px;">
+          <div class="frame" style="border-bottom:0; padding-bottom:0;">
+            <div class="lbl">Tide ledger</div>
+            <div class="prov">Survey · 1 placement</div>
+            <p>Gauge readings from the 1974 survey, rebuilt against the new
+               datum. The north pier figures continue on the next page with the
+               contractor's revised dates and the corrected chart datum.</p>
+          </div>
+          <div style="position:absolute; left:14px; right:14px; bottom:12px; display:flex; justify-content:space-between; font:500 9px var(--f-mono); letter-spacing:0.06em; text-transform:uppercase; color:rgba(49,74,117,0.9);"><span>Continued</span><span>1 / 3</span></div>
+        </div>
+      </div>
+
+      <!-- refuse row -->
+      <div>
+        <div class="verdict refuse" style="position:relative;">REFUSE · CENTRED PANEL, DIMMED GRID CONTEXT</div>
+        <div class="scene framed" id="refBad1" style="position:relative; height:224px; margin-top:10px;">
+          <div style="position:absolute; inset:0; background:rgba(0,0,0,0.55); z-index:2;"></div>
+          <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:204px; z-index:3; background:var(--surface); border:1px solid rgba(234,234,234,0.14); border-radius:10px; padding:14px;">
+            <div style="font:500 15px var(--f-display); letter-spacing:0.03em; text-transform:uppercase; color:var(--text);">Reading</div>
+            <div style="height:56px; margin-top:10px; background:#26262A;"></div>
+            <div style="margin-top:12px; display:flex; justify-content:flex-end; gap:8px;">
+              <span style="padding:5px 11px; border-radius:12px; font:500 10px var(--f-ui); color:var(--text); background:rgba(255,255,255,0.06);">Close</span>
+              <span style="padding:5px 11px; border-radius:12px; font:500 10px var(--f-ui); color:var(--paper-ink); background:var(--marquee);">Open</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="verdict refuse" style="position:relative;">REFUSE · THE MEASURE ON DISPLAY</div>
+        <div class="scene framed" id="refBad2" style="position:relative; height:224px; margin-top:10px;">
+          <div style="position:absolute; left:78px; top:96px; z-index:3; display:flex; align-items:center; gap:7px;">
+            <div class="blip" style="position:relative; left:auto; top:auto; transform:none;"></div>
+            <div style="padding:3px 6px; background:var(--invalid); color:#17171B; border-radius:9px; font:600 9px var(--f-mono); letter-spacing:0.06em;">12</div>
+            <div style="font:500 9px var(--f-mono); letter-spacing:0.08em; color:rgba(234,234,234,0.7);">SAT 0.78 · 24/32 CELLS</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="verdict refuse" style="position:relative;">REFUSE · SHRUNK, CLIPPED, ELLIPSIZED</div>
+        <div style="position:relative; height:224px; margin-top:10px; background:var(--paper); color:var(--paper-ink); border:1px solid rgba(14,14,16,0.18); padding:14px; overflow:hidden;">
+          <div class="frame" style="border-bottom:0; padding-bottom:0;">
+            <div class="lbl" style="font-size:12px;">Tide ledger</div>
+            <div class="prov">Survey · 1 placement</div>
+            <p style="font-size:8px; line-height:1.35;">Gauge readings from the 1974 survey, rebuilt against the new datum. The north pier figures continue on the next page with the contractor's revised dates and the corrected chart datum, then the tide gauge comparison, then the ledger for the south basin, then the correspondence with the harbour office about the slipway, then the …</p>
+          </div>
+          <div style="position:absolute; left:14px; right:14px; bottom:12px; font:500 9px var(--f-mono); letter-spacing:0.06em; text-transform:uppercase; color:rgba(226,98,92,0.95);">Truncated to fit</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="folio">DESIGN.MD OVERLAYS &amp; CHROME · READING SURFACES</div>
+</section>
+
+<!-- ======================= 19 · REFUSALS, STATED ======================= -->
+<section class="slide">
+  <div class="running"><span>READING MARKERS · REFUSALS</span><span class="fig">18 / 18</span></div>
+  <div class="stage bleed">
+    <div style="display:grid; grid-template-columns:1fr 1fr; column-gap:64px; row-gap:24px;">
+      <div class="ann"><span class="n" style="color:var(--invalid);">×</span><span><b>No marker without spatial evidence</b>Qualification comes from overlapping fields on a target Layer and measured source mass. Grove never groups material by guessing what it is about, and never rewards mere adjacency.</span></div>
+      <div class="ann"><span class="n" style="color:var(--invalid);">×</span><span><b>No measurements in the interface</b>Supported cells, saturation, and source mass are engineering evidence. The person sees a marker or nothing at all.</span></div>
+      <div class="ann"><span class="n" style="color:var(--invalid);">×</span><span><b>No view movement, ever</b>Approaching, opening, pinning, and returning never re-centre or zoom. A reading that moved the view would take the person's place from them.</span></div>
+      <div class="ann"><span class="n" style="color:var(--invalid);">×</span><span><b>No qualification that depends on the view</b>The same material qualifies at any zoom or pan. Otherwise a marker would blink in and out as the person looked around.</span></div>
+      <div class="ann"><span class="n" style="color:var(--invalid);">×</span><span><b>No second active, no second pin</b>One marker is active and one reading is kept. A second pin is refused with an explanation; it is never a silent swap.</span></div>
+      <div class="ann"><span class="n" style="color:var(--invalid);">×</span><span><b>No centred panel and no dimming</b>The reading is local to its material or it is not a reading. There is no scrim, no dialog, and no floating confirmation anywhere in this journey.</span></div>
+      <div class="ann"><span class="n" style="color:var(--invalid);">×</span><span><b>No truncation, no summary, no shrinking</b>Pages are the only answer to material that does not fit. Nothing is cut, condensed, or reduced below a readable measure — including the cue.</span></div>
+      <div class="ann"><span class="n" style="color:var(--invalid);">×</span><span><b>No writing of any kind</b>A reading creates no Memory, no Placement, and no history entry. Pinned state ends with the session, and an excerpt never becomes new material by itself.</span></div>
+      <div class="ann"><span class="n" style="color:var(--invalid);">×</span><span><b>No dropped source</b>A piece that cannot be shown keeps its place and its provenance. Silently removing it would rewrite what the person actually gathered.</span></div>
+      <div class="ann"><span class="n" style="color:var(--invalid);">×</span><span><b>No unsupported material pretending to work</b>Notes, Documents, Images, and GIFs are the first reading. Audio, video, PDF, and EPUB are absent rather than half-shown.</span></div>
+      <div class="ann"><span class="n" style="color:var(--invalid);">×</span><span><b>No marker as a placed object</b>Blips, staircases, and cues occupy no cells, join no selection, and cannot be moved, copied, or traced. They are not content.</span></div>
+      <div class="ann"><span class="n" style="color:var(--invalid);">×</span><span><b>No system vocabulary in a cue</b>Markers and readings name the material and the destination. Nothing on screen explains Grove to itself.</span></div>
+    </div>
+  </div>
+  <div class="folio">END · READING MARKERS</div>
+</section>
+
+<script>
+/* ------------------------------------------------------------------
+   Field painter — mirrors the shipped accumulation: per-cell
+   contribution with falloff, cell-quantized fill at the mixed source
+   hue, hard edges, and a 1px perimeter only where the contour set ends.
+   Deterministic: every scene is authored data, no randomness.
+   ------------------------------------------------------------------ */
+const HUE = {
+  doc:  [234,234,234],
+  img:  [234,234,234],
+  img2: [234,234,234],
+  img3: [234,234,234],
+  n0:   [226,98,92],
+  n1:   [158,140,234],
+  n2:   [110,160,226],
+  anchor: [158,140,234]
+};
+
+function buildScene(el, spec) {
+  if (!el) return;
+  const cell = spec.cell, cols = spec.cols, rows = spec.rows;
+  const gain = spec.gain === undefined ? 1.25 : spec.gain;
+  const n = cols * rows;
+  const sat = new Float64Array(n), hr = new Float64Array(n), hg = new Float64Array(n), hb = new Float64Array(n);
+
+  for (const s of spec.sources) {
+    const size = s.size || 1;
+    const reach = s.reach;
+    const weight = (s.weight === undefined ? 1 : s.weight) * (s.depth ? Math.pow(0.45, s.depth) : 1) * gain;
+    const c0 = s.anchored ? HUE.anchor : (HUE[s.kind] || HUE.doc);
+    for (let c = Math.floor(s.col - reach); c <= s.col + size - 1 + reach; c++) {
+      for (let r = Math.floor(s.row - reach); r <= s.row + size - 1 + reach; r++) {
+        if (c < 0 || r < 0 || c >= cols || r >= rows) continue;
+        const dx = Math.max(s.col - c, 0, c - (s.col + size - 1));
+        const dy = Math.max(s.row - r, 0, r - (s.row + size - 1));
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d > reach) continue;
+        const f = Math.pow(1 - d / reach, 1.45) * weight;
+        const i = r * cols + c;
+        sat[i] += f; hr[i] += f * c0[0]; hg[i] += f * c0[1]; hb[i] += f * c0[2];
+      }
+    }
+  }
+
+  const contour = spec.contour === undefined ? 0.55 : spec.contour;
+  const active = new Set();
+  for (let i = 0; i < n; i++) if (sat[i] >= contour) active.add(i);
+
+  const frag = document.createDocumentFragment();
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const i = r * cols + c, s = sat[i];
+      if (!(s > 0.012)) continue;
+      const strength = Math.min(1.36, s);
+      const alpha = Math.min(0.30, Math.max(0.025, strength * 0.22));
+      const R = Math.round(hr[i] / s), G = Math.round(hg[i] / s), B = Math.round(hb[i] / s);
+      const d = document.createElement('div');
+      d.className = 'fc';
+      d.style.cssText = 'left:' + (c * cell) + 'px;top:' + (r * cell) + 'px;width:' + cell + 'px;height:' + cell +
+        'px;background:rgba(' + R + ',' + G + ',' + B + ',' + alpha.toFixed(3) + ');';
+      if (active.has(i)) {
+        const edge = '1px solid rgba(' + R + ',' + G + ',' + B + ',0.38)';
+        if (c === 0 || !active.has(i - 1)) d.style.borderLeft = edge;
+        if (c === cols - 1 || !active.has(i + 1)) d.style.borderRight = edge;
+        if (r === 0 || !active.has(i - cols)) d.style.borderTop = edge;
+        if (r === rows - 1 || !active.has(i + cols)) d.style.borderBottom = edge;
+      }
+      frag.appendChild(d);
+    }
+  }
+
+  for (const s of spec.sources) {
+    if (s.hidden) continue;
+    const size = s.size || 1;
+    const p = document.createElement('div');
+    p.className = 'pl ' + s.kind;
+    p.style.cssText = 'left:' + (s.col * cell) + 'px;top:' + (s.row * cell) + 'px;width:' + (size * cell) +
+      'px;height:' + (size * cell) + 'px;opacity:' + (s.depth ? (s.depth === 1 ? 0.5 : 0.3) : 1) + ';';
+    frag.appendChild(p);
+  }
+  el.appendChild(frag);
+}
+
+/* ---- 01 · quiet field ---- */
+buildScene(document.getElementById('sceneA'), {
+  cell: 44, cols: 28, rows: 14,
+  sources: [
+    /* qualified group, left of centre */
+    { col: 4, row: 3, size: 2, kind: 'doc', reach: 3.6 },
+    { col: 7, row: 2, size: 1, kind: 'n0', reach: 3.0, weight: 0.9 },
+    { col: 6, row: 5, size: 1, kind: 'img', reach: 3.2 },
+    { col: 8, row: 5, size: 2, kind: 'doc', reach: 3.6 },
+    { col: 3, row: 6, size: 1, kind: 'n2', reach: 3.0, weight: 0.9, depth: 1 },
+    { col: 9, row: 3, size: 1, kind: 'img2', reach: 3.0, weight: 0.9 },
+    /* second qualified group, right */
+    { col: 18, row: 5, size: 2, kind: 'img', reach: 3.4 },
+    { col: 21, row: 4, size: 1, kind: 'n1', reach: 3.0, weight: 0.95, anchored: true },
+    { col: 20, row: 8, size: 1, kind: 'doc', reach: 3.2, weight: 0.95 },
+    { col: 22, row: 7, size: 1, kind: 'img3', reach: 3.0, weight: 0.85, depth: 1 },
+    /* below the gate */
+    { col: 2, row: 11, size: 1, kind: 'n1', reach: 2.4, weight: 0.45 },
+    { col: 13, row: 11, size: 1, kind: 'doc', reach: 2.4, weight: 0.4 },
+    { col: 25, row: 1, size: 1, kind: 'img2', reach: 2.4, weight: 0.4 },
+    { col: 15, row: 2, size: 1, kind: 'n2', reach: 2.2, weight: 0.35 }
+  ]
+});
+
+/* ---- 04 · one area, two dense groups inside it, one neighbour ---- */
+buildScene(document.getElementById('sceneB'), {
+  cell: 44, cols: 28, rows: 14,
+  sources: [
+    /* dense group A */
+    { col: 3, row: 2, size: 2, kind: 'doc', reach: 3.4 },
+    { col: 6, row: 2, size: 1, kind: 'n0', reach: 3.0 },
+    { col: 4, row: 4, size: 1, kind: 'img', reach: 3.0 },
+    { col: 6, row: 4, size: 1, kind: 'doc', reach: 3.0 },
+    /* material that keeps the whole area one field */
+    { col: 8, row: 5, size: 1, kind: 'n2', reach: 3.6, weight: 0.85, depth: 1 },
+    { col: 9, row: 4, size: 1, kind: 'doc', reach: 3.2, weight: 0.7 },
+    /* dense group B */
+    { col: 10, row: 7, size: 2, kind: 'img2', reach: 3.4 },
+    { col: 13, row: 7, size: 1, kind: 'doc', reach: 3.0 },
+    { col: 11, row: 9, size: 1, kind: 'n1', reach: 3.0, anchored: true },
+    { col: 13, row: 9, size: 1, kind: 'doc', reach: 3.0, weight: 0.9 },
+    /* neighbouring concentration */
+    { col: 19, row: 2, size: 2, kind: 'doc', reach: 3.4 },
+    { col: 22, row: 3, size: 1, kind: 'img3', reach: 3.0 },
+    { col: 20, row: 5, size: 1, kind: 'n2', reach: 3.0, weight: 0.9 }
+  ]
+});
+
+/* ---- 06 · engagement ---- */
+buildScene(document.getElementById('sceneC'), {
+  cell: 44, cols: 14, rows: 14,
+  sources: [
+    { col: 3, row: 2, size: 2, kind: 'doc', reach: 3.4 },
+    { col: 6, row: 3, size: 1, kind: 'img', reach: 3.0 },
+    { col: 4, row: 5, size: 1, kind: 'n0', reach: 3.0 },
+    { col: 7, row: 5, size: 1, kind: 'doc', reach: 3.0, weight: 0.9, depth: 1 },
+    { col: 8, row: 10, size: 1, kind: 'n2', reach: 2.6, weight: 0.6 },
+    { col: 10, row: 12, size: 1, kind: 'doc', reach: 2.6, weight: 0.6 }
+  ]
+});
+
+/* ---- 08 · the approach ---- */
+buildScene(document.getElementById('sceneD'), {
+  cell: 44, cols: 28, rows: 14,
+  sources: [
+    { col: 5, row: 6, size: 2, kind: 'doc', reach: 3.6 },
+    { col: 8, row: 6, size: 1, kind: 'img', reach: 3.2 },
+    { col: 6, row: 9, size: 1, kind: 'n0', reach: 3.0 },
+    { col: 9, row: 8, size: 2, kind: 'doc', reach: 3.4 },
+    { col: 4, row: 9, size: 1, kind: 'n2', reach: 3.0, weight: 0.9, depth: 1 },
+    { col: 7, row: 4, size: 1, kind: 'img2', reach: 3.0, weight: 0.9 },
+    { col: 19, row: 9, size: 2, kind: 'doc', reach: 3.2 },
+    { col: 21, row: 11, size: 1, kind: 'n1', reach: 2.8, weight: 0.9 }
+  ]
+});
+
+/* ---- 10 · the open reading ---- */
+buildScene(document.getElementById('sceneE'), {
+  cell: 44, cols: 28, rows: 14,
+  sources: [
+    { col: 2, row: 3, size: 2, kind: 'doc', reach: 3.6 },
+    { col: 5, row: 2, size: 1, kind: 'img', reach: 3.2 },
+    { col: 3, row: 6, size: 1, kind: 'n0', reach: 3.0 },
+    { col: 6, row: 5, size: 2, kind: 'doc', reach: 3.4 },
+    { col: 1, row: 8, size: 1, kind: 'n2', reach: 3.0, weight: 0.9, depth: 1 },
+    { col: 8, row: 8, size: 1, kind: 'img3', reach: 3.0, weight: 0.9 },
+    { col: 24, row: 10, size: 1, kind: 'doc', reach: 2.4, weight: 0.4 }
+  ]
+});
+
+/* ---- 12 · pinned beside its source, then the view moved ---- */
+buildScene(document.getElementById('sceneF1'), {
+  cell: 44, cols: 14, rows: 14,
+  sources: [
+    { col: 0, row: 3, size: 2, kind: 'doc', reach: 3.4 },
+    { col: 2, row: 6, size: 1, kind: 'img', reach: 3.0 },
+    { col: 0, row: 8, size: 1, kind: 'n0', reach: 3.0 },
+    { col: 3, row: 9, size: 2, kind: 'doc', reach: 3.2, depth: 1 }
+  ]
+});
+buildScene(document.getElementById('sceneF2'), {
+  cell: 44, cols: 14, rows: 14,
+  sources: [
+    { col: 7, row: 2, size: 1, kind: 'n1', reach: 2.6, weight: 0.5 },
+    { col: 10, row: 5, size: 2, kind: 'doc', reach: 3.0, weight: 0.7 },
+    { col: 5, row: 9, size: 1, kind: 'img2', reach: 2.6, weight: 0.5 }
+  ]
+});
+
+/* ---- 03 · the gate: 8 x 4 fully fitting cells on a 1920 x 1080 surface ---- */
+(function gate() {
+  const host = document.getElementById('gateSurface');
+  if (!host) return;
+  const S = 0.42, CELL = 220 * S;           /* 92.4px */
+  const supported = new Set();
+  /* 24 of the 32 full cells carry enough support — a contiguous body,
+     the way overlapping fields actually fall. */
+  const body = [
+    [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],
+    [0,1],[1,1],[2,1],[3,1],[4,1],[5,1],[6,1],
+    [1,2],[2,2],[3,2],[4,2],[5,2],[6,2],
+    [2,3],[3,3],[4,3],[5,3],[6,3]
+  ];
+  for (const [c, r] of body) supported.add(c + ',' + r);
+
+  for (let c = 0; c < 8; c++) {
+    for (let r = 0; r < 4; r++) {
+      const d = document.createElement('div');
+      const on = supported.has(c + ',' + r);
+      d.style.cssText = 'position:absolute;left:' + (c * CELL) + 'px;top:' + (r * CELL) + 'px;width:' + CELL +
+        'px;height:' + CELL + 'px;border:1px solid ' + (on ? 'rgba(234,234,234,0.34)' : 'rgba(234,234,234,0.07)') +
+        ';background:' + (on ? 'rgba(234,234,234,0.16)' : 'transparent') + ';';
+      host.appendChild(d);
+    }
+  }
+  /* boundary of the fully fitting lattice */
+  const bound = document.createElement('div');
+  bound.style.cssText = 'position:absolute;left:0;top:0;width:' + (8 * CELL) + 'px;height:' + (4 * CELL) +
+    'px;border:1px solid rgba(150,182,248,0.55);';
+  host.appendChild(bound);
+  /* the remainder: partial cells, marked but never counted */
+  const remW = document.createElement('div');
+  remW.style.cssText = 'position:absolute;left:' + (8 * CELL) + 'px;top:0;right:0;bottom:0;background:repeating-linear-gradient(135deg,rgba(234,234,234,0.06) 0 5px,transparent 5px 10px);';
+  host.appendChild(remW);
+  const remH = document.createElement('div');
+  remH.style.cssText = 'position:absolute;left:0;top:' + (4 * CELL) + 'px;width:' + (8 * CELL) +
+    'px;bottom:0;background:repeating-linear-gradient(135deg,rgba(234,234,234,0.06) 0 5px,transparent 5px 10px);';
+  host.appendChild(remH);
+})();
+
+/* ---- 03 · overlap groups, adjacency does not ---- */
+buildScene(document.getElementById('gateOverlap'), {
+  cell: 25, cols: 13, rows: 3, contour: 0.30, gain: 1,
+  sources: [
+    { col: 3, row: 1, size: 1, kind: 'doc', reach: 3.0 },
+    { col: 7, row: 1, size: 1, kind: 'img', reach: 3.0 }
+  ]
+});
+buildScene(document.getElementById('gateAdjacent'), {
+  cell: 25, cols: 13, rows: 3, contour: 0.30, gain: 1,
+  sources: [
+    { col: 3, row: 1, size: 1, kind: 'doc', reach: 1.3 },
+    { col: 7, row: 1, size: 1, kind: 'img', reach: 1.3 }
+  ]
+});
+buildScene(document.getElementById('gateSingle'), {
+  cell: 25, cols: 12, rows: 3, contour: 0.34, gain: 1,
+  sources: [
+    { col: 5, row: 1, size: 1, kind: 'doc', reach: 3.4 }
+  ]
+});
+
+/* ---- 17 · refusal comparisons ---- */
+buildScene(document.getElementById('refKeep1'), {
+  cell: 32, cols: 12, rows: 8,
+  sources: [
+    { col: 1, row: 2, size: 1, kind: 'doc', reach: 2.6 },
+    { col: 2, row: 4, size: 1, kind: 'img', reach: 2.4 }
+  ]
+});
+buildScene(document.getElementById('refKeep2'), {
+  cell: 32, cols: 12, rows: 8,
+  sources: [
+    { col: 3, row: 2, size: 1, kind: 'doc', reach: 2.8 },
+    { col: 5, row: 3, size: 1, kind: 'n0', reach: 2.6 },
+    { col: 4, row: 5, size: 1, kind: 'img', reach: 2.4 }
+  ]
+});
+buildScene(document.getElementById('refBad1'), {
+  cell: 32, cols: 12, rows: 8,
+  sources: [
+    { col: 1, row: 2, size: 1, kind: 'doc', reach: 2.6 },
+    { col: 8, row: 5, size: 1, kind: 'img', reach: 2.4 }
+  ]
+});
+buildScene(document.getElementById('refBad2'), {
+  cell: 32, cols: 12, rows: 8,
+  sources: [
+    { col: 3, row: 2, size: 1, kind: 'doc', reach: 2.8 },
+    { col: 5, row: 3, size: 1, kind: 'n0', reach: 2.6 },
+    { col: 4, row: 5, size: 1, kind: 'img', reach: 2.4 }
+  ]
+});
+
+/* the kept, local reading beside its source (refusal comparison) */
+(function keepLocal() {
+  const host = document.getElementById('refKeep1');
+  if (!host) return;
+  const card = document.createElement('div');
+  card.style.cssText = 'position:absolute;left:140px;top:30px;width:186px;padding:10px 11px;background:rgba(22,22,25,0.96);border:1px solid rgba(150,182,248,0.36);border-radius:2px;box-shadow:0 14px 40px rgba(0,0,0,0.44);z-index:3;';
+  card.innerHTML = '<div class="eyebrow">Nearby reading</div>' +
+    '<div style="margin-top:5px;font:500 15px/1 var(--f-display);letter-spacing:0.02em;text-transform:uppercase;color:rgba(234,234,234,0.94);">Brochure reading</div>' +
+    '<div style="margin-top:9px;padding:8px;background:var(--paper);color:var(--paper-ink);border:1px solid rgba(14,14,16,0.18);">' +
+      '<div style="font:500 11px var(--f-display);letter-spacing:0.03em;text-transform:uppercase;">Tide ledger</div>' +
+      '<div style="margin-top:4px;font:500 7px var(--f-mono);letter-spacing:0.05em;text-transform:uppercase;color:rgba(49,74,117,0.88);">Survey · 1 placement</div>' +
+      '<div style="margin-top:6px;font:400 9px/1.5 var(--f-ui);color:#2A2A30;">Gauge readings from the 1974 survey, rebuilt against the new datum.</div>' +
+    '</div>';
+  host.appendChild(card);
+})();
+</script>
+
+</body>
+</html>

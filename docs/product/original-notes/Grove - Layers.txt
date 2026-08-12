@@ -1,0 +1,7 @@
+08.05 13:36
+Grove - Layers 
+Layers are simply the way in which we tangibly define the grid stacking up on itself. 
+In actuality the grid is always 2D. However, the layer concept enables is to extend the mental model of the grid, and therefore the cells, to simulate a multi-dimensional-like state where aura fields can impact cells on different layers of the grid.
+The concept of the aura field extending beyond it's current layer could be likened to the concept of saturation. If you pour liquid on a table, and use a paper towel and lay it on top, how many paper towels would it take to absorb the liquid? What if we pour more liquid on top of some of the paper towels, is the saturation distinguishable between the lowest layer and the layer in which we added more liquid? This is how aura fields work in tandem with layers. The light we see around content, saturates neighboring layers, and additional light from content on those adjacent layers maintains a certain level of saturation. So an aura field for a given object may be giving off a unique hue as it's the combination of the hue from the content itself + the combined hues of all the content saturating the field in that part of the grid from above and below that given layer. 
+This behavior is what gives the grid system depth, you don't need to see the content from all layers, you instead experience the content from all layers through their field presence. 
+

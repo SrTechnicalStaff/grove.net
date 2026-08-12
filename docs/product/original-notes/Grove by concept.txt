@@ -1,0 +1,5 @@
+08.04 18:26
+Grove by concept 
+So far we have failed to capture my vision because we have always attempted to convert ideas from prototype to app.
+Instead we are going to build the app outwards from the concept as the baseline. We are going to build it as a first class, bespoke, local browser app. Once we have all our concepts laid out we will then convert the app into a local desktop app that can be distributed. Meaning use the js to ts converted, build the rust back end, etc. 
+

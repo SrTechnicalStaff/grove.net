@@ -1,0 +1,18 @@
+# .NET build and release artifacts
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+.idea/
+.vscode/
+
+# Build outputs
+GroveApp-Release/
+
+# OS metadata
+.DS_Store
+Thumbs.db

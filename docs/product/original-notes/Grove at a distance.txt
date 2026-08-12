@@ -1,0 +1,8 @@
+08.05 14:44
+Grove at a distance
+When we zoom out, content in grove becomes less legible, this is by design. Content on the grid is not meant to be visible at all times. The camera is just a lens. 
+When we zoom out, an aura field that contains two or more pieces of content can produce an annotation. Annotations are simple markers that can be triggered on hover. There will be types of annotations, and they will operate as overlays to provide a lens / "bird's eye view" of the data itself. Reducing the need to zoom when it is not necessary. 
+Also, at scale, the aura field itself will use LOD techniques to represent itself in a map-like way. Similar to how Google maps presents data on Google Earth in a different way based on distance from the earth in terms of scale. We will research these techniques and utilize them to bring to the app. 
+The goal is; the larger the field, the further out you must go to get the full view, but the change in view is universal. At the same time, the content won't be "hidden" from simple scale measures. You must zoom out to extremes to trigger these LOD events. 
+So the qualifications for modification are both the amount of content and the actual cell coverage of the field itself. 
+

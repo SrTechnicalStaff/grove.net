@@ -1,0 +1,5 @@
+08.05 15:55
+Grove - information layer 
+The information layer is an overlay layer that is not connected to the camera or the grid. It exists above the grid, uses coordinates for locality, relates to information on the grid but has nothing to do with the grid, nor the camera. To the user, it is a series of overlays and modals that seem to be locally coordinated with the grid, but the grid has no idea this system exists and the elements it uses. 
+This gives us the ability to coordinate information without giving the grid or the camera more responsibilities than necessary.
+

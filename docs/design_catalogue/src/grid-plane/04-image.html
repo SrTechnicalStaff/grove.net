@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Image</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/catalogue.css">
+<style>
+  /* ---- deck-local: projected cell field ---- */
+  .gridfield {
+    --cell: 60px; --maj: 240px;
+    position: relative;
+    background:
+      linear-gradient(to right, #242428 1px, transparent 1px),
+      linear-gradient(to bottom, #242428 1px, transparent 1px),
+      linear-gradient(to right, rgba(36,36,40,0.55) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(36,36,40,0.55) 1px, transparent 1px);
+    background-size: var(--maj) var(--maj), var(--maj) var(--maj),
+                     var(--cell) var(--cell), var(--cell) var(--cell);
+    background-color: var(--canvas);
+    border: 1px solid var(--hairline);
+  }
+
+  /* ---- deck-local: photographic frames (token-derived, no raster) ---- */
+  .ph {
+    position: absolute;
+    overflow: hidden;
+    border: 1px solid rgba(234,234,234,0.16);
+    border-radius: var(--r);
+  }
+  .ph::before, .ph::after { content: ""; position: absolute; }
+  /* real children (badges, bars) always sit above the scene layers */
+  .ph > * { z-index: 2; }
+
+  .sc-ridge {
+    background:
+      radial-gradient(circle 11px at 71% 15%, rgba(250,242,224,0.92) 62%, transparent 100%),
+      radial-gradient(120% 50% at 70% 14%, rgba(234,234,234,0.26), transparent 55%),
+      linear-gradient(180deg, #5A4A60 0%, #44506A 40%, #2A3450 62%, #10141C 100%);
+  }
+  .sc-ridge::before {
+    left: -2%; right: -2%; bottom: 0; height: 56%;
+    background: linear-gradient(180deg, #2E3A52, #1A2232 70%, #141A26);
+    clip-path: polygon(0 42%, 12% 24%, 26% 38%, 40% 12%, 55% 34%, 70% 18%, 84% 32%, 100% 22%, 100% 100%, 0 100%);
+  }
+  .sc-ridge::after {
+    left: -2%; right: -2%; bottom: 0; height: 36%;
+    background: linear-gradient(180deg, #171D29, #0C1016);
+    clip-path: polygon(0 55%, 15% 30%, 33% 52%, 52% 24%, 71% 46%, 88% 34%, 100% 44%, 100% 100%, 0 100%);
+  }
+
+  .sc-dune {
+    background:
+      radial-gradient(70% 45% at 30% 24%, rgba(234,234,234,0.30), transparent 58%),
+      linear-gradient(180deg, #6B5540 0%, #57432F 45%, #1A1410 100%);
+  }
+  .sc-dune::before {
+    left: -2%; right: -2%; bottom: 0; height: 52%;
+    background: linear-gradient(180deg, #3A2C1E, #201811 65%, #14100B);
+    clip-path: polygon(0 60%, 20% 34%, 45% 56%, 68% 30%, 100% 52%, 100% 100%, 0 100%);
+  }
+  .sc-dune::after {
+    left: -2%; right: -2%; bottom: 0; height: 26%;
+    background: linear-gradient(180deg, #191209, #0E0B07);
+    clip-path: polygon(0 40%, 30% 62%, 60% 36%, 100% 58%, 100% 100%, 0 100%);
+  }
+
+  .sc-coast {
+    background:
+      radial-gradient(40% 42% at 62% 28%, rgba(234,234,234,0.30), transparent 60%),
+      linear-gradient(180deg, #46536B 0%, #3C4A62 44%, #2B3850 51.6%, #151D2C 52.4%, #121A28 72%, #0F141E 100%);
+  }
+  .sc-coast::before {
+    right: -2%; top: 30%; width: 42%; height: 24%;
+    background: linear-gradient(180deg, #222C40, #182236);
+    clip-path: polygon(0 100%, 22% 55%, 45% 78%, 68% 40%, 100% 62%, 100% 100%);
+  }
+  .sc-coast::after {
+    left: 61%; top: 14%; width: 7%; aspect-ratio: 1;
+    border-radius: 50%;
+    background: rgba(246,238,216,0.62);
+  }
+
+  .sc-moss {
+    background:
+      radial-gradient(52% 40% at 44% 14%, rgba(240,238,212,0.34), transparent 64%),
+      linear-gradient(178deg, #6C7A55 0%, #4C5A42 30%, #2C3626 62%, #121610 100%);
+  }
+  .sc-moss::before {
+    left: -2%; right: -2%; top: 32%; height: 38%;
+    background: linear-gradient(180deg, #33402C, #1E2619 78%, #192016);
+    clip-path: polygon(0 44%, 4% 22%, 7% 40%, 13% 6%, 17% 34%, 22% 18%, 26% 38%,
+      31% 12%, 34% 33%, 39% 24%, 44% 4%, 48% 30%, 53% 16%, 57% 36%, 63% 10%,
+      67% 32%, 71% 20%, 76% 38%, 81% 8%, 85% 30%, 90% 18%, 94% 36%, 100% 26%,
+      100% 100%, 0 100%);
+  }
+  .sc-moss::after {
+    left: -2%; right: -2%; bottom: 0; height: 34%;
+    background: linear-gradient(180deg, #1B2117, #0B0F09);
+    clip-path: polygon(0 48%, 14% 24%, 30% 46%, 48% 20%, 66% 44%, 84% 22%, 100% 42%, 100% 100%, 0 100%);
+  }
+
+  /* stepped back: decorative treatment shed, frame and cells identical */
+  .ph.lo { background: linear-gradient(165deg, #3C4A62, #14161A); }
+  .ph.lo::before, .ph.lo::after { content: none; }
+
+  /* far: kind-coded figure stand-in on the exact footprint.
+     Same grammar as the Distance deck so one kind reads one way everywhere. */
+  .standin {
+    position: absolute;
+    background: var(--paper);
+    box-shadow: inset 0 0 0 1px rgba(26,26,26,0.28);
+  }
+  .standin .a { position: absolute; inset: 9% 9% 17% 9%; background: #D7D7D2; }
+  .standin svg { position: absolute; inset: 9% 9% 17% 9%; width: 82%; height: 74%; }
+
+  /* selection: interaction outline outside the edge, picture untouched */
+  .sel { outline: 2px solid var(--interaction); outline-offset: 3px; }
+
+  /* structural field response under a selected frame — lit cells, hard edges */
+  .fcell { position: absolute; }
+
+  /* anchored: fixed indigo mark at the frame corner */
+  .anch {
+    position: absolute; width: 9px; height: 9px;
+    background: var(--anchor-indigo); transform: rotate(45deg); z-index: 3;
+  }
+
+  /* quiet mono badge — the one mark a frame carries */
+  .badge {
+    position: absolute; top: 8px; right: 8px;
+    font-family: var(--f-mono); font-size: 9px; font-weight: 500;
+    letter-spacing: 0.18em; color: rgba(234,234,234,0.75);
+    background: rgba(14,14,16,0.72);
+    border: 1px solid rgba(234,234,234,0.18);
+    border-radius: var(--r);
+    padding: 2px 6px 1px;
+  }
+
+  /* annotation-layer figure labels inside a field */
+  .under {
+    position: absolute;
+    font-family: var(--f-mono); font-size: 9px; font-weight: 500;
+    letter-spacing: 0.16em; color: var(--ann); text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .sectionlbl {
+    font-family: var(--f-mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.24em; text-transform: uppercase; color: var(--ann);
+    margin-bottom: 12px;
+  }
+  .reason {
+    font-family: var(--f-mono); font-size: 10px; line-height: 1.8;
+    letter-spacing: 0.02em; color: var(--ann); margin-top: 14px;
+  }
+  .refusecol { display: flex; flex-direction: column; }
+  .refusecol .verdict { position: static; display: block; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<!-- ============================ 01 · COVER ============================ -->
+<section class="slide cover">
+  <div class="running"><span>GROVE · DESIGN CATALOGUE · GRID</span><span class="fig">04</span></div>
+  <div class="plane">GRID PLANE · CONTENT FORM</div>
+  <h1>Image</h1>
+  <div class="rule"></div>
+  <div class="scope">
+    Complete frames · Cell footprints · Aspect families ·
+    Animated frames · Selection · Distance · Refusals
+  </div>
+  <div class="folio">SOURCE: DESIGN.MD (ALPHA)</div>
+</section>
+
+<!-- ============================ 02 · PLACED FORM ============================ -->
+<section class="slide">
+  <div class="running"><span>IMAGE · PLACED FORM</span><span class="fig">01 / 05</span></div>
+
+  <div class="stage">
+    <div class="gridfield" style="width:780px; height:540px; --cell:60px; --maj:240px;">
+      <div class="ph sc-ridge" style="left:240px; top:60px; width:300px; height:420px;"></div>
+      <div class="mark" style="left:381px; top:51px;">01</div>
+      <div class="mark" style="left:231px; top:471px;">02</div>
+      <div class="mark" style="left:231px; top:261px;">03</div>
+      <div class="under" style="left:240px; top:494px;">5 × 7 CELLS · WORKING ZOOM</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Complete frame</b>The whole picture at its intrinsic proportions. Imports preserve the complete frame; fitting a footprint never crops or recompresses the source.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Footprint follows frame</b>A portrait picture takes a tall footprint — 5 × 7 complete cells here — a landscape one a wide footprint. The footprint serves the picture, never the reverse.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Quiet edge, no chrome</b>A 1px edge is the entire frame treatment. No caption, no bar, no controls riding on the picture: it stays the brightest thing on screen.</span></div>
+  </div>
+  <div class="folio">FOOTPRINT: COMPLETE CELLS · EDGE: 1PX</div>
+</section>
+
+<!-- ============================ 03 · ASPECT FAMILIES ============================ -->
+<section class="slide">
+  <div class="running"><span>IMAGE · ASPECT FAMILIES</span><span class="fig">02 / 05</span></div>
+
+  <div class="stage">
+    <div class="gridfield" style="width:800px; height:480px; --cell:40px; --maj:160px;">
+      <div class="ph sc-ridge" style="left:80px; top:80px; width:120px; height:160px;"></div>
+      <div class="under" style="left:80px; top:252px;">PORTRAIT · 3 × 4</div>
+
+      <div class="ph sc-dune" style="left:280px; top:120px; width:160px; height:120px;"></div>
+      <div class="under" style="left:280px; top:252px;">LANDSCAPE · 4 × 3</div>
+
+      <div class="ph sc-moss" style="left:520px; top:120px; width:120px; height:120px;"></div>
+      <div class="under" style="left:520px; top:252px;">SQUARE · 3 × 3</div>
+
+      <div class="ph sc-coast" style="left:240px; top:320px; width:320px; height:80px;"></div>
+      <div class="under" style="left:240px; top:412px;">PANORAMA · 8 × 2</div>
+
+      <div class="mark" style="left:71px; top:71px;">01</div>
+      <div class="mark" style="left:551px; top:311px;">02</div>
+      <div class="mark" style="left:431px; top:231px;">03</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Nearest complete-cell footprint</b>The picture's proportion rounds to the closest whole-cell shape that preserves it. Edges always land on cell boundaries, at every zoom.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Letterbox refused</b>Bars above or beside a picture never appear. When a shape would need them, the footprint changes shape — the frame does not.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>One law, every family</b>Portrait, landscape, square, panorama: the same fitting rule, the same quiet edge. No family earns special dress.</span></div>
+  </div>
+</section>
+
+<!-- ============================ 04 · GIF ============================ -->
+<section class="slide">
+  <div class="running"><span>IMAGE · GIF</span><span class="fig">03 / 05</span></div>
+
+  <div class="stage">
+    <div class="gridfield" style="width:768px; height:528px; --cell:48px; --maj:192px;">
+      <div class="ph sc-dune" style="left:48px; top:48px; width:288px; height:192px;">
+        <div class="badge">GIF</div>
+      </div>
+      <div class="under" style="left:48px; top:254px;">SOURCE ANIMATES · PLAYS IN PLACE</div>
+
+      <div class="ph sc-dune" style="left:432px; top:288px; width:288px; height:192px;">
+        <div class="badge">GIF</div>
+      </div>
+      <div class="under" style="left:432px; top:494px;">REDUCED MOTION · COMPLETE STILL FRAME</div>
+
+      <div class="mark" style="left:39px; top:39px;">01</div>
+      <div class="mark" style="left:342px; top:51px;">02</div>
+      <div class="mark" style="left:351px; top:191px;">03</div>
+      <div class="mark" style="left:711px; top:471px;">04</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Same frame law</b>An animated picture is a picture first: complete frame, intrinsic proportions, complete-cell footprint, quiet 1px edge.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Quiet badge</b>A small mono tag at the corner is the one mark the frame carries. Reduced ink, never a control, never over the subject.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Motion stays inside the frame</b>Playback happens only where the source animates. The cells around it are perfectly still.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Playback is transient</b>Play or pause is never saved with the picture. With reduced motion a complete still frame stands at the same footprint — same size, same place.</span></div>
+  </div>
+</section>
+
+<!-- ============================ 05 · STATES · DISTANCE ============================ -->
+<section class="slide">
+  <div class="running"><span>IMAGE · STATES · DISTANCE</span><span class="fig">04 / 05</span></div>
+
+  <div class="stage" style="flex-direction:column; align-items:flex-start; justify-content:center; gap:26px;">
+    <div>
+      <div class="sectionlbl">Interaction</div>
+      <div class="gridfield" style="width:800px; height:200px; --cell:40px; --maj:160px;">
+        <!-- structural response: the cells around the selection brighten, hard-edged -->
+        <div class="fcell" style="left:120px; top:0;    width:160px; height:40px;  background:rgba(150,182,248,0.13);"></div>
+        <div class="fcell" style="left:120px; top:160px;width:160px; height:40px;  background:rgba(150,182,248,0.13);"></div>
+        <div class="fcell" style="left:80px;  top:40px; width:40px;  height:120px; background:rgba(150,182,248,0.13);"></div>
+        <div class="fcell" style="left:280px; top:40px; width:40px;  height:120px; background:rgba(150,182,248,0.13);"></div>
+        <div class="fcell" style="left:80px;  top:0;    width:40px;  height:40px;  background:rgba(150,182,248,0.06);"></div>
+        <div class="fcell" style="left:280px; top:0;    width:40px;  height:40px;  background:rgba(150,182,248,0.06);"></div>
+        <div class="fcell" style="left:80px;  top:160px;width:40px;  height:40px;  background:rgba(150,182,248,0.06);"></div>
+        <div class="fcell" style="left:280px; top:160px;width:40px;  height:40px;  background:rgba(150,182,248,0.06);"></div>
+
+        <div class="ph sc-ridge sel" style="left:120px; top:40px; width:160px; height:120px;"></div>
+        <div class="under" style="left:120px; top:172px;">SELECTED</div>
+
+        <div class="ph sc-moss" style="left:480px; top:40px; width:160px; height:120px;"></div>
+        <div class="anch" style="left:476px; top:36px;"></div>
+        <div class="under" style="left:480px; top:172px;">ANCHORED</div>
+
+        <div class="mark" style="left:311px; top:31px;">01</div>
+        <div class="mark" style="left:449px; top:31px;">02</div>
+      </div>
+    </div>
+    <div>
+      <div class="sectionlbl">Distance</div>
+      <div style="display:flex; gap:28px;">
+        <div>
+          <div class="gridfield" style="width:248px; height:220px; --cell:40px; --maj:160px;">
+            <div class="ph sc-ridge" style="left:40px; top:40px; width:160px; height:120px;"></div>
+          </div>
+          <div class="under" style="position:static; display:block; margin-top:8px;">WORKING ZOOM · FULL FRAME · 4 × 3</div>
+        </div>
+        <div>
+          <div class="gridfield" style="width:248px; height:220px; --cell:24px; --maj:96px;">
+            <div class="ph lo" style="left:72px; top:48px; width:96px; height:72px;"></div>
+            <div class="mark" style="left:159px; top:39px;">03</div>
+          </div>
+          <div class="under" style="position:static; display:block; margin-top:8px;">STEPPED BACK · SURFACE SHEDS · 4 × 3</div>
+        </div>
+        <div>
+          <div class="gridfield" style="width:248px; height:220px; --cell:16px; --maj:64px;">
+            <div class="standin" style="left:96px; top:80px; width:64px; height:48px;">
+              <div class="a"></div>
+              <svg viewBox="0 0 96 78" preserveAspectRatio="none">
+                <polygon points="4,66 32,28 50,46 68,18 92,66" fill="#9BB6E0"/>
+                <circle cx="72" cy="16" r="7" fill="#E8B964"/>
+              </svg>
+            </div>
+            <div class="mark" style="left:167px; top:63px;">04</div>
+          </div>
+          <div class="under" style="position:static; display:block; margin-top:8px;">FAR · FIGURE STAND-IN · 4 × 3</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Selected</b>The interaction outline sits outside the edge and the cells around it brighten. The picture itself is never restyled, tinted, or dimmed to show selection.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Anchored</b>The fixed indigo mark at the frame corner. Authored context is always this hue — it is not a color a person can pick.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Stepped back</b>Decorative surface treatment sheds first. The frame stays on its exact cells, its surface simpler; nothing disappears.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Far</b>A figure stand-in holds the exact footprint. Distance simplifies what a picture shows, never whether it exists: nothing hides, moves, or merges.</span></div>
+  </div>
+  <div class="folio">DISTANCE SIMPLIFIES · PRESENCE IS CONSTANT</div>
+</section>
+
+<!-- ============================ 06 · REFUSALS ============================ -->
+<section class="slide">
+  <div class="running"><span>IMAGE · REFUSALS</span><span class="fig">05 / 05</span></div>
+
+  <div class="stage full" style="align-items:flex-start; padding-top:20px; gap:32px;">
+    <!-- cover crop -->
+    <div class="refusecol" style="flex:1;">
+      <span class="verdict refuse">REFUSE · COVER CROP</span>
+      <div class="panel" style="position:relative; height:400px; background:var(--canvas); overflow:hidden;">
+        <div class="ph sc-coast" style="left:15px; top:122px; width:340px; height:128px; border-radius:0;"></div>
+        <div style="position:absolute; left:15px;  top:122px; width:106px; height:128px; background:rgba(14,14,16,0.80);"></div>
+        <div style="position:absolute; left:249px; top:122px; width:106px; height:128px; background:rgba(14,14,16,0.80);"></div>
+        <div style="position:absolute; left:121px; top:122px; width:128px; height:128px; border:1px solid var(--invalid);"></div>
+        <div class="under" style="left:121px; top:266px; color:var(--invalid);">KEPT</div>
+        <div class="under" style="left:15px;  top:266px;">LOST</div>
+        <div class="under" style="left:323px; top:266px;">LOST</div>
+      </div>
+      <div class="reason">COVER-FIT FILLS A SQUARE BY THROWING AWAY THE SIDES OF THE PICTURE. THE FRAME IS NEVER CROPPED — A PANORAMA TAKES A WIDE FOOTPRINT INSTEAD.</div>
+    </div>
+
+    <!-- caption overlay -->
+    <div class="refusecol" style="flex:1;">
+      <span class="verdict refuse">REFUSE · CAPTION OVERLAY</span>
+      <div class="panel" style="position:relative; height:400px; background:var(--canvas);">
+        <div class="ph sc-dune" style="left:45px; top:106px; width:280px; height:187px;">
+          <div style="position:absolute; left:0; right:0; bottom:0; height:32px; background:rgba(10,10,12,0.88); display:flex; align-items:center; justify-content:space-between; padding:0 12px; font-family:var(--f-ui); font-size:12px; color:var(--text);">
+            <span>Sunrise ridge</span><span style="opacity:0.6;">8.2 MB</span>
+          </div>
+        </div>
+      </div>
+      <div class="reason">A FILENAME BAR RIDES ON TOP OF THE FRAME. NOTHING OVERLAYS A PICTURE — DETAILS LIVE OFF THE FRAME, NEVER ON IT.</div>
+    </div>
+
+    <!-- decorated card -->
+    <div class="refusecol" style="flex:1;">
+      <span class="verdict refuse">REFUSE · DECORATED CARD</span>
+      <div class="panel" style="position:relative; height:400px; background:var(--canvas);">
+        <div style="position:absolute; left:70px; top:66px; width:234px; padding:14px 14px 48px; background:var(--paper); border-radius:10px; box-shadow:0 18px 44px rgba(0,0,0,0.55); transform:rotate(-3deg);">
+          <div class="ph sc-moss" style="position:relative; left:0; top:0; width:206px; height:206px; border:none; border-radius:0;"></div>
+          <div style="position:absolute; left:0; right:0; bottom:14px; text-align:center; font-family:var(--f-ui); font-style:italic; font-size:15px; color:var(--paper-ink);">Sunrise</div>
+        </div>
+      </div>
+      <div class="reason">RADIUS, SHADOW, MAT AND CAPTION DRESS THE PICTURE AS A KEEPSAKE CARD. THE ONLY DRESS A PICTURE WEARS IS ITS QUIET 1PX EDGE.</div>
+    </div>
+  </div>
+  <div class="folio">END · IMAGE</div>
+</section>
+
+</body>
+</html>

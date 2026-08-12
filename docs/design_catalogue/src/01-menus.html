@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Menus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/catalogue.css">
+<style>
+  /* deck-local helpers */
+  .sectionlbl {
+    font-family: var(--f-mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.24em; text-transform: uppercase; color: var(--ann);
+    margin-bottom: 14px;
+  }
+  .note-under {
+    font-family: var(--f-mono); font-size: 10px; line-height: 1.8;
+    color: var(--ann); letter-spacing: 0.02em;
+  }
+
+  /* dim Grid context (context only, never the subject) */
+  .grid-context {
+    position: relative;
+    background:
+      linear-gradient(rgba(36,36,40,0.85) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(36,36,40,0.85) 1px, transparent 1px),
+      var(--canvas);
+    background-size: 48px 48px, 48px 48px, auto;
+    border: 1px solid var(--hairline);
+    border-radius: var(--r);
+    overflow: hidden;
+  }
+
+  /* ---- the menu — the subject of this deck ---- */
+  .menu {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r);
+    padding: 6px 0;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+  .mrow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    padding: 7px 14px;
+    font-family: var(--f-ui);
+    font-size: 12.5px;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .mrow .mk {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    color: rgba(234,234,234,0.45);
+  }
+  .mrow.danger { color: var(--invalid); }
+  .mrow.hot { background: rgba(150,182,248,0.14); }
+  .msep { height: 1px; background: var(--hairline); margin: 6px 0; }
+
+  /* hero scale (anatomy slide only — same grammar, larger cloth) */
+  .menu.hero { padding: 9px 0; width: 336px; }
+  .menu.hero .mrow { padding: 12px 22px; font-size: 18px; }
+  .menu.hero .mrow .mk { font-size: 13.5px; }
+  .menu.hero .msep { margin: 9px 0; }
+
+  /* flyout destination rows: digit left in mono, no key on the right */
+  .mrow.dest { justify-content: flex-start; gap: 14px; }
+  .mrow.dest .num {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    color: rgba(234,234,234,0.45);
+    width: 10px;
+  }
+
+  /* placed content stand-ins (context) */
+  .note-src {
+    background: #1C1C20;
+    border: 1px solid var(--hairline);
+    border-radius: var(--r);
+    padding: 12px;
+    font-family: var(--f-ui);
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  /* pointer at the invocation point */
+  .cursor { position: absolute; z-index: 6; width: 15px; height: 20px; }
+
+  /* keycaps (keyboard slide) */
+  .cap {
+    min-width: 34px;
+    padding: 8px 10px;
+    text-align: center;
+    background: #1C1C20;
+    border: 1px solid rgba(234,234,234,0.18);
+    border-radius: var(--r);
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: rgba(234,234,234,0.6);
+  }
+  .cap.pressed {
+    background: var(--interaction);
+    border-color: var(--interaction);
+    color: var(--paper-ink);
+    font-weight: 500;
+  }
+
+  /* refusal panels */
+  .ref-wrap { position: relative; }
+  .ref-wrap .verdict { position: static; display: block; margin-bottom: 16px; }
+  .ref-reason { margin-top: 14px; font-family: var(--f-mono); font-size: 10px; line-height: 1.75; letter-spacing: 0.02em; color: var(--ann); }
+</style>
+</head>
+<body>
+
+<!-- ============================ 01 · COVER ============================ -->
+<section class="slide cover">
+  <div class="running"><span>GROVE · DESIGN CATALOGUE</span><span class="fig">01</span></div>
+  <div class="plane">EVERY PLANE · NEUTRAL CHROME</div>
+  <h1>Menus</h1>
+  <div class="rule"></div>
+  <div class="scope">
+    Row anatomy · Three targets · Surface actions ·
+    Flyout · Keyboard grammar · Refusals
+  </div>
+  <div class="folio">SOURCE: DESIGN.MD · CM-00–CM-05 · D-CM-01</div>
+</section>
+
+<!-- ============================ 02 · ROW ANATOMY ============================ -->
+<section class="slide">
+  <div class="running"><span>MENUS · ROW ANATOMY</span><span class="fig">01 / 06</span></div>
+
+  <div class="stage">
+    <div class="grid-context" style="width:836px; height:576px;">
+      <!-- the target: a placed Image (context only) -->
+      <div class="plate cool" style="position:absolute; left:30px; top:30px; width:210px; height:158px; border:1px solid var(--hairline); border-radius:var(--r);"></div>
+      <!-- a second placed record, further off (context only) -->
+      <div class="note-src" style="position:absolute; left:44px; top:396px; width:154px; font-size:11px; opacity:0.7;">Framer confirmed Thursday — bring the river prints.</div>
+
+      <!-- the menu, at large scale, opened at the pointer -->
+      <div class="menu hero" style="position:absolute; left:238px; top:50px;">
+        <div class="mrow"><span>Open</span><span class="mk">O</span></div>
+        <div class="mrow"><span>Edit</span><span class="mk">E</span></div>
+        <div class="msep"></div>
+        <div class="mrow"><span>Cut</span><span class="mk">X</span></div>
+        <div class="mrow"><span>Copy</span><span class="mk">C</span></div>
+        <div class="mrow"><span>Duplicate</span><span class="mk">D</span></div>
+        <div class="msep"></div>
+        <div class="mrow"><span>Trace</span><span class="mk">T</span></div>
+        <div class="mrow"><span>Anchor</span><span class="mk">A</span></div>
+        <div class="msep"></div>
+        <div class="mrow danger"><span>Remove</span><span class="mk">R</span></div>
+      </div>
+      <svg class="cursor" style="left:231px; top:43px;" viewBox="0 0 15 20"><path d="M1 1 L1 15 L4.6 11.8 L7 18 L9.6 17 L7.2 11 L12 11 Z" fill="#EAEAEA" stroke="#0E0E10" stroke-width="1"/></svg>
+
+      <!-- leaders + marks, clear of the menu on the right -->
+      <div class="leader v" style="left:259px; top:36px; height:14px;"></div>
+      <div class="mark" style="left:250px; top:18px;">6</div>
+
+      <div class="leader h" style="left:574px; top:50px; width:24px;"></div>
+      <div class="mark" style="left:598px; top:41px;">1</div>
+
+      <div class="leader h" style="left:574px; top:85px; width:24px;"></div>
+      <div class="mark" style="left:598px; top:76px;">3</div>
+
+      <div class="leader h" style="left:574px; top:342px; width:24px;"></div>
+      <div class="mark" style="left:598px; top:333px;">4</div>
+
+      <div class="leader h" style="left:574px; top:499px; width:24px;"></div>
+      <div class="mark" style="left:598px; top:490px;">5</div>
+
+      <div class="mark" style="left:716px; top:180px;">2</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Surface fill, 2px radius</b>Fill #161618 on a quiet 1px border. 2px is the only radius Grove chrome owns; a rounded menu is a foreign object.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>No scrim</b>The Grid context behind stays fully lit and live. Nothing dims to make a menu matter — it is chrome, not an event.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Label left, key right</b>A plain verb in UI type, one unmodified stroke in mono at reduced ink. Rows never wrap and never truncate.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Hairline groups</b>A 1px separator bounds each intent group: open and edit, clipboard, context, removal. Grouping is the only hierarchy a menu gets.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Destructive stands alone</b>Remove reads in the invalid role, in its own group, never beside the default row — a fast hand cannot land on it by habit.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>No title</b>A menu names nothing, not even itself. The thing that was clicked is the title.</span></div>
+  </div>
+  <div class="folio">CLASS: MENU · CM-01 · D-CM-01 BASELINE</div>
+</section>
+
+<!-- ============================ 03 · THREE TARGETS ============================ -->
+<section class="slide">
+  <div class="running"><span>MENUS · THREE TARGETS</span><span class="fig">02 / 06</span></div>
+
+  <div class="stage" style="align-items:flex-start; justify-content:flex-start; gap:28px;">
+    <!-- CM-01 · on placed content -->
+    <div style="width:260px;">
+      <div class="sectionlbl">CM-01 · ON CONTENT</div>
+      <div class="grid-context" style="width:260px; height:496px;">
+        <div class="note-src" style="position:absolute; left:20px; top:24px; width:150px; font-size:11px;">Framer confirmed Thursday — bring the river prints.</div>
+        <svg class="cursor" style="left:118px; top:88px;" viewBox="0 0 15 20"><path d="M1 1 L1 15 L4.6 11.8 L7 18 L9.6 17 L7.2 11 L12 11 Z" fill="#EAEAEA" stroke="#0E0E10" stroke-width="1"/></svg>
+        <div class="menu" style="position:absolute; left:52px; top:100px; width:184px;">
+          <div class="mrow"><span>Open</span><span class="mk">O</span></div>
+          <div class="mrow"><span>Edit</span><span class="mk">E</span></div>
+          <div class="msep"></div>
+          <div class="mrow"><span>Cut</span><span class="mk">X</span></div>
+          <div class="mrow"><span>Copy</span><span class="mk">C</span></div>
+          <div class="mrow"><span>Duplicate</span><span class="mk">D</span></div>
+          <div class="msep"></div>
+          <div class="mrow"><span>Trace</span><span class="mk">T</span></div>
+          <div class="mrow"><span>Anchor</span><span class="mk">A</span></div>
+          <div class="msep"></div>
+          <div class="mrow danger"><span>Remove</span><span class="mk">R</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CM-02 · on empty space -->
+    <div style="width:260px;">
+      <div class="sectionlbl">CM-02 · ON SPACE</div>
+      <div class="grid-context" style="width:260px; height:496px;">
+        <svg class="cursor" style="left:52px; top:150px;" viewBox="0 0 15 20"><path d="M1 1 L1 15 L4.6 11.8 L7 18 L9.6 17 L7.2 11 L12 11 Z" fill="#EAEAEA" stroke="#0E0E10" stroke-width="1"/></svg>
+        <div class="menu" style="position:absolute; left:64px; top:172px; width:176px;">
+          <div class="mrow"><span>Paste here</span><span class="mk">V</span></div>
+          <div class="mrow"><span>New Note</span><span class="mk">N</span></div>
+          <div class="msep"></div>
+          <div class="mrow"><span>Frame Layer</span><span class="mk">F</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CM-04 · inside a surface -->
+    <div style="width:260px;">
+      <div class="sectionlbl">CM-04 · IN A SURFACE</div>
+      <div style="width:260px; height:496px; background:var(--surface); border:1px solid rgba(205,184,216,0.35); border-radius:var(--r); padding:18px; position:relative;">
+        <div style="font-family:var(--f-display); font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:var(--slate); margin-bottom:14px;">Gallery</div>
+        <div style="display:flex; gap:8px;">
+          <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+            <div class="plate cool" style="height:88px; border-radius:var(--r);"></div>
+            <div class="plate moss" style="height:120px; border-radius:var(--r);"></div>
+            <div class="plate dusk" style="height:70px; border-radius:var(--r);"></div>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+            <div class="plate warm" style="height:128px; border-radius:var(--r);"></div>
+            <div class="plate" style="height:80px; border-radius:var(--r);"></div>
+            <div class="plate cool" style="height:96px; border-radius:var(--r);"></div>
+          </div>
+        </div>
+        <svg class="cursor" style="left:66px; top:96px;" viewBox="0 0 15 20"><path d="M1 1 L1 15 L4.6 11.8 L7 18 L9.6 17 L7.2 11 L12 11 Z" fill="#EAEAEA" stroke="#0E0E10" stroke-width="1"/></svg>
+        <div class="menu" style="position:absolute; left:44px; top:120px; width:196px;">
+          <div class="mrow"><span>Open</span><span class="mk">O</span></div>
+          <div class="mrow"><span>Show on the Grid</span><span class="mk">G</span></div>
+          <div class="mrow"><span>Open record</span><span class="mk">M</span></div>
+          <div class="msep"></div>
+          <div class="mrow"><span>Anchor</span><span class="mk">A</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>One grammar, three targets</b>Content, empty space, and the inside of a surface all get the same cloth: same fill, same rows, same keys. Only the actions change.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>A short list per target</b>Each target answers with the actions it supports and no others — open, edit, clipboard, duplicate, remove where they apply, plus what only that target can do.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Omitted, never grayed</b>An action that does not apply is absent. A disabled gray row is an apology for a wrong list; Grove does not print apologies.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>No actions, no menu</b>A target with nothing to offer shows nothing at all. An empty menu — or a menu of one filler row — never opens.</span></div>
+  </div>
+  <div class="folio">TARGETS: CM-01 · CM-02 · CM-04</div>
+</section>
+
+<!-- ============================ 05 · SURFACE ACTIONS ============================ -->
+<section class="slide">
+  <div class="running"><span>MENUS · SURFACE ACTIONS</span><span class="fig">03 / 06</span></div>
+
+  <div class="stage" style="align-items:flex-start; justify-content:flex-start; gap:28px;">
+
+    <!-- local text editor -->
+    <div style="width:260px;">
+      <div class="sectionlbl">LOCAL EDITOR · A NOTE</div>
+      <div class="grid-context" style="width:260px; height:496px;">
+        <div class="note-src" style="position:absolute; left:16px; top:26px; width:134px; font-size:10.5px; opacity:0.6;">Framer confirmed Thursday.</div>
+        <div style="position:absolute; left:20px; top:124px; width:220px; background:var(--surface); border:1px solid var(--edit-border); border-radius:var(--r); padding:14px; box-shadow:0 8px 24px rgba(0,0,0,0.35);">
+          <div style="font-family:var(--f-ui); font-size:11.5px; line-height:1.65; color:var(--text);">Framer confirmed Thursday — bring the river prints and the small maple frame.</div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:16px;">
+            <span style="width:5px; height:5px; border-radius:50%; background:var(--edit);"></span>
+            <span style="margin-left:auto; font-family:var(--f-ui); font-size:10.5px; color:rgba(234,234,234,0.7);">Cancel</span>
+            <span style="font-family:var(--f-ui); font-size:10.5px; background:var(--interaction); color:var(--paper-ink); padding:4px 9px; border-radius:var(--r);">Save</span>
+          </div>
+        </div>
+        <svg class="cursor" style="left:31px; top:229px;" viewBox="0 0 15 20"><path d="M1 1 L1 15 L4.6 11.8 L7 18 L9.6 17 L7.2 11 L12 11 Z" fill="#EAEAEA" stroke="#0E0E10" stroke-width="1"/></svg>
+        <div class="menu" style="position:absolute; left:36px; top:238px; width:212px;">
+          <div class="mrow"><span>Save</span><span class="mk">S</span></div>
+          <div class="mrow"><span>Open in Writing Slate</span><span class="mk">W</span></div>
+          <div class="msep"></div>
+          <div class="mrow"><span>Close</span><span class="mk">C</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- image viewer -->
+    <div style="width:260px;">
+      <div class="sectionlbl">IMAGE VIEWER · A PHOTOGRAPH</div>
+      <div class="grid-context" style="width:260px; height:496px;">
+        <div class="plate warm" style="position:absolute; left:16px; top:396px; width:96px; height:72px; border:1px solid var(--hairline);"></div>
+        <div style="position:absolute; left:16px; top:26px; width:228px; background:var(--surface); border:1px solid var(--view-border); border-radius:var(--r); padding:12px; box-shadow:0 8px 24px rgba(0,0,0,0.35);">
+          <div style="background:#0B0B0D; height:156px; display:flex; align-items:center; justify-content:center;">
+            <div class="plate warm" style="width:188px; height:130px;"></div>
+          </div>
+          <div style="margin-top:9px; font-family:var(--f-mono); font-size:8.5px; letter-spacing:0.02em; white-space:nowrap; color:rgba(234,234,234,0.45);">Harbor at dusk · JPG · 5472 × 3648</div>
+          <div style="margin-top:10px; display:flex; gap:6px;">
+            <span style="padding:3px 8px; font-family:var(--f-ui); font-size:10px; color:var(--view); background:var(--canvas); border:1px solid rgba(234,234,234,0.18); border-radius:var(--r);">Fit</span>
+            <span style="padding:3px 8px; font-family:var(--f-ui); font-size:10px; color:var(--view); background:var(--canvas); border:1px solid rgba(234,234,234,0.18); border-radius:var(--r);">100%</span>
+          </div>
+        </div>
+        <svg class="cursor" style="left:59px; top:243px;" viewBox="0 0 15 20"><path d="M1 1 L1 15 L4.6 11.8 L7 18 L9.6 17 L7.2 11 L12 11 Z" fill="#EAEAEA" stroke="#0E0E10" stroke-width="1"/></svg>
+        <div class="menu" style="position:absolute; left:64px; top:252px; width:158px;">
+          <div class="mrow"><span>Fit frame</span><span class="mk">F</span></div>
+          <div class="mrow"><span>Back</span><span class="mk">B</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- writing slate -->
+    <div style="width:260px;">
+      <div class="sectionlbl">WRITING SLATE · A DOCUMENT</div>
+      <div style="width:260px; height:496px; background:var(--surface); border:1px solid rgba(205,184,216,0.35); border-radius:var(--r); padding:18px; position:relative; overflow:hidden;">
+        <div style="font-family:var(--f-display); font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:var(--slate);">Writing</div>
+        <div style="margin-top:16px; font-family:var(--f-ui); font-size:14px; font-weight:600; color:var(--text);">Shore survey — May</div>
+        <div style="margin-top:12px; font-family:var(--f-ui); font-size:11px; line-height:1.75; color:rgba(234,234,234,0.82);">
+          Three mornings at the water's edge. The tide tables promised a low at
+          dawn, and the flats delivered — ripple patterns in wet sand, stranded
+          kelp, one heron working the channel.
+        </div>
+        <div style="margin-top:12px; font-family:var(--f-ui); font-size:11px; line-height:1.75; color:rgba(234,234,234,0.82);">
+          The light stays workable for maybe forty minutes. After that the glare
+          flattens everything and the birds move off toward the point.
+        </div>
+        <div style="position:absolute; left:18px; right:18px; bottom:18px; display:flex; gap:8px; justify-content:flex-end;">
+          <span style="font-family:var(--f-ui); font-size:10.5px; color:rgba(234,234,234,0.7);">Cancel</span>
+          <span style="font-family:var(--f-ui); font-size:10.5px; background:var(--interaction); color:var(--paper-ink); padding:4px 9px; border-radius:var(--r);">Save</span>
+        </div>
+        <svg class="cursor" style="left:63px; top:290px;" viewBox="0 0 15 20"><path d="M1 1 L1 15 L4.6 11.8 L7 18 L9.6 17 L7.2 11 L12 11 Z" fill="#EAEAEA" stroke="#0E0E10" stroke-width="1"/></svg>
+        <div class="menu" style="position:absolute; left:68px; top:300px; width:150px;">
+          <div class="mrow"><span>Save</span><span class="mk">S</span></div>
+          <div class="mrow"><span>Cancel</span><span class="mk">C</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>The surface answers</b>Every surface supplies its own short list of what it can do. There is no single global menu carrying rows that do not apply here.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Borrowed vocabulary</b>A text editor answers like a plain text editor; a viewer answers like a photo viewer. The words people already own are the right words.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Two rows is a whole menu</b>A short list is a correct list. Length is never padded to look substantial, and a row never appears just to fill a group.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Same cloth, different words</b>Fill, border, radius, label left and key right do not change from one surface to the next. Only the actions do.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Opening changes nothing</b>The menu asks the surface what it offers and draws it. No draft is saved, no view moves, no state is touched until a row is chosen.</span></div>
+  </div>
+  <div class="folio">TARGET: CM-04 · SURFACE-OWNED ACTIONS</div>
+</section>
+
+<!-- ============================ 04 · FLYOUT ============================ -->
+<section class="slide">
+  <div class="running"><span>MENUS · FLYOUT</span><span class="fig">04 / 06</span></div>
+
+  <div class="stage">
+    <div class="grid-context" style="width:836px; height:576px;">
+      <!-- parent menu near the right edge -->
+      <div class="menu" style="position:absolute; left:600px; top:140px; width:210px;">
+        <div class="mrow"><span>Open</span><span class="mk">O</span></div>
+        <div class="mrow"><span>Edit</span><span class="mk">E</span></div>
+        <div class="msep"></div>
+        <div class="mrow hot"><span>Move to</span><span class="mk">M &nbsp;◂</span></div>
+        <div class="msep"></div>
+        <div class="mrow danger"><span>Remove</span><span class="mk">R</span></div>
+      </div>
+
+      <!-- the flyout, flipped left to stay on screen -->
+      <div class="menu" style="position:absolute; left:396px; top:214px; width:196px;">
+        <div class="mrow dest"><span class="num">1</span><span>Reading</span></div>
+        <div class="mrow dest"><span class="num">2</span><span>Studio wall</span></div>
+        <div class="mrow dest"><span class="num">3</span><span>River study</span></div>
+        <div class="mrow dest"><span class="num">4</span><span>Archive</span></div>
+      </div>
+
+      <div class="mark" style="left:812px; top:232px;">1</div>
+      <div class="mark" style="left:812px; top:108px;">2</div>
+
+      <div class="leader h" style="left:338px; top:237px; width:58px;"></div>
+      <div class="mark" style="left:320px; top:228px;">3</div>
+
+      <div class="leader h" style="left:338px; top:337px; width:58px;"></div>
+      <div class="mark" style="left:320px; top:328px;">4</div>
+
+      <div class="leader v" style="left:709px; top:309px; height:16px;"></div>
+      <div class="mark" style="left:700px; top:325px;">5</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Parent row held</b>Move to stays highlighted the whole time its flyout is open. The eye can always trace the child back to the row that owns it.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Flipped at the edge</b>Near the right edge the flyout opens leftward, and the row's arrow points the way. The whole menu is always on screen — never clipped, never scrolled.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Digits pick destinations</b>Destinations are numbered 1–n in mono. One keystroke moves the content; the digit is the quick key, so no row carries a second one.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>One level, ever</b>A flyout never opens a flyout. A list too deep for one level is navigation, and navigation is not a menu's job.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Left-arrow retreats one step</b>← closes only the flyout and returns to the held row. Escape still closes the topmost surface — here, that same flyout first.</span></div>
+  </div>
+  <div class="folio">FLYOUT: CM-03</div>
+</section>
+
+<!-- ============================ 05 · KEYBOARD GRAMMAR ============================ -->
+<section class="slide">
+  <div class="running"><span>MENUS · KEYBOARD GRAMMAR</span><span class="fig">05 / 06</span></div>
+
+  <div class="stage" style="flex-direction:column; gap:34px;">
+    <div class="menu hero" style="width:336px;">
+      <div class="mrow"><span>Open</span><span class="mk">O</span></div>
+      <div class="mrow"><span>Edit</span><span class="mk">E</span></div>
+      <div class="msep"></div>
+      <div class="mrow"><span>Cut</span><span class="mk">X</span></div>
+      <div class="mrow"><span>Copy</span><span class="mk">C</span></div>
+      <div class="mrow"><span>Duplicate</span><span class="mk">D</span></div>
+      <div class="msep"></div>
+      <div class="mrow hot"><span>Trace</span><span class="mk" style="color:var(--paper-ink); background:var(--interaction); padding:1px 5px; border-radius:var(--r); font-weight:500;">T</span></div>
+      <div class="mrow"><span>Anchor</span><span class="mk">A</span></div>
+      <div class="msep"></div>
+      <div class="mrow danger"><span>Remove</span><span class="mk">R</span></div>
+    </div>
+
+    <div style="display:flex; gap:12px; align-items:center;">
+      <span class="cap pressed" style="min-width:46px; padding:11px 13px; font-size:13px;">T</span>
+      <span class="cap" style="min-width:46px; padding:11px 13px; font-size:13px;">↑</span>
+      <span class="cap" style="min-width:46px; padding:11px 13px; font-size:13px;">↓</span>
+      <span class="cap" style="min-width:46px; padding:11px 13px; font-size:13px;">ENTER</span>
+      <span class="cap" style="min-width:46px; padding:11px 13px; font-size:13px;">ESC</span>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Single strokes, printed</b>Every row shows its key — one unmodified stroke, no chords to memorize. T fires Trace the instant it is pressed.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Live only while open</b>Quick keys belong to the menu, not the Grid. Closed, T types a letter again; nothing is globally reserved.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Hover and arrows agree</b>↑↓ walk the rows, Enter fires the lit one. Pointer and keyboard light the identical row state — one highlight, two hands.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Escape peels one layer</b>Escape closes the topmost surface and only that surface — flyout before menu, menu before nothing.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Stable order</b>Within a target kind the rows never reshuffle — the HIG rule that muscle memory is part of the contract. Position is learned once.</span></div>
+  </div>
+  <div class="folio">KEYS: SINGLE STROKE · ARROWS · ENTER · ESC</div>
+</section>
+
+<!-- ============================ 06 · REFUSALS ============================ -->
+<section class="slide">
+  <div class="running"><span>MENUS · REFUSALS</span><span class="fig">06 / 06</span></div>
+
+  <div class="stage full">
+    <div style="display:grid; grid-template-columns:1fr 1fr; column-gap:64px; row-gap:44px; width:100%;">
+
+      <!-- icon-only toolbar menu -->
+      <div class="ref-wrap">
+        <span class="verdict refuse">✕ &nbsp;ICON STRIP AS MENU</span>
+        <div class="menu" style="width:236px; padding:8px; display:flex; gap:6px; box-shadow:none;">
+          <span class="cap" style="min-width:36px;">▣</span>
+          <span class="cap" style="min-width:36px;">✎</span>
+          <span class="cap" style="min-width:36px;">⧉</span>
+          <span class="cap" style="min-width:36px;">◎</span>
+          <span class="cap" style="min-width:36px; color:var(--invalid);">⌫</span>
+        </div>
+        <div class="ref-reason">A ROW IS A LABELED WORD. AN ICON STRIP MAKES THE READER DECODE PICTURES BEFORE ACTING — AND HIDES THE QUICK KEY.</div>
+      </div>
+
+      <!-- two-level flyout tree -->
+      <div class="ref-wrap">
+        <span class="verdict refuse">✕ &nbsp;FLYOUT INSIDE A FLYOUT</span>
+        <div style="position:relative; height:150px;">
+          <div class="menu" style="position:absolute; left:0; top:0; width:150px; box-shadow:none;">
+            <div class="mrow"><span>Open</span><span class="mk">O</span></div>
+            <div class="mrow hot"><span>Move to</span><span class="mk">▸</span></div>
+          </div>
+          <div class="menu" style="position:absolute; left:158px; top:34px; width:150px; box-shadow:none;">
+            <div class="mrow dest"><span class="num">1</span><span>Reading</span></div>
+            <div class="mrow hot"><span>More</span><span class="mk">▸</span></div>
+          </div>
+          <div class="menu" style="position:absolute; left:316px; top:70px; width:150px; box-shadow:none; border-color:rgba(226,98,92,0.5);">
+            <div class="mrow dest"><span class="num">1</span><span>Archive</span></div>
+            <div class="mrow dest"><span class="num">2</span><span>Studio wall</span></div>
+          </div>
+        </div>
+        <div class="ref-reason">ONE FLYOUT LEVEL EVER. A SECOND CASCADE IS NAVIGATION WEARING MENU CLOTH — THE DIGITS CAN NO LONGER SAY WHICH LIST THEY PICK FROM.</div>
+      </div>
+
+      <!-- Remove beside the default row -->
+      <div class="ref-wrap">
+        <span class="verdict refuse">✕ &nbsp;REMOVE BESIDE THE DEFAULT ROW</span>
+        <div class="menu" style="width:200px; box-shadow:none;">
+          <div class="mrow"><span>Open</span><span class="mk">O</span></div>
+          <div class="mrow danger" style="border:1px solid rgba(226,98,92,0.5); margin:0 -1px;"><span>Remove</span><span class="mk">R</span></div>
+          <div class="mrow"><span>Edit</span><span class="mk">E</span></div>
+        </div>
+        <div class="ref-reason">A FAST HAND AIMS AT OPEN BY HABIT. THE DESTRUCTIVE ROW SITS IN ITS OWN GROUP AT THE END, BEHIND A HAIRLINE — NEVER ONE SLIP AWAY.</div>
+      </div>
+
+      <!-- titled menu naming machinery -->
+      <div class="ref-wrap">
+        <span class="verdict refuse">✕ &nbsp;A TITLE NAMING MACHINERY</span>
+        <div class="menu" style="width:220px; box-shadow:none;">
+          <div style="padding:8px 14px; font-family:var(--f-mono); font-size:9.5px; letter-spacing:0.18em; color:var(--invalid); text-transform:uppercase; border-bottom:1px solid rgba(226,98,92,0.5);">Session · Editor actions</div>
+          <div class="mrow"><span>Open</span><span class="mk">O</span></div>
+          <div class="mrow"><span>Edit</span><span class="mk">E</span></div>
+        </div>
+        <div class="ref-reason">A MENU NEEDS NO TITLE — THE THING CLICKED IS THE TITLE. AND MACHINERY NOUNS NEVER REACH THE SCREEN; ONE IS ENOUGH TO FAIL REVIEW.</div>
+      </div>
+
+    </div>
+  </div>
+  <div class="folio">END · MENUS</div>
+</section>
+
+</body>
+</html>

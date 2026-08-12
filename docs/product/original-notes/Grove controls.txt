@@ -1,0 +1,7 @@
+08.05 11:48
+Grove controls
+Grove controls are seemingly random.
+We are going to consolidate the concept of keybinds. Cursor keybinds will be simple. We use the 1 key to rotate between armed states. Navigation is too scattered and needs to be simplified. For now we focus on the two brackets. Left bracket is down, right bracket is up. Shift left bracket is create new downwards, opposite for up. Insert is Ctrl/cmd, unless at the lowest/highest. Then it mirrors shift usage.
+Moving content should feel easy, select should always highlight aura as well, auras combine while under select. Giving off a larger field view to represent that you're selecting a field of content rather than just the singular content itself. 
+Moving content should not feel "slippery" or "sticky". Moving should feel deliberate and frictionless. 
+

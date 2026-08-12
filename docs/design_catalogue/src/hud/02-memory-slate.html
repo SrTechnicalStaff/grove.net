@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Memory Slate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/catalogue.css">
+<style>
+  /* deck-local helpers */
+  .scene { position: relative; width: 100%; height: 100%; }
+  .sectionlbl {
+    font-family: var(--f-mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.24em; text-transform: uppercase; color: var(--ann);
+    margin-bottom: 14px;
+  }
+  .note-under {
+    font-family: var(--f-mono); font-size: 10px; line-height: 1.8;
+    color: var(--ann); letter-spacing: 0.02em;
+  }
+
+  /* dim Grid context, context only */
+  .ws {
+    position: absolute;
+    background: var(--canvas);
+    background-image:
+      linear-gradient(var(--grid-major) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-major) 1px, transparent 1px);
+    background-size: 56px 56px;
+    background-position: 12px 10px;
+  }
+  .viewport { position: absolute; border: 1px solid var(--hairline); border-radius: var(--r); overflow: hidden; }
+  .prop { position: absolute; background: #1A1A1D; border: 1px solid var(--hairline); border-radius: var(--r); }
+  .prop .pline { height: 3px; background: rgba(234,234,234,0.10); margin: 10px 12px 0; }
+  .camchip {
+    position: absolute; font-family: var(--f-mono); font-size: 9px; font-weight: 500;
+    letter-spacing: 0.08em; color: rgba(234,234,234,0.35);
+  }
+
+  /* ---- Memory Slate chrome ---- */
+  .slate {
+    background: var(--surface);
+    border: 1px solid rgba(205,184,216,0.35);
+    border-radius: var(--r);
+    padding: var(--sp-lg);
+    display: flex; flex-direction: column;
+  }
+  .slate-head {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: var(--sp-lg); flex: none;
+  }
+  .slate-title {
+    font-family: var(--f-display); font-size: 20px; font-weight: 500;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--slate);
+    line-height: 1.4;
+  }
+  .quiet-btn {
+    font-family: var(--f-ui); font-size: 11.5px; color: rgba(234,234,234,0.70);
+    border: 1px solid var(--hairline); border-radius: var(--r); padding: 5px 14px;
+  }
+
+  /* form filters — quiet text controls, active state is structural */
+  .filters { display: flex; gap: 24px; margin-bottom: var(--sp-lg); flex: none; }
+  .filter {
+    font-family: var(--f-ui); font-size: 12px; color: rgba(234,234,234,0.45);
+    padding-bottom: 6px; border-bottom: 1px solid transparent;
+  }
+  .filter.on { color: var(--text); border-bottom-color: rgba(234,234,234,0.55); }
+
+  .masonry { flex: 1; display: flex; gap: 8px; overflow: hidden; min-height: 0; }
+  .mcol { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .card { flex: none; }
+
+  .meta {
+    font-family: var(--f-mono); font-size: 9.5px; font-weight: 500;
+    letter-spacing: 0.08em; color: rgba(234,234,234,0.45);
+    text-transform: uppercase; margin-top: 8px;
+    display: flex; gap: 8px; align-items: center;
+  }
+  .badge {
+    font-family: var(--f-mono); font-size: 8.5px; font-weight: 500;
+    letter-spacing: 0.1em; color: rgba(234,234,234,0.55);
+    border: 1px solid rgba(234,234,234,0.25); border-radius: var(--r);
+    padding: 0 5px; line-height: 1.6;
+  }
+
+  .note-card {
+    background: #1C1C20; border: 1px solid var(--hairline);
+    border-radius: var(--r); padding: 18px;
+    font-family: var(--f-ui); font-size: 14px; line-height: 1.5;
+    color: rgba(234,234,234,0.88);
+  }
+  .img-frame { border-radius: var(--r); }
+
+  /* a Document card is its own front page in miniature */
+  .doc-card { background: var(--paper); color: var(--paper-ink); border-radius: var(--r); padding: 18px; }
+  .doc-title { font-family: var(--f-ui); font-weight: 600; font-size: 13px; line-height: 1.3; margin-bottom: 4px; }
+  .doc-fm { font-family: var(--f-ui); font-size: 8.5px; color: rgba(26,26,26,0.55); margin-bottom: 8px; }
+  .doc-abs { font-family: var(--f-ui); font-size: 9px; line-height: 1.65; color: rgba(26,26,26,0.72); text-align: justify; }
+
+  .btn-primary {
+    background: var(--interaction); color: var(--paper-ink);
+    border-radius: var(--r); font-family: var(--f-ui); font-size: 12.5px;
+    font-weight: 500; padding: 10px 16px; text-align: center;
+  }
+  .btn-quiet {
+    border: 1px solid rgba(234,234,234,0.18); color: var(--text);
+    border-radius: var(--r); font-family: var(--f-ui); font-size: 12.5px;
+    padding: 10px 16px; text-align: center;
+  }
+
+  .selframe { outline: 1px solid var(--interaction); outline-offset: 4px; border-radius: var(--r); }
+
+  /* provenance definition table */
+  .prov { display: flex; flex-direction: column; gap: 12px; }
+  .prov .row { display: grid; grid-template-columns: 62px 1fr; column-gap: 14px; align-items: baseline; }
+  .prov .k {
+    font-family: var(--f-mono); font-size: 9px; font-weight: 500;
+    letter-spacing: 0.12em; text-transform: uppercase; color: rgba(234,234,234,0.45);
+  }
+  .prov .v { font-family: var(--f-ui); font-size: 12.5px; color: var(--text); }
+
+  /* refusal slide */
+  .vtag {
+    position: static; display: block; margin-bottom: 10px;
+    font-family: var(--f-mono); font-size: 9.5px; font-weight: 500;
+    letter-spacing: 0.24em; text-transform: uppercase;
+  }
+  .reason {
+    font-family: var(--f-mono); font-size: 10px; line-height: 1.7;
+    color: var(--ann); letter-spacing: 0.02em; margin-top: 14px;
+  }
+  .rpair { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+</style>
+</head>
+<body>
+
+<!-- ============================ 01 · COVER ============================ -->
+<section class="slide cover">
+  <div class="running"><span>GROVE · DESIGN CATALOGUE · HUD</span><span class="fig">00</span></div>
+  <div class="plane">HUD PLANE · COLLECTION</div>
+  <h1>Memory<br>slate</h1>
+  <div class="rule"></div>
+  <div class="scope">
+    Entry &amp; return · Browse-first gallery · Card forms · Selection ·
+    Memory detail · Filtered browse · Empty states · Refusals
+  </div>
+  <div class="folio">SOURCE: MS-00..MS-08 · DESIGN.MD (ALPHA)</div>
+</section>
+
+<!-- ============================ 02 · ENTRY & RETURN (MS-00 · MS-08) ============================ -->
+<section class="slide">
+  <div class="running"><span>MEMORY SLATE · ENTRY &amp; RETURN</span><span class="fig">01 / 08</span></div>
+
+  <div class="stage">
+    <div class="scene">
+      <div class="viewport" style="inset:0;">
+        <div class="ws" style="inset:0;"></div>
+        <div class="prop" style="left:52px; top:64px; width:196px; height:118px;"><div class="pline" style="width:70%"></div><div class="pline" style="width:52%"></div><div class="pline" style="width:64%"></div></div>
+        <div class="prop" style="left:300px; top:150px; width:170px; height:104px;"><div class="pline" style="width:60%"></div><div class="pline" style="width:74%"></div></div>
+        <div class="prop" style="left:120px; top:262px; width:150px; height:96px;"><div class="pline" style="width:56%"></div><div class="pline" style="width:44%"></div></div>
+        <div class="prop" style="left:520px; top:70px; width:180px; height:110px;"><div class="pline" style="width:66%"></div><div class="pline" style="width:48%"></div><div class="pline" style="width:58%"></div></div>
+        <div class="prop" style="left:340px; top:400px; width:190px; height:112px;"><div class="pline" style="width:72%"></div><div class="pline" style="width:50%"></div></div>
+        <div class="camchip" style="left:16px; bottom:12px;">1240, −380 · 100%</div>
+
+        <!-- closed entry: a quiet invitation, anchored to the viewport -->
+        <div class="slate" style="position:absolute; right:28px; bottom:28px; width:322px; padding:22px;">
+          <div class="slate-title" style="font-size:17px; margin-bottom:10px;">Memories</div>
+          <div style="font-family:var(--f-ui); font-size:13px; line-height:1.55; color:rgba(234,234,234,0.72);">
+            Every note, document, and image you have kept — in one place.
+          </div>
+          <div style="display:flex; align-items:center; gap:10px; margin-top:18px;">
+            <div style="font-family:var(--f-mono); font-size:11px; font-weight:500; letter-spacing:0.1em; color:var(--text); border:1px solid rgba(234,234,234,0.28); border-radius:var(--r); padding:3px 9px;">S</div>
+            <div style="font-family:var(--f-ui); font-size:12px; color:rgba(234,234,234,0.55);">to open</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- marks -->
+      <div class="mark" style="left:466px; top:443px;">1</div>
+      <div class="mark" style="left:466px; top:503px;">2</div>
+      <div class="mark" style="left:150px; top:36px;">3</div>
+      <div class="mark" style="left:806px; top:406px;">4</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>A named invitation</b>The closed surface says what it holds, in the words a person would use. It never announces itself or explains what it is.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>One key, shown</b>S opens it, and the key is printed where the invitation is — learned in the place it is used, not in a settings list.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Nothing behind it moves</b>The Grid context, the camera, and every placement stay exactly as they are. Opening this surface is never a navigation.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>One return path</b>Close comes back to this same view. There is no second exit, and no route that leaves a person somewhere new.</span></div>
+  </div>
+  <div class="folio">CONTRACT: MS-00 · MS-08</div>
+</section>
+
+<!-- ============================ 03 · GALLERY ANATOMY (MS-01) ============================ -->
+<section class="slide">
+  <div class="running"><span>MEMORY SLATE · GALLERY ANATOMY</span><span class="fig">02 / 08</span></div>
+
+  <div class="stage">
+    <div class="slate" style="width:836px; height:576px;">
+      <div class="slate-head">
+        <div class="slate-title">Memories</div>
+        <div class="quiet-btn">Close</div>
+      </div>
+      <div class="filters">
+        <div class="filter on">All</div>
+        <div class="filter">Notes</div>
+        <div class="filter">Documents</div>
+        <div class="filter">Images</div>
+      </div>
+      <div class="masonry">
+        <div class="mcol">
+          <div class="card">
+            <div class="plate warm img-frame" style="height:250px;"></div>
+            <div class="meta">IMAGE · MAY 18</div>
+          </div>
+          <div class="card">
+            <div class="note-card">Met with Jamie — launch timing and messaging. Align on the audience and the core benefit before the next review.</div>
+            <div class="meta">NOTE · MAY 12</div>
+          </div>
+        </div>
+        <div class="mcol">
+          <div class="card">
+            <div class="note-card">Golden hour along the ridge path — look for the leading lines and the long shadows before the light goes flat.</div>
+            <div class="meta">NOTE · MAY 30</div>
+          </div>
+          <div class="card">
+            <div class="plate dusk img-frame" style="height:236px;"></div>
+            <div class="meta"><span class="badge">GIF</span><span>JUN 02</span></div>
+          </div>
+        </div>
+        <div class="mcol">
+          <div class="card">
+            <div class="doc-card">
+              <div class="doc-title">Shoreline Erosion Survey</div>
+              <div class="doc-fm">R. Okafor · Field Team North · April 2025</div>
+              <div class="doc-abs">Seasonal observation of the north shoreline shows erosion concentrating at the tide line after the winter storms. We compare bank profiles from four field visits and note where planting held the slope and where it gave way. Recommendations follow for the spring survey route.</div>
+            </div>
+            <div class="meta">DOCUMENT · APR 28</div>
+          </div>
+          <div class="card">
+            <div class="plate moss img-frame" style="height:182px;"></div>
+            <div class="meta">IMAGE · APR 19</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mark" style="left:305px; top:502px;">1</div>
+  <div class="mark" style="left:305px; top:222px;">2</div>
+  <div class="mark" style="left:835px; top:222px;">3</div>
+  <div class="mark" style="left:424px; top:610px;">4</div>
+  <div class="mark" style="left:325px; top:400px;">5</div>
+  <div class="mark" style="left:340px; top:166px;">6</div>
+
+  <div class="ann-col right" style="gap:18px;">
+    <div class="ann"><span class="n">01</span><span><b>Content is the card</b>A note's complete text is the card face — UI type on a raised surface. No title row, no icon header, no ellipsis.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Intrinsic aspect</b>An image card is the complete frame. Columns absorb the height; frames are never cropped to tiles.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Document front page</b>Its own first page in miniature — title, front matter, abstract. The page is the identity, not an icon.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Metadata beneath</b>One quiet mono line: form · date. A GIF badge sits here — never on the image.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Masonry math</b>Columns balance around a ~250px minimum; gutters are the small step, 8px. Column bottoms stay ragged.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Header and filters</b>Display type in slate hue names the surface; form filters are quiet text controls, not tabs or pills.</span></div>
+  </div>
+  <div class="folio">CONTRACT: MS-01 · COLLECTION LAYOUT</div>
+</section>
+
+<!-- ============================ 04 · CARD FORMS ============================ -->
+<section class="slide">
+  <div class="running"><span>MEMORY SLATE · CARD FORMS</span><span class="fig">03 / 08</span></div>
+
+  <div class="stage full" style="align-items:flex-start; padding-top:6px;">
+    <div style="display:grid; grid-template-columns:repeat(4, 1fr); grid-template-rows:auto 340px auto auto; column-gap:32px; width:100%;">
+
+      <div class="sectionlbl">Note</div>
+      <div class="sectionlbl">Image</div>
+      <div class="sectionlbl">Document</div>
+      <div class="sectionlbl">Animated image</div>
+
+      <div>
+        <div class="note-card">Met with Jamie — launch timing and messaging. We agreed the audience question has to be settled before anything else moves. Align on who this is for, then on the one benefit worth leading with, and bring both to the next review. If neither is settled by then, the review is the wrong meeting and we should move it a week. Jamie will pull the two customer calls from March; I will draft the one-line version and send it Friday.</div>
+      </div>
+      <div><div class="plate warm img-frame" style="height:340px;"></div></div>
+      <div>
+        <div class="doc-card" style="padding:20px;">
+          <div class="doc-title" style="font-size:15px;">Shoreline Erosion Survey</div>
+          <div class="doc-fm" style="font-size:9px;">R. Okafor · Field Team North · April 2025</div>
+          <div class="doc-abs" style="font-size:10px; line-height:1.7;">Seasonal observation of the north shoreline shows erosion concentrating at the tide line after the winter storms. We compare bank profiles from four field visits between November and March, and note where the planting held the slope and where it gave way under standing water. The two culverts below the ridge path carried more volume than the design allowed, and the softened bank above them accounts for most of the loss measured this season. Recommendations follow for the spring survey route, the order of repair, and the two crossings that should be watched through the next storm cycle.</div>
+        </div>
+      </div>
+      <div><div class="plate dusk img-frame" style="height:296px;"></div></div>
+
+      <div class="meta">NOTE · MAY 12</div>
+      <div class="meta">IMAGE · MAY 18</div>
+      <div class="meta">DOCUMENT · APR 28</div>
+      <div class="meta"><span class="badge">GIF</span><span>JUN 02</span></div>
+
+      <div class="ann" style="margin-top:24px;"><span class="n">01</span><span>Identity is the text itself, complete and unclipped. A title row would be a second, worse copy of the first sentence.</span></div>
+      <div class="ann" style="margin-top:24px;"><span class="n">02</span><span>Identity is the complete frame at intrinsic aspect. The photograph is never summarized, cropped, or captioned over.</span></div>
+      <div class="ann" style="margin-top:24px;"><span class="n">03</span><span>Identity is the document's own front page in miniature — title, front matter, abstract — like a paper laid on a desk.</span></div>
+      <div class="ann" style="margin-top:24px;"><span class="n">04</span><span>The frame stays an image; a quiet mono badge in the metadata line marks animation. The badge never sits on the frame.</span></div>
+
+    </div>
+  </div>
+
+  <div class="note-under" style="position:absolute; bottom:28px; left:48px; letter-spacing:0.12em; text-transform:uppercase;">
+    NO CARD GETS A TITLE BAR — EVERY FORM IS ALREADY ITS OWN LABEL, AND THE METADATA LINE SAYS THE REST
+  </div>
+</section>
+
+<!-- ============================ 05 · SELECTION (MS-03) ============================ -->
+<section class="slide">
+  <div class="running"><span>MEMORY SLATE · SELECTION</span><span class="fig">04 / 08</span></div>
+
+  <div class="stage">
+    <div class="slate" style="width:836px; height:576px;">
+      <div class="slate-head">
+        <div class="slate-title">Memories</div>
+        <div class="quiet-btn">Close</div>
+      </div>
+      <div class="filters">
+        <div class="filter on">All</div>
+        <div class="filter">Notes</div>
+        <div class="filter">Documents</div>
+        <div class="filter">Images</div>
+      </div>
+      <div class="masonry">
+        <div class="mcol">
+          <div class="card" style="margin:6px;">
+            <div class="selframe">
+              <div class="plate warm img-frame" style="height:238px;"></div>
+            </div>
+            <div class="meta" style="color:var(--text);">IMAGE · MAY 18</div>
+          </div>
+          <div class="card">
+            <div class="note-card">Met with Jamie — launch timing and messaging. Align on the audience and the core benefit before the next review.</div>
+            <div class="meta">NOTE · MAY 12</div>
+          </div>
+        </div>
+        <div class="mcol">
+          <div class="card">
+            <div class="note-card">Golden hour along the ridge path — look for the leading lines and the long shadows before the light goes flat.</div>
+            <div class="meta">NOTE · MAY 30</div>
+          </div>
+          <div class="card">
+            <div class="plate moss img-frame" style="height:236px;"></div>
+            <div class="meta">IMAGE · APR 19</div>
+          </div>
+        </div>
+        <div class="mcol">
+          <div class="card">
+            <div class="plate cool img-frame" style="height:244px;"></div>
+            <div class="meta">IMAGE · JUN 04</div>
+          </div>
+          <div class="card">
+            <div class="note-card">Ask Priya for the shoreline survey before Thursday.</div>
+            <div class="meta">NOTE · APR 30</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mark" style="left:318px; top:290px;">1</div>
+  <div class="mark" style="left:300px; top:462px;">2</div>
+  <div class="mark" style="left:340px; top:166px;">3</div>
+  <div class="mark" style="left:835px; top:222px;">4</div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Outline outside the frame</b>1px interaction hue, offset from the edge. The image itself is never restyled — no tint, no dim, no border swap.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Structure joins hue</b>The card's metadata line brightens to full ink. The state reads completely without color.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Nothing else happens</b>Header, filters, order, and scroll are unchanged. Selection opens no preview and navigates nowhere.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Detail is a separate act</b>Every other card stays exactly as it was. Opening the record is its own explicit action, never a side effect of selecting.</span></div>
+  </div>
+  <div class="folio">CONTRACT: MS-03</div>
+</section>
+
+<!-- ============================ 06 · MEMORY DETAIL (MS-04) ============================ -->
+<section class="slide">
+  <div class="running"><span>MEMORY SLATE · MEMORY DETAIL</span><span class="fig">05 / 08</span></div>
+
+  <div class="stage">
+    <div class="slate" style="width:836px; height:576px;">
+      <div class="slate-head" style="margin-bottom:20px;">
+        <div style="font-family:var(--f-ui); font-size:12.5px; color:rgba(234,234,234,0.62);">&#8592;&nbsp;&nbsp;Back</div>
+        <div class="quiet-btn">Close</div>
+      </div>
+      <div style="flex:1; display:flex; gap:32px; min-height:0;">
+        <div style="flex:none;">
+          <div class="plate warm img-frame" style="width:512px; height:452px;"></div>
+          <div class="meta">IMAGE · 3840 × 2560 · 2.7 MB</div>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+          <div style="font-family:var(--f-ui); font-size:20px; font-weight:500; line-height:1.3;">Sunlit ridge</div>
+          <div style="font-family:var(--f-ui); font-size:13px; line-height:1.6; color:rgba(234,234,234,0.72); margin-top:10px;">
+            Golden hour along the ridge path. Soft haze, long shadows.
+          </div>
+          <div style="height:1px; background:var(--hairline); margin:22px 0;"></div>
+          <div class="prov">
+            <div class="row"><div class="k">Added</div><div class="v">May 18, 2025 · 6:42 PM</div></div>
+            <div class="row"><div class="k">Form</div><div class="v">Image</div></div>
+            <div class="row"><div class="k">Anchor</div><div class="v" style="color:var(--anchor-indigo);">Northpoint / Shoreline</div></div>
+          </div>
+          <div style="margin-top:auto; display:flex; flex-direction:column; gap:10px;">
+            <div class="btn-primary">View content</div>
+            <div class="btn-quiet">Place later</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mark" style="left:575px; top:360px;">1</div>
+  <div class="mark" style="left:592px; top:290px;">2</div>
+  <div class="mark" style="left:592px; top:560px;">3</div>
+  <div class="mark" style="left:150px; top:112px;">4</div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>The record is the content</b>The canonical Memory takes most of the surface, complete — the same frame the gallery card showed, never a re-crop.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Provenance is quiet</b>A small mono-labeled table: added, form, anchor. Authored context always reads in anchor-indigo. No chip pile.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Two explicit actions</b>View content is the one primary; Place later stays quiet. Nothing here navigates or places on its own.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Back is a return</b>Leaving detail restores the gallery at the same scroll position with the same selection — and reached only by explicit Open.</span></div>
+  </div>
+  <div class="folio">CONTRACT: MS-04 · MS-05 · MS-06</div>
+</section>
+
+<!-- ============================ 07 · FILTERED BROWSE (MS-02) ============================ -->
+<section class="slide">
+  <div class="running"><span>MEMORY SLATE · FILTERED BROWSE</span><span class="fig">06 / 08</span></div>
+
+  <div class="stage" style="flex-direction:column; align-items:stretch; justify-content:flex-start; gap:24px;">
+    <div class="slate" style="height:328px;">
+      <div class="slate-head">
+        <div class="slate-title">Memories</div>
+        <div class="quiet-btn">Close</div>
+      </div>
+      <div class="filters">
+        <div class="filter">All</div>
+        <div class="filter on">Notes</div>
+        <div class="filter">Documents</div>
+        <div class="filter">Images</div>
+      </div>
+      <div class="masonry">
+        <div class="mcol">
+          <div class="card">
+            <div class="note-card">Met with Jamie — launch timing and messaging. Align on the audience and the core benefit before the next review.</div>
+            <div class="meta">NOTE · MAY 12</div>
+          </div>
+        </div>
+        <div class="mcol">
+          <div class="card">
+            <div class="note-card">Golden hour along the ridge path — look for the leading lines and the long shadows before the light goes flat.</div>
+            <div class="meta">NOTE · MAY 30</div>
+          </div>
+        </div>
+        <div class="mcol">
+          <div class="card">
+            <div class="note-card">Ask Priya for the shoreline survey before Thursday.</div>
+            <div class="meta">NOTE · APR 30</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slate" style="height:224px;">
+      <div class="slate-head">
+        <div class="slate-title">Memories</div>
+        <div class="quiet-btn">Close</div>
+      </div>
+      <div class="filters">
+        <div class="filter">All</div>
+        <div class="filter">Notes</div>
+        <div class="filter on">Documents</div>
+        <div class="filter">Images</div>
+      </div>
+      <div style="flex:1; display:flex; align-items:center; gap:20px; min-height:0;">
+        <div style="font-family:var(--f-ui); font-size:13.5px; color:rgba(234,234,234,0.72);">Nothing here matches Documents.</div>
+        <div class="btn-quiet" style="padding:7px 16px; font-size:12px;">Show all</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mark" style="left:320px; top:166px;">1</div>
+  <div class="mark" style="left:568px; top:218px;">2</div>
+  <div class="mark" style="left:400px; top:594px;">3</div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>The gallery narrows in place</b>Same surface, same masonry, same header — only membership changes. The active filter is marked by structure, not by hue alone.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Cards stay themselves</b>A filtered note card is the same complete card at the same measure. Narrowing never switches to a denser or summarized layout.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>No results explains itself</b>A designed state that says what happened and offers the one way back. The filter never silently resets itself.</span></div>
+  </div>
+  <div class="folio">CONTRACT: MS-02</div>
+</section>
+
+<!-- ============================ 08 · EMPTY & UNAVAILABLE (MS-07) ============================ -->
+<section class="slide">
+  <div class="running"><span>MEMORY SLATE · EMPTY &amp; UNAVAILABLE</span><span class="fig">07 / 08</span></div>
+
+  <div class="stage" style="flex-direction:column; align-items:stretch; justify-content:flex-start; gap:24px;">
+    <div class="slate" style="height:220px;">
+      <div class="slate-head">
+        <div class="slate-title">Memories</div>
+        <div class="quiet-btn">Close</div>
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:14px; min-height:0;">
+        <div style="font-family:var(--f-ui); font-size:14px; line-height:1.55; color:rgba(234,234,234,0.72); max-width:430px;">
+          Nothing kept yet. The notes, documents, and images you keep will gather here.
+        </div>
+        <div style="font-family:var(--f-ui); font-size:12.5px; color:rgba(234,234,234,0.50);">Write a note or bring in an image to start.</div>
+      </div>
+    </div>
+
+    <div class="slate" style="height:332px;">
+      <div class="slate-head">
+        <div class="slate-title">Memories</div>
+        <div class="quiet-btn">Close</div>
+      </div>
+      <div class="filters">
+        <div class="filter on">All</div>
+        <div class="filter">Notes</div>
+        <div class="filter">Documents</div>
+        <div class="filter">Images</div>
+      </div>
+      <div class="masonry">
+        <div class="mcol">
+          <div class="card">
+            <div class="img-frame" style="height:150px; background:#131316; border:1px solid var(--hairline); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:0 18px;">
+              <div style="font-family:var(--f-ui); font-size:12.5px; color:rgba(234,234,234,0.60); text-align:center; line-height:1.5;">This image can't be shown right now.</div>
+              <div class="btn-quiet" style="font-size:11.5px; padding:6px 14px;">Retry</div>
+            </div>
+            <div class="meta">IMAGE · MAY 18</div>
+          </div>
+        </div>
+        <div class="mcol">
+          <div class="card">
+            <div class="plate moss img-frame" style="height:158px;"></div>
+            <div class="meta">IMAGE · APR 19</div>
+          </div>
+        </div>
+        <div class="mcol">
+          <div class="card">
+            <div class="note-card">Ask Priya for the shoreline survey before Thursday.</div>
+            <div class="meta">NOTE · APR 30</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mark" style="left:560px; top:200px;">1</div>
+  <div class="mark" style="left:305px; top:614px;">2</div>
+  <div class="mark" style="left:246px; top:548px;">3</div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Empty is designed</b>An empty collection states what will gather here and what to do first — a next step, never a blank surface.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Unavailability keeps identity</b>The card holds its place, its aspect, and its metadata line. A view failure never hides or deletes a Memory.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Retry in place</b>Recovery is offered inside the card that failed. No invalid red — nothing was refused, only not shown yet.</span></div>
+  </div>
+  <div class="folio">CONTRACT: MS-07</div>
+</section>
+
+<!-- ============================ 09 · REFUSALS ============================ -->
+<section class="slide">
+  <div class="running"><span>MEMORY SLATE · REFUSALS</span><span class="fig">08 / 08</span></div>
+
+  <div class="stage full" style="align-items:center;">
+    <div style="display:grid; grid-template-columns:1fr 1fr; column-gap:56px; row-gap:36px; width:100%;">
+
+      <!-- A · titled + ellipsized note card -->
+      <div>
+        <div class="rpair">
+          <div>
+            <div class="vtag" style="color:var(--invalid);">Refuse</div>
+            <div class="note-card" style="font-size:12.5px; padding:16px;">
+              <div style="font-weight:600; font-size:13px; margin-bottom:3px;">Meeting notes</div>
+              <div style="font-family:var(--f-mono); font-size:8.5px; letter-spacing:0.08em; color:rgba(234,234,234,0.45); text-transform:uppercase; margin-bottom:10px;">NOTE · MAY 12</div>
+              <div style="color:rgba(234,234,234,0.60);">Met with Jamie — launch timing and&#8230;</div>
+            </div>
+          </div>
+          <div>
+            <div class="vtag" style="color:var(--interaction);">Keep</div>
+            <div class="note-card" style="font-size:12.5px; padding:16px;">Met with Jamie — launch timing and messaging. Align on the audience and the core benefit before the next review.</div>
+            <div class="meta">NOTE · MAY 12</div>
+          </div>
+        </div>
+        <div class="reason">A TITLE ROW PLUS AN ELLIPSIS HIDES TEXT THE CARD COULD SIMPLY SHOW. THE NOTE IS ALREADY ITS OWN CARD.</div>
+      </div>
+
+      <!-- B · uniform crop grid -->
+      <div>
+        <div class="rpair">
+          <div>
+            <div class="vtag" style="color:var(--invalid);">Refuse</div>
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:4px;">
+              <div class="plate warm" style="height:58px;"></div>
+              <div class="plate cool" style="height:58px;"></div>
+              <div class="plate moss" style="height:58px;"></div>
+              <div class="plate dusk" style="height:58px;"></div>
+              <div class="plate moss" style="height:58px;"></div>
+              <div class="plate warm" style="height:58px;"></div>
+            </div>
+          </div>
+          <div>
+            <div class="vtag" style="color:var(--interaction);">Keep</div>
+            <div style="display:flex; gap:8px;">
+              <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+                <div class="plate warm img-frame" style="height:62px;"></div>
+                <div class="plate dusk img-frame" style="height:98px;"></div>
+              </div>
+              <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+                <div class="plate cool img-frame" style="height:112px;"></div>
+                <div class="plate moss img-frame" style="height:48px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="reason">UNIFORM TILES CROP EVERY FRAME. MASONRY KEEPS COMPLETE EDGES AND INTRINSIC ASPECT.</div>
+      </div>
+
+      <!-- C · metadata overlaid -->
+      <div>
+        <div class="rpair">
+          <div>
+            <div class="vtag" style="color:var(--invalid);">Refuse</div>
+            <div style="position:relative;">
+              <div class="plate warm img-frame" style="height:150px;"></div>
+              <div style="position:absolute; left:0; right:0; bottom:0; padding:26px 12px 10px; background:linear-gradient(180deg, transparent, rgba(0,0,0,0.75)); font-family:var(--f-mono); font-size:9.5px; letter-spacing:0.08em; color:#EAEAEA; text-transform:uppercase;">IMAGE · MAY 18</div>
+            </div>
+          </div>
+          <div>
+            <div class="vtag" style="color:var(--interaction);">Keep</div>
+            <div class="plate warm img-frame" style="height:150px;"></div>
+            <div class="meta">IMAGE · MAY 18</div>
+          </div>
+        </div>
+        <div class="reason">METADATA LIVES BENEATH THE FRAME. A SCRIM AND CAPTION RESTYLE THE IMAGE THEY DESCRIBE.</div>
+      </div>
+
+      <!-- D · selection as tint -->
+      <div>
+        <div class="rpair">
+          <div>
+            <div class="vtag" style="color:var(--invalid);">Refuse</div>
+            <div style="position:relative;">
+              <div class="plate moss img-frame" style="height:150px;"></div>
+              <div style="position:absolute; inset:0; background:rgba(150,182,248,0.28); border-radius:var(--r);"></div>
+            </div>
+            <div class="meta">IMAGE · APR 19</div>
+          </div>
+          <div>
+            <div class="vtag" style="color:var(--interaction);">Keep</div>
+            <div style="margin:6px;">
+              <div class="selframe"><div class="plate moss img-frame" style="height:138px;"></div></div>
+              <div class="meta" style="color:var(--text);">IMAGE · APR 19</div>
+            </div>
+          </div>
+        </div>
+        <div class="reason">SELECTION IS AN OUTLINE OUTSIDE THE FRAME, PLUS FULL INK IN THE METADATA. A TINT RESTYLES THE CONTENT ITSELF.</div>
+      </div>
+
+    </div>
+  </div>
+  <div class="folio">END · MEMORY SLATE</div>
+</section>
+
+</body>
+</html>

@@ -1,0 +1,16 @@
+08.05 12:33
+Grove - Documents
+Documents can be created both in the app and be retrieved from disk.
+Documents on the grid are meant to be more representative than legible. The content displayed should feel like a research paper. Title, front matter (in place of author), the equivalent of an abstract and a conclusion. 
+Documents are not actually structured like this unless they're actual research papers. So instead what that means is the amount of content displayed should feel equivalent to this concept. 
+The title and frontmatter should have an appropriate amount of space, and then the content should have an appropriate amount of space. Under no circumstances should we be using overflow or truncation techniques.
+For greater inspection, a writing slate would be used, allowing direct content review and editing where applicable.
+Let's focus on use cases. 
+## Information laid out in 2D space.
+In this use case, the primary purpose is to have quick access to information for reference purposes. Allowing you to quickly review material for whatever reason you see fit.
+## Organizing information in 2D space
+In this scenario we are organizing information by whatever relationship we see fit compared to one another. This means that what is in the document may not be important right now, but it is important to have in proximity to other forms of information to preserve context. For example you may decide to organize a topic in one area, and that topic being organized in one area establishes its importance in relation to all information in the grid.
+## Placing information across layers 
+Documents can be placed across multiple layers, same as all content. You are indeed creating another copy of the document on disk. Tracing is a grove specific concept, so on disk it is simply making a copy. The method of copying on disk depends on the file type. For now the only document type in scope is markdown. For markdown, content copies on disk use a simple copy technique or (n) where n is the number of copy, unless the document is renamed in-app or on disk. In the frontmatter, the content gains a field of "Trace of" and the source document is listed. While the source document gets a "Traces" field, listing the traced document underneath it. 
+Only frontmatter compatible file types get this level of granularity. All other file types simply get the filename treatment due to lack of programmatic tracking for relationships. 
+

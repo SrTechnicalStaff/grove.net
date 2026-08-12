@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Image viewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/catalogue.css">
+<style>
+  /* deck-local helpers */
+
+  /* dim Grid context context behind the subject */
+  .grid-context {
+    position: relative;
+    width: 100%; height: 100%;
+    background-color: var(--canvas);
+    background-image:
+      linear-gradient(rgba(38,38,42,0.85) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(38,38,42,0.85) 1px, transparent 1px);
+    background-size: 70px 70px;
+    border: 1px solid var(--hairline);
+    border-radius: var(--r);
+    overflow: hidden;
+  }
+
+  /* source placement: a photo record sitting on the Grid */
+  .srccard {
+    position: absolute;
+    background: var(--paper);
+    padding: 9px;
+    border-radius: 1px;
+  }
+  .srccard .ph { width: 132px; height: 104px; }
+
+  /* the viewer itself — local editor class, view role */
+  .viewer {
+    position: absolute;
+    background: var(--surface);
+    border: 1px solid var(--view-border);
+    border-radius: var(--r);
+    padding: 16px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+  }
+  .vstage {
+    position: relative;
+    background: #0B0B0D;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .vmeta {
+    margin-top: 10px;
+    font-family: var(--f-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.06em;
+    color: rgba(234,234,234,0.45);
+    white-space: nowrap;
+  }
+  .vstrip {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .vbtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    font-family: var(--f-ui);
+    font-size: 11px;
+    color: var(--view);
+    background: var(--canvas);
+    border: 1px solid rgba(234,234,234,0.18);
+    border-radius: var(--r);
+    white-space: nowrap;
+  }
+  .vbtn.neutral { color: rgba(234,234,234,0.85); }
+  .vslider {
+    position: relative;
+    width: 74px; height: 22px;
+    flex: none;
+  }
+  .vslider .track { position: absolute; top: 10.5px; left: 0; right: 0; height: 1px; background: rgba(234,234,234,0.25); }
+  .vslider .thumb { position: absolute; top: 6px; width: 6px; height: 10px; background: var(--view); border-radius: var(--r); }
+  .vscale {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: rgba(234,234,234,0.75);
+  }
+  .kindbadge {
+    position: absolute;
+    top: 8px; right: 8px;
+    padding: 2px 7px;
+    font-family: var(--f-mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    color: rgba(234,234,234,0.5);
+    background: rgba(14,14,16,0.82);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r);
+  }
+
+  /* one recurring photograph — features scale with the element, so
+     fit and zoom read as the same picture at different scales */
+  .img-harbor {
+    background-image:
+      radial-gradient(ellipse 7% 9% at 66% 32%, rgba(240,228,200,0.85), transparent 70%),
+      radial-gradient(ellipse 26% 7% at 66% 44%, rgba(220,214,200,0.18), transparent 70%),
+      linear-gradient(180deg, transparent 54%, rgba(200,214,235,0.20) 55%, rgba(200,214,235,0.05) 62%, transparent 78%),
+      radial-gradient(120% 90% at 20% 12%, rgba(234,234,234,0.14), transparent 55%),
+      linear-gradient(160deg, #3C4A62, #10141C);
+  }
+
+  /* refusal comparison panels */
+  .refgrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    width: 100%; height: 100%;
+  }
+  .refpanel {
+    position: relative;
+    border: 1px solid var(--hairline);
+    border-radius: var(--r);
+    background: var(--surface);
+    padding: 44px 20px 18px 20px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    overflow: hidden;
+  }
+  .refpanel .render { flex: none; position: relative; }
+  .refpanel .reason {
+    font-family: var(--f-mono);
+    font-size: 10.5px;
+    line-height: 1.75;
+    color: var(--ann);
+    letter-spacing: 0.02em;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================ 01 · COVER ============================ -->
+<section class="slide cover">
+  <div class="running"><span>GROVE · DESIGN CATALOGUE</span><span class="fig">02</span></div>
+  <div class="plane">INFORMATION PLANE · LOCAL VIEWER</div>
+  <h1>Image<br>viewer</h1>
+  <div class="rule"></div>
+  <div class="scope">
+    Complete-frame inspection beside the source · Zoom · Pan ·
+    GIF playback · Decode recovery · Return · Refusals
+  </div>
+  <div class="folio">SOURCE: IMAGE-VIEWER STATE BOARD V2 · DESIGN.MD (ALPHA)</div>
+</section>
+
+<!-- ============================ 02 · ANATOMY (IV-00) ============================ -->
+<section class="slide">
+  <div class="running"><span>IMAGE VIEWER · ANATOMY</span><span class="fig">01 / 06</span></div>
+
+  <div class="stage">
+    <div class="grid-context">
+      <!-- source placement -->
+      <div class="srccard" style="left:40px; top:216px;">
+        <div class="ph img-harbor"></div>
+      </div>
+      <!-- a second distant record for context -->
+      <div style="position:absolute; left:56px; top:452px; width:118px; height:64px; background:#1C1C20; border:1px solid var(--hairline);"></div>
+
+      <!-- the viewer, fitted -->
+      <div class="viewer" style="left:268px; top:62px; width:502px;">
+        <div class="vstage" style="height:322px;">
+          <div class="img-harbor" style="width:420px; height:280px;"></div>
+        </div>
+        <div class="vmeta">Harbor at dusk · JPG · 5472 × 3648 · 8.2 MB · May 12, 2026</div>
+        <div class="vstrip">
+          <div class="vbtn">Fit</div>
+          <div class="vbtn">100%</div>
+          <div class="vbtn">−</div>
+          <div class="vslider"><div class="track"></div><div class="thumb" style="left:22px;"></div></div>
+          <div class="vbtn">+</div>
+          <div class="vbtn" style="padding:4px 8px;">
+            <svg width="10" height="10" viewBox="0 0 10 10"><path d="M1 3.5 V1 H3.5 M6.5 1 H9 V3.5 M9 6.5 V9 H6.5 M3.5 9 H1 V6.5" fill="none" stroke="#9BB6E0" stroke-width="1.2"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- marks -->
+      <div class="mark" style="left:290px; top:80px;">1</div>
+      <div class="mark" style="left:248px; top:44px;">2</div>
+      <div class="mark" style="left:206px; top:236px;">3</div>
+      <div class="mark" style="left:600px; top:442px;">4</div>
+      <div class="mark" style="left:668px; top:406px;">5</div>
+      <div class="mark" style="left:782px; top:486px;">6</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Complete frame, fitted</b>Opens at fit: the whole picture visible. Never cropped, never upscaled past 100% — a small image sits at natural size on the dark stage.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>View-role border</b>1px #3F5F8A names a looking surface. The hue is a promise: this frame inspects and never edits.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Beside the source</b>The viewer opens next to the placement it serves. The source stays visible; the Grid never dims.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Control strip</b>Fit · 100% · zoom slider · fullscreen. Quiet chrome in the view hue — photos-app parity, nothing more.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Metadata line</b>One quiet mono line beneath the frame: title · kind · pixels · size · date. Complete, never shortened.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Frame and depth</b>Surface fill, 2px radius, 16px padding, one soft shadow lifts it off the Grid. No glow, no scrim.</span></div>
+  </div>
+  <div class="folio">STATE: IV-00 · OPEN FITTED</div>
+</section>
+
+<!-- ============================ 03 · ZOOM + PAN (IV-01 / IV-02) ============================ -->
+<section class="slide">
+  <div class="running"><span>IMAGE VIEWER · ZOOM · PAN</span><span class="fig">02 / 06</span></div>
+
+  <div class="stage">
+    <div class="grid-context">
+      <div class="srccard" style="left:40px; top:216px;">
+        <div class="ph img-harbor"></div>
+      </div>
+
+      <!-- the viewer, zoomed to 240% -->
+      <div class="viewer" style="left:268px; top:62px; width:502px;">
+        <div class="vstage" style="height:322px;">
+          <div class="img-harbor" style="position:absolute; width:1008px; height:672px; left:-290px; top:-186px;"></div>
+          <!-- pan handle indicator -->
+          <svg width="44" height="44" viewBox="0 0 44 44" style="position:absolute; left:212px; top:139px;">
+            <path d="M22 6 v32 M6 22 h32" stroke="rgba(150,182,248,0.55)" stroke-width="1"/>
+            <circle cx="22" cy="22" r="3.5" fill="#96B6F8"/>
+          </svg>
+        </div>
+        <div class="vmeta">Harbor at dusk · JPG · 5472 × 3648 · 8.2 MB · May 12, 2026</div>
+        <div class="vstrip">
+          <div class="vbtn">Fit</div>
+          <div class="vbtn">100%</div>
+          <div class="vbtn">−</div>
+          <div class="vslider"><div class="track"></div><div class="thumb" style="left:50px;"></div></div>
+          <div class="vbtn">+</div>
+          <div class="vscale">240%</div>
+          <div class="vbtn" style="padding:4px 8px;">
+            <svg width="10" height="10" viewBox="0 0 10 10"><path d="M1 3.5 V1 H3.5 M6.5 1 H9 V3.5 M9 6.5 V9 H6.5 M3.5 9 H1 V6.5" fill="none" stroke="#9BB6E0" stroke-width="1.2"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- marks -->
+      <div class="leader v" style="left:557px; top:480px; height:16px;"></div>
+      <div class="mark" style="left:548px; top:496px;">1</div>
+      <div class="leader v" style="left:439px; top:480px; height:16px;"></div>
+      <div class="mark" style="left:430px; top:496px;">2</div>
+      <div class="leader h" style="left:770px; top:331px; width:12px;"></div>
+      <div class="mark" style="left:782px; top:322px;">3</div>
+      <div class="leader v" style="left:297px; top:480px; height:16px;"></div>
+      <div class="mark" style="left:288px; top:496px;">4</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Readable scale</b>The current scale is always legible in mono while zoomed. Nobody guesses what size they are looking at.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Photos-app reflexes</b>Wheel and ± zoom, drag pans, double-click toggles fit and 100%. Habits learned elsewhere work here unchanged.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Clamped pan</b>Dragging stops at the frame's own bounds. There is no void past the edge of the picture.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>One action home</b>Fit restores the complete frame in a single action, from any zoom or pan position. Double-click does the same.</span></div>
+  </div>
+  <div class="folio">STATES: IV-01 · IV-02</div>
+</section>
+
+<!-- ============================ 04 · GIF PLAYBACK (IV-03) ============================ -->
+<section class="slide">
+  <div class="running"><span>IMAGE VIEWER · GIF PLAYBACK</span><span class="fig">03 / 06</span></div>
+
+  <div class="stage">
+    <div class="grid-context">
+      <div class="srccard" style="left:36px; top:110px;">
+        <div class="ph plate moss"></div>
+      </div>
+
+      <!-- playing viewer -->
+      <div class="viewer" style="left:256px; top:20px; width:436px;">
+        <div class="vstage" style="height:266px;">
+          <div class="plate moss" style="width:340px; height:230px;"></div>
+          <div class="kindbadge">GIF</div>
+        </div>
+        <div class="vmeta">Rain loop · GIF · 640 × 480 · 2.1 MB · Jun 3, 2026</div>
+        <div class="vstrip">
+          <div class="vbtn">
+            <svg width="8" height="10" viewBox="0 0 8 10"><path d="M1 1 v8 M7 1 v8" stroke="#9BB6E0" stroke-width="2"/></svg>
+            Pause
+          </div>
+          <div class="vbtn">Fit</div>
+          <div class="vbtn">100%</div>
+          <div class="vbtn">−</div>
+          <div class="vslider"><div class="track"></div><div class="thumb" style="left:22px;"></div></div>
+          <div class="vbtn">+</div>
+        </div>
+      </div>
+
+      <!-- reduced-motion open: paused on a complete frame -->
+      <div class="viewer" style="left:470px; top:400px; width:300px; padding:12px;">
+        <div class="vstage" style="height:104px;">
+          <div class="plate moss" style="width:130px; height:88px;"></div>
+          <div class="kindbadge">GIF</div>
+        </div>
+        <div class="vstrip" style="margin-top:10px;">
+          <div class="vbtn">
+            <svg width="8" height="10" viewBox="0 0 8 10"><path d="M1 1 L7 5 L1 9 Z" fill="#9BB6E0"/></svg>
+            Play
+          </div>
+          <div class="vbtn">Fit</div>
+        </div>
+      </div>
+
+      <!-- marks -->
+      <div class="leader h" style="left:244px; top:349px; width:12px;"></div>
+      <div class="mark" style="left:226px; top:340px;">1</div>
+      <div class="leader h" style="left:692px; top:53px; width:12px;"></div>
+      <div class="mark" style="left:704px; top:44px;">2</div>
+      <div class="leader h" style="left:458px; top:417px; width:12px;"></div>
+      <div class="mark" style="left:440px; top:408px;">3</div>
+      <div class="mark" style="left:200px; top:160px;">4</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Visible play / pause</b>Motion is a control, not a fact of the frame. Pause is always one action away, in the same strip as Fit.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Quiet kind badge</b>A mono GIF chip on the stage corner names the kind at reduced ink. It never covers meaningful pixels for long words.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Reduced motion</b>Opens paused on a complete frame, Play offered. The still state carries everything the motion does.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Presentation only</b>Play, pause, zoom, pan are transient viewing state. The source is never written; the record keeps its bytes.</span></div>
+  </div>
+  <div class="folio">STATE: IV-03 · PLAYBACK NEVER MUTATES THE SOURCE</div>
+</section>
+
+<!-- ============================ 05 · DECODE RECOVERY (IV-04) ============================ -->
+<section class="slide">
+  <div class="running"><span>IMAGE VIEWER · DECODE RECOVERY</span><span class="fig">04 / 06</span></div>
+
+  <div class="stage">
+    <div class="grid-context">
+      <div class="srccard" style="left:40px; top:216px;">
+        <div class="ph" style="background:#26262A;"></div>
+      </div>
+
+      <!-- the viewer in refusal -->
+      <div class="viewer" style="left:268px; top:88px; width:502px;">
+        <div class="vstage" style="height:280px; border:1px solid var(--invalid);">
+          <div style="text-align:center; max-width:340px;">
+            <div style="font-family:var(--f-ui); font-size:13px; font-weight:500; color:var(--text); margin-bottom:10px;">Harbor at dusk</div>
+            <div style="font-family:var(--f-ui); font-size:12px; line-height:1.6; color:rgba(234,234,234,0.7);">
+              This image can't be shown right now. The Memory is safe — nothing was changed or removed.
+            </div>
+            <div style="display:flex; gap:8px; justify-content:center; margin-top:18px;">
+              <div class="vbtn neutral">Try again</div>
+              <div class="vbtn neutral">Close</div>
+            </div>
+          </div>
+        </div>
+        <div class="vmeta">Harbor at dusk · JPG · 5472 × 3648 · 8.2 MB · May 12, 2026</div>
+      </div>
+
+      <!-- marks -->
+      <div class="mark" style="left:320px; top:190px;">1</div>
+      <div class="mark" style="left:320px; top:230px;">2</div>
+      <div class="mark" style="left:248px; top:96px;">3</div>
+      <div class="mark" style="left:610px; top:280px;">4</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Identity kept</b>Title and metadata remain. A failure never shows an empty panel; the record still has a name.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Plain words</b>What happened and what it means, in everyday language. No codes, no jargon — and the person is told the Memory is safe.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Invalid carries refusal</b>The red 1px border sits on the stage — the part that refused. The outer frame keeps its view role; the controls still work.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>A way forward</b>Try again retries the decode; Close leaves quietly. Nothing is deleted on either path.</span></div>
+  </div>
+  <div class="folio">STATE: IV-04 · NEVER AN EMPTY PANEL · NO DELETION</div>
+</section>
+
+<!-- ============================ 06 · CLOSE + RETURN (IV-05) ============================ -->
+<section class="slide">
+  <div class="running"><span>IMAGE VIEWER · CLOSE · RETURN</span><span class="fig">05 / 06</span></div>
+
+  <div class="stage">
+    <div class="grid-context">
+      <!-- the Gallery wall, exactly as it was left -->
+      <div style="position:absolute; left:120px; top:36px; width:560px; height:504px; background:var(--surface); border:1px solid rgba(205,184,216,0.35); border-radius:var(--r); padding:24px; display:flex; flex-direction:column;">
+        <div style="font-family:var(--f-display); font-size:13px; letter-spacing:0.12em; text-transform:uppercase; color:var(--slate); margin-bottom:16px;">Gallery</div>
+        <div style="flex:1; display:flex; gap:10px;">
+          <div style="flex:1; display:flex; flex-direction:column; gap:10px;">
+            <div class="plate warm" style="height:96px;"></div>
+            <div class="img-harbor" style="height:150px; outline:1px solid var(--interaction); outline-offset:3px;"></div>
+            <div class="plate dusk" style="height:120px;"></div>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; gap:10px;">
+            <div class="plate moss" style="height:140px;"></div>
+            <div class="plate dusk" style="height:88px;"></div>
+            <div class="plate warm" style="height:150px;"></div>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; gap:10px;">
+            <div class="plate cool" style="height:118px;"></div>
+            <div class="plate warm" style="height:132px;"></div>
+            <div class="plate moss" style="height:96px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- marks (over the stage, positioned within Grid context) -->
+    <div class="mark" style="left:388px; top:20px;">1</div>
+    <div class="mark" style="left:124px; top:358px;">2</div>
+    <div class="mark" style="left:730px; top:420px;">3</div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Back where you were</b>Escape or Close, and the invoking Gallery wall regains focus exactly as it was — the viewer leaves no residue.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Same wall, same selection</b>The wall keeps its scroll position and the same tile selected: interaction-blue outline outside the frame, exactly as before opening.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Nothing else moved</b>Grid, Camera, and every slate are untouched. Viewing was camera-blind; closing proves it.</span></div>
+  </div>
+  <div class="folio">STATE: IV-05 · GRID · CAMERA · SLATES UNCHANGED</div>
+</section>
+
+<!-- ============================ 07 · REFUSALS ============================ -->
+<section class="slide">
+  <div class="running"><span>IMAGE VIEWER · REFUSALS</span><span class="fig">06 / 06</span></div>
+
+  <div class="stage full">
+    <div class="refgrid">
+
+      <!-- centered modal -->
+      <div class="refpanel">
+        <div class="verdict refuse" style="top:16px; left:20px;">REFUSE · CENTERED MODAL</div>
+        <div class="render" style="width:236px; height:160px;">
+          <div class="grid-context" style="border-radius:var(--r);">
+            <div class="srccard" style="left:14px; top:52px; padding:4px;">
+              <div class="plate cool" style="width:44px; height:34px;"></div>
+            </div>
+            <div style="position:absolute; inset:0; background:rgba(0,0,0,0.55);"></div>
+            <div style="position:absolute; left:64px; top:32px; width:108px; height:92px; background:var(--surface); border:1px solid var(--view-border); border-radius:var(--r); padding:6px;">
+              <div class="plate cool" style="width:96px; height:60px;"></div>
+              <div style="margin-top:5px; display:flex; gap:4px;">
+                <div class="vbtn" style="padding:1px 5px; font-size:8px;">Fit</div>
+                <div class="vbtn" style="padding:1px 5px; font-size:8px;">100%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="reason">A box floating center-screen over a dimmed room detaches the picture from its record. The viewer sits beside its source, and nothing dims.</div>
+      </div>
+
+      <!-- cover-fit crop -->
+      <div class="refpanel">
+        <div class="verdict refuse" style="top:16px; left:20px;">REFUSE · CROPPED TO FILL</div>
+        <div class="render">
+          <div class="viewer" style="position:relative; left:0; top:0; width:236px; padding:8px; box-shadow:none;">
+            <div class="vstage" style="height:130px;">
+              <div class="plate warm" style="position:absolute; width:300px; height:200px; left:-40px; top:-35px;"></div>
+              <svg width="220" height="130" viewBox="0 0 220 130" style="position:absolute; left:0; top:0;">
+                <rect x="12" y="16" width="196" height="98" fill="none" stroke="#E2625C" stroke-width="1" stroke-dasharray="4 3"/>
+              </svg>
+            </div>
+            <div class="vmeta" style="font-size:8.5px;">Sand study · JPG · 4000 × 2667</div>
+          </div>
+        </div>
+        <div class="reason">Filling the stage crops the frame — the dashed region is all anyone gets. The complete frame always fits; letterbox space is fine, missing picture is not.</div>
+      </div>
+
+      <!-- edit controls -->
+      <div class="refpanel">
+        <div class="verdict refuse" style="top:16px; left:20px;">REFUSE · EDIT CONTROLS</div>
+        <div class="render">
+          <div class="viewer" style="position:relative; left:0; top:0; width:236px; padding:8px; box-shadow:none;">
+            <div class="vstage" style="height:118px;">
+              <div class="plate dusk" style="width:170px; height:100px;"></div>
+            </div>
+            <div class="vstrip" style="margin-top:8px; gap:5px;">
+              <div class="vbtn" style="padding:2px 7px; font-size:9px;">Fit</div>
+              <div class="vbtn" style="padding:2px 7px; font-size:9px; color:var(--edit); border-color:var(--edit-border);">Crop</div>
+              <div class="vbtn" style="padding:2px 7px; font-size:9px; color:var(--edit); border-color:var(--edit-border);">Rotate</div>
+              <div class="vbtn" style="padding:2px 7px; font-size:9px; color:var(--edit); border-color:var(--edit-border);">Draw</div>
+            </div>
+          </div>
+        </div>
+        <div class="reason">Crop, rotate, and draw change the picture. This frame only looks — photos-app viewing parity, zero editing. Changing pixels belongs to an editing tool, not here.</div>
+      </div>
+
+      <!-- ellipsized title -->
+      <div class="refpanel">
+        <div class="verdict refuse" style="top:16px; left:20px;">REFUSE · SHORTENED TITLE</div>
+        <div class="render">
+          <div class="viewer" style="position:relative; left:0; top:0; width:236px; padding:8px; box-shadow:none;">
+            <div class="vstage" style="height:118px;">
+              <div class="plate cool" style="width:170px; height:100px;"></div>
+            </div>
+            <div class="vmeta" style="font-size:8.5px;">Harbor at du… · JPG · 5472 × 3648 · 8.2 MB</div>
+            <svg width="76" height="14" viewBox="0 0 76 14" style="position:absolute; left:8px; bottom:4px;">
+              <rect x="0" y="0" width="76" height="14" fill="none" stroke="#E2625C" stroke-width="1"/>
+            </svg>
+          </div>
+        </div>
+        <div class="reason">A title cut to fit is information lost. Nothing in Grove is ellipsized — the metadata line is laid out to hold the whole name.</div>
+      </div>
+
+    </div>
+  </div>
+  <div class="folio">END · IMAGE VIEWER</div>
+</section>
+
+</body>
+</html>

@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mixed media</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/catalogue.css">
+<style>
+  /* ---- deck-local: print-on-paper primitives ---- */
+  .sheet {
+    position: absolute;
+    background: var(--paper);
+    color: var(--paper-ink);
+    box-shadow: 0 16px 44px rgba(0, 0, 0, 0.52);
+  }
+  .creaseV {
+    position: absolute; top: 0; bottom: 0; width: 0;
+    border-left: 1px dashed rgba(26, 26, 26, 0.30);
+  }
+  .foldtick { position: absolute; width: 1px; background: rgba(26, 26, 26, 0.55); }
+  .bindV {
+    position: absolute; top: 0; bottom: 0; width: 0;
+    border-left: 1px solid rgba(26, 26, 26, 0.16);
+  }
+  .slabel {
+    font-family: var(--f-display); font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.045em; color: #1A1A1A;
+  }
+  .prov {
+    font-family: var(--f-mono); font-weight: 500; text-transform: uppercase;
+    letter-spacing: 0.1em; color: rgba(26, 26, 26, 0.46);
+  }
+  .btext {
+    font-family: var(--f-ui); color: #2A2A30; text-align: justify;
+    hyphens: auto; -webkit-hyphens: auto;
+  }
+  .btext p + p { text-indent: 1.1em; }
+  .cap { font-family: var(--f-ui); color: rgba(26, 26, 26, 0.58); }
+  .routes {
+    font-family: var(--f-mono); text-transform: uppercase;
+    letter-spacing: 0.11em; color: rgba(26, 26, 26, 0.40);
+  }
+  .pfoot {
+    position: absolute; display: flex; justify-content: space-between;
+    font-family: var(--f-mono); text-transform: uppercase;
+    letter-spacing: 0.2em; color: rgba(26, 26, 26, 0.44);
+  }
+  .hair { background: rgba(26, 26, 26, 0.22); height: 1px; }
+  .hairq { background: rgba(26, 26, 26, 0.13); height: 1px; }
+  .slug { font-family: var(--f-ui); font-style: italic; color: rgba(26, 26, 26, 0.55); }
+
+  /* ---- deck-local: catalogue helpers ---- */
+  .sectionlbl {
+    font-family: var(--f-mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.24em; text-transform: uppercase; color: var(--ann);
+    margin-bottom: 14px;
+  }
+  .note-under {
+    font-family: var(--f-mono); font-size: 10px; line-height: 1.8;
+    color: var(--ann); letter-spacing: 0.02em;
+  }
+  .eq {
+    font-family: var(--f-mono); font-size: 10px; line-height: 2.0;
+    color: var(--ann-strong); white-space: pre; letter-spacing: 0.01em;
+  }
+  .tbl { width: 100%; border-collapse: collapse; }
+  .tbl th {
+    font-family: var(--f-mono); font-size: 9px; font-weight: 500;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--ann-strong);
+    text-align: left; padding: 0 16px 8px 0; border-bottom: 1px solid var(--hairline);
+  }
+  .tbl td {
+    font-family: var(--f-mono); font-size: 10px; line-height: 1.5;
+    letter-spacing: 0.02em; color: var(--ann);
+    padding: 7px 16px 7px 0; border-bottom: 1px solid var(--hairline);
+    vertical-align: top;
+  }
+  .tbl td.k { color: var(--ann-strong); white-space: nowrap; }
+  .arrow { position: absolute; height: 1px; background: var(--ann-line); }
+  .arrow::after {
+    content: ""; position: absolute; right: -1px; top: -3px;
+    border-left: 6px solid var(--ann-line);
+    border-top: 3.5px solid transparent; border-bottom: 3.5px solid transparent;
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== 01 · COVER ==================== -->
+<section class="slide cover">
+  <div class="running"><span>GROVE · DESIGN CATALOGUE</span><span class="fig">05</span></div>
+  <div class="plane">INFORMATION PLANE · READING VERTICAL</div>
+  <h1>Mixed<br>media</h1>
+  <div class="rule"></div>
+  <div class="scope">
+    Brochure · Pamphlet · Magazine · Twelve template families ·
+    Demand and ratio · Image quality bands · Source identity ·
+    Pagination · Landscape reading unit · Refusals
+  </div>
+  <div class="folio">D-ANNOTATION-02 / 03 · T-AN04 · T-AN05 · T-AN06 · T-AN07 · T-AN10 · T-AN13</div>
+</section>
+
+<!-- ==================== 02 · PLATE · TIER 01 BROCHURE ==================== -->
+<section class="slide">
+  <div class="running"><span>MIXED MEDIA · TIER 01 · BROCHURE</span><span class="fig">01 / 23</span></div>
+  <div class="stage bleed">
+
+    <div class="sheet" style="left:122px; top:4px; width:940px; height:588px;">
+      <!-- fold creases: inside spread of a three-panel fold -->
+      <div class="creaseV" style="left:313px;"></div>
+      <div class="creaseV" style="left:627px;"></div>
+      <div class="foldtick" style="left:313px; top:0; height:11px;"></div>
+      <div class="foldtick" style="left:313px; bottom:0; height:11px;"></div>
+      <div class="foldtick" style="left:627px; top:0; height:11px;"></div>
+      <div class="foldtick" style="left:627px; bottom:0; height:11px;"></div>
+
+      <div style="position:absolute; left:0; right:0; top:38px; bottom:54px; display:flex;">
+
+        <!-- panel 1 · image leads -->
+        <div style="flex:1 1 0; padding:0 26px; min-width:0;">
+          <div class="plate warm" style="width:261px; height:174px;"></div>
+          <div class="cap" style="font-size:9.5px; line-height:14px; margin-top:9px; width:261px;">
+            Iron saturate over porcelain, second shelf
+          </div>
+          <div class="prov" style="font-size:7.5px; margin-top:9px;">KILN · 1 PLACEMENT</div>
+          <div class="routes" style="font-size:7px; margin-top:14px;">GRID PLACEMENT · CORE MEMORY · IMAGE VIEWER</div>
+        </div>
+
+        <!-- panel 2 · titled Document -->
+        <div style="flex:1 1 0; padding:0 26px; min-width:0; position:relative;">
+          <div class="slabel" style="font-size:15px; line-height:19px;">Firing log — cone 6 oxidation</div>
+          <div class="prov" style="font-size:7.5px; margin-top:7px;">STUDIO LOG · 1 PLACEMENT</div>
+          <div class="hair" style="margin-top:11px;"></div>
+          <div class="btext" style="font-size:11.5px; line-height:18px; margin-top:14px;">
+            <p>Loaded Tuesday evening: twenty-two shelves of test tiles and the four
+            porcelain beakers. Candled at 95°C for three hours because the beakers
+            were thrown on Sunday and still felt cool against the back of the hand.</p>
+            <p>Ramp one held a hundred and thirty degrees an hour to 600°C without
+            complaint. Ramp two ran faster than asked — the controller read two
+            hundred and five where the schedule said one hundred and eighty — so
+            the soak at the top was stretched to twenty minutes to bring the back
+            of the chamber level with the front.</p>
+            <p>Cooling was slow on purpose. Crash to 900°C, a long hold there, then
+            free fall with both dampers shut. Opened Thursday morning at 60°C.</p>
+            <p>Everything came out. Nothing to redo except the two beakers that
+            touched at the rim.</p>
+          </div>
+          <div class="routes" style="font-size:7px; position:absolute; left:26px; bottom:0;">GRID PLACEMENT · CORE MEMORY · WRITING SLATE</div>
+        </div>
+
+        <!-- panel 3 · untitled Note, bounded supporting image, short Note -->
+        <div style="flex:1 1 0; padding:0 26px; min-width:0; position:relative;">
+          <div class="prov" style="font-size:7.5px;">KILN · 2 PLACEMENTS</div>
+          <div class="hair" style="margin-top:11px;"></div>
+          <div class="btext" style="font-size:11.5px; line-height:18px; margin-top:14px;">
+            <p>The second shelf ran hotter than the first the whole way through.
+            Tiles nearest the back wall went glassy where the same glaze on the
+            front shelf stayed dry and matte. Worth moving the thermocouple next
+            time rather than trusting the readout.</p>
+          </div>
+          <div class="hairq" style="margin-top:20px;"></div>
+          <div class="plate moss" style="width:150px; height:100px; margin-top:20px;"></div>
+          <div class="prov" style="font-size:7.5px; margin-top:9px;">KILN · 1 PLACEMENT</div>
+          <div class="hairq" style="margin-top:20px;"></div>
+          <div class="prov" style="font-size:7.5px; margin-top:20px;">STUDIO LOG · 1 PLACEMENT</div>
+          <div class="btext" style="font-size:11.5px; line-height:18px; margin-top:10px;">
+            <p>Order more silica before the next load. Half a bucket left.</p>
+          </div>
+          <div class="routes" style="font-size:7px; position:absolute; left:26px; bottom:0;">GRID PLACEMENT · CORE MEMORY · WRITING SLATE</div>
+        </div>
+      </div>
+
+      <div class="hairq" style="position:absolute; left:26px; right:26px; bottom:34px;"></div>
+      <div class="pfoot" style="left:26px; right:26px; bottom:15px; font-size:7.5px;">
+        <span>STUDIO LOG · KILN</span><span></span>
+      </div>
+    </div>
+
+    <div class="mark" style="left:425px; top:6px;">01</div>
+    <div class="mark" style="left:739px; top:6px;">02</div>
+    <div class="leader h" style="left:106px; top:106px; width:40px;"></div>
+    <div class="mark" style="left:84px; top:96px;">03</div>
+    <div class="leader h" style="left:106px; top:306px; width:40px;"></div>
+    <div class="mark" style="left:84px; top:296px;">04</div>
+    <div class="mark" style="left:417px; top:40px;">05</div>
+    <div class="mark" style="left:417px; top:72px;">06</div>
+    <div class="mark" style="left:731px; top:44px;">07</div>
+    <div class="mark" style="left:248px; top:430px;">08</div>
+    <div class="mark" style="left:417px; top:300px;">09</div>
+    <div class="mark" style="left:1012px; top:556px;">10</div>
+  </div>
+  <div class="folio">AB-01 · ONE COMPLETE SHEET</div>
+</section>
+
+<!-- ==================== 03 · NOTES ON 01 ==================== -->
+<section class="slide">
+  <div class="running"><span>MIXED MEDIA · NOTES ON 01</span><span class="fig">02 / 23</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>A sheet and its folds</b>A brochure is not a page with columns. This is the inside spread of a three-panel fold: the reader meets panels in sequence, then opens the sheet and sees them together. Six reading panels exist in all; three are on the reverse.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>The fold sets pacing, never type size</b>A fold creates reveal and order. It is never a reason to shrink type to make material reach the next crease.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>An image may lead a panel</b>The frame is complete and proportional — never cropped to a slot, never enlarged past the point where it stays sharp. An image can lead a panel, share one with text, or occupy a reveal.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>A caption exists or it does not</b>This line prints because the source carries caption metadata. Where none exists, nothing appears, and a file name is never promoted into one.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>A title exists or it does not</b>The Document prints a title because the source carries title metadata. There is no generated title region anywhere on the sheet.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Provenance travels with its source</b>Every frame keeps its own Layer label and placement count. Sources sharing a panel never merge into one voice.</span></div>
+    <div class="ann"><span class="n">07</span><span><b>Untitled text starts at the measure</b>The third panel's Note carries no title, so it begins at the body measure. Its first sentence is not lifted into a headline.</span></div>
+    <div class="ann"><span class="n">08</span><span><b>Empty space stays empty</b>The lower half of the first panel holds nothing. No headline, caption, or label is invented to fill a panel.</span></div>
+    <div class="ann"><span class="n">09</span><span><b>A panel is bounded</b>A panel that cannot hold its text does not compress it: it creates another panel, or the set moves to the pamphlet form and paginates. AB-02.</span></div>
+    <div class="ann"><span class="n">10</span><span><b>One sheet carries no page number</b>Page numbers are physical pagination. A single sheet has none, so the footer carries Layer context only and no pagination chrome appears. AB-01.</span></div>
+  </div>
+  <div class="folio">TIER 01 · 1.0 ≤ D &lt; 1.75</div>
+</section>
+
+<!-- ==================== 04 · PLATE · TIER 02 PAMPHLET ==================== -->
+<section class="slide">
+  <div class="running"><span>MIXED MEDIA · TIER 02 · PAMPHLET</span><span class="fig">03 / 23</span></div>
+  <div class="stage bleed">
+
+    <div class="sheet" style="left:151px; top:4px; width:882px; height:588px;">
+      <div class="bindV" style="left:441px;"></div>
+
+      <!-- verso · page 2 -->
+      <div style="position:absolute; left:30px; top:34px; width:371px; bottom:46px; display:flex; gap:19px;">
+        <div style="width:176px;">
+          <div class="plate warm" style="width:176px; height:235px;"></div>
+          <div class="cap" style="font-size:9px; line-height:13px; margin-top:8px;">Iron saturate over porcelain, second shelf</div>
+          <div class="prov" style="font-size:7px; margin-top:8px;">KILN · 1 PLACEMENT</div>
+          <div class="routes" style="font-size:6.5px; margin-top:12px;">GRID PLACEMENT · CORE MEMORY · IMAGE VIEWER</div>
+        </div>
+        <div style="width:176px; position:relative;">
+          <div class="prov" style="font-size:7px;">KILN · 2 PLACEMENTS</div>
+          <div class="hair" style="margin-top:9px;"></div>
+          <div class="btext" style="font-size:10px; line-height:15px; margin-top:12px;">
+            <p>The second shelf ran hotter than the first the whole way through. Tiles
+            nearest the back wall went glassy where the same glaze on the front shelf
+            stayed dry and matte.</p>
+            <p>Worth moving the thermocouple next time rather than trusting the
+            readout, which has been reading low since the element change in
+            February and has never quite been believed since.</p>
+            <p>The tile at the far corner is the one to keep. Everything else on that
+            shelf is a variation on it, and most of the variations are duller.</p>
+            <p>Two things to try before the next load. Move the tiles a hand's width
+            forward of the back wall so the wall stops radiating into them, and put a
+            second cone pack at the back where it can actually be seen through the spy
+            hole rather than guessed at from the front.</p>
+          </div>
+          <div class="routes" style="font-size:6.5px; position:absolute; left:0; bottom:0;">GRID PLACEMENT · CORE MEMORY · WRITING SLATE</div>
+        </div>
+      </div>
+      <div class="hairq" style="position:absolute; left:30px; width:371px; bottom:32px;"></div>
+      <div class="pfoot" style="left:30px; width:371px; bottom:14px; font-size:7px;">
+        <span>2</span><span>KILN</span>
+      </div>
+
+      <!-- recto · page 3 · threaded Document -->
+      <div style="position:absolute; left:481px; top:34px; width:371px; bottom:46px; display:flex; gap:19px;">
+        <div style="width:176px;">
+          <div class="slabel" style="font-size:13px; line-height:16px;">Firing log — cone 6 oxidation</div>
+          <div class="prov" style="font-size:7px; margin-top:6px;">STUDIO LOG · 1 PLACEMENT</div>
+          <div class="hair" style="margin-top:9px;"></div>
+          <div class="btext" style="font-size:10px; line-height:15px; margin-top:12px;">
+            <p>Loaded Tuesday evening: twenty-two shelves of test tiles, the four
+            porcelain beakers, and the two press-moulded dishes that have been
+            waiting since March.</p>
+            <p>Candled at 95°C for three hours because the beakers were thrown on
+            Sunday and still felt cool against the back of the hand. Ramp one held a
+            hundred and thirty degrees an hour to 600°C without complaint, front and
+            back within four degrees of each other for the whole of the first ramp,
+            which is better than this kiln usually manages and probably owes more to
+            the weather than to anything done at the controller.</p>
+            <p>Ramp two ran faster than asked. The panel read two hundred and five
+            degrees an hour where the schedule said one hundred and eighty, and by the
+            time it was noticed the back of the chamber was already twelve degrees
+            ahead of the</p>
+          </div>
+        </div>
+        <div style="width:176px; position:relative;">
+          <div class="btext" style="font-size:10px; line-height:15px;">
+            <p style="text-indent:0;">front. The soak at the top was stretched to
+            twenty minutes rather than fifteen to bring the two ends level again
+            before the cooling was allowed to start, and the door was left alone
+            until the panel agreed with the pyrometer on the far wall.</p>
+            <p>Cooling was slow on purpose: a crash to 900°C, a long hold there, then
+            free fall with both dampers shut and the spy holes plugged. Opened
+            Thursday morning at 60°C, warm enough to hold but not to hurry.</p>
+            <p>Everything came out. The beakers took the glaze evenly and the dishes
+            are the best of the year. Two tiles at the back of the</p>
+          </div>
+          <div class="slug" style="font-size:9px; position:absolute; left:0; bottom:24px;">Continues on 4.</div>
+          <div class="routes" style="font-size:6.5px; position:absolute; left:0; bottom:0;">GRID PLACEMENT · CORE MEMORY · WRITING SLATE</div>
+        </div>
+      </div>
+      <div class="hairq" style="position:absolute; left:481px; width:371px; bottom:32px;"></div>
+      <div class="pfoot" style="left:481px; width:371px; bottom:14px; font-size:7px;">
+        <span>STUDIO LOG</span><span>3</span>
+      </div>
+    </div>
+
+    <div class="mark" style="left:582px; top:6px;">01</div>
+    <div class="mark" style="left:356px; top:470px;">02</div>
+    <div class="mark" style="left:582px; top:296px;">03</div>
+    <div class="mark" style="left:356px; top:100px;">04</div>
+    <div class="leader h" style="left:127px; top:150px; width:54px;"></div>
+    <div class="mark" style="left:105px; top:140px;">05</div>
+    <div class="mark" style="left:808px; top:296px;">06</div>
+    <div class="mark" style="left:1042px; top:536px;">07</div>
+    <div class="leader h" style="left:127px; top:572px; width:54px;"></div>
+    <div class="mark" style="left:105px; top:562px;">08</div>
+    <div class="mark" style="left:356px; top:250px;">09</div>
+  </div>
+  <div class="folio">APF-01 · FACING LEAVES · 3:2 SPREAD</div>
+</section>
+
+<!-- ==================== 05 · NOTES ON 03 ==================== -->
+<section class="slide">
+  <div class="running"><span>MIXED MEDIA · NOTES ON 03</span><span class="fig">04 / 23</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>Leaves, not panels</b>A pamphlet is a short sequence of leaves. One sheet folded once makes four pages; folios stack and stitch into a longer sequence. The spread reads near 3:2 overall while each leaf stays near portrait inside it.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Two columns, one stable measure</b>Both leaves hold the same column width and the same explicit gutter. The measure does not change from leaf to leaf to make material fit.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>The binding stays quiet</b>No essential sentence and no fragile image detail sits where the binding would take it. The inner margin is wider than the outer margin for that reason.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Image and text stay paired</b>The photograph and the Note that explains it share one leaf and one pair. Page assignment never separates them, and sources are never reordered to improve a pairing.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>The frame is complete</b>The image takes the column measure at its own proportion. It is not cropped to a square, and it is not enlarged to fill the leaf.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Text continues at the same size</b>The Document runs from the first column into the second without a change of measure or type size. A column end is a break in the flow, not a break in the material.</span></div>
+    <div class="ann"><span class="n">07</span><span><b>Continuation is stated</b>The last line of the leaf names the leaf that follows. The end of a leaf is a pagination boundary, never a truncation boundary. APF-02.</span></div>
+    <div class="ann"><span class="n">08</span><span><b>Page numbers are physical</b>The folio is a position in the sequence. It is never a source count, a breadcrumb, or a label like "Note 01". Layer context sits opposite it, on the outer edge.</span></div>
+    <div class="ann"><span class="n">09</span><span><b>Two frames to a leaf</b>Holding a leaf to two frames keeps the pairing readable. A third source starts the next leaf; a set that keeps demanding leaves promotes to the magazine form. APF-02.</span></div>
+  </div>
+  <div class="folio">TIER 02 · 1.75 ≤ D &lt; 3.0</div>
+</section>
+
+<!-- ==================== 06 · PLATE · TIER 03 MAGAZINE ==================== -->
+<section class="slide">
+  <div class="running"><span>MIXED MEDIA · TIER 03 · MAGAZINE</span><span class="fig">05 / 23</span></div>
+  <div class="stage bleed">
+
+    <div class="sheet" style="left:122px; top:4px; width:940px; height:588px;">
+      <!-- recto page: wide binding margin at the left edge -->
+      <div style="position:absolute; left:56px; right:44px; top:40px; bottom:46px;">
+
+        <!-- row 1 · image module spanning two columns · Note in column three -->
+        <div style="display:flex; gap:22px; height:210px;">
+          <div style="width:552px;">
+            <div class="plate cool" style="width:552px; height:174px;"></div>
+            <div class="cap" style="font-size:9px; line-height:13px; margin-top:8px;">Second shelf before unloading, dampers still shut</div>
+            <div class="prov" style="font-size:7px; margin-top:6px;">KILN · 1 PLACEMENT</div>
+            <div class="routes" style="font-size:6.5px; margin-top:6px;">GRID PLACEMENT · CORE MEMORY · IMAGE VIEWER</div>
+          </div>
+          <div style="width:265px;">
+            <div class="prov" style="font-size:7px;">WORKSHOP · 1 PLACEMENT</div>
+            <div class="hair" style="margin-top:8px;"></div>
+            <div class="btext" style="font-size:10.5px; line-height:16px; margin-top:11px;">
+              <p>Bought the second-hand extruder from the college clearance. The dies
+              are all imperial and the barrel has a dent near the collar, but it holds
+              pressure and the price was two afternoons of helping to clear the room.</p>
+              <p>Cleaned it with a wire brush and more patience than the job deserved.
+              It will do for handles.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- row 2 · threaded Document across three columns -->
+        <div style="display:flex; gap:22px; margin-top:20px; position:relative;">
+          <div style="width:265px;">
+            <div class="slabel" style="font-size:16px; line-height:19px;">Firing log — cone 6 oxidation</div>
+            <div class="prov" style="font-size:7px; margin-top:6px;">STUDIO LOG · 1 PLACEMENT</div>
+            <div class="hair" style="margin-top:9px;"></div>
+            <div class="btext" style="font-size:10.5px; line-height:16px; margin-top:11px;">
+              <p>Loaded Tuesday evening: twenty-two shelves of test tiles, the four
+              porcelain beakers, and the two press-moulded dishes that have been
+              waiting since March. Candled at 95°C for three hours because the beakers
+              were thrown on Sunday and still felt cool against the back of the hand.</p>
+              <p>Ramp one held a hundred and thirty degrees an hour to 600°C without
+              complaint. Front and back sat within four degrees of</p>
+            </div>
+          </div>
+          <div style="width:265px;">
+            <div class="btext" style="font-size:10.5px; line-height:16px;">
+              <p style="text-indent:0;">each other for the whole of it, which is better
+              than this kiln usually manages and probably owes more to the weather
+              than to anything done at the controller.</p>
+              <p>Ramp two ran faster than asked. The panel read two hundred and five
+              degrees an hour where the schedule said one hundred and eighty, and by
+              the time it was noticed the back of the chamber was already twelve
+              degrees ahead of the front. The soak at the top was stretched to twenty
+              minutes rather than fifteen to bring the two ends level again before the
+              cooling was allowed to start, and the door was left alone until the
+              panel agreed with the pyrometer</p>
+            </div>
+          </div>
+          <div style="width:265px; position:relative;">
+            <div class="btext" style="font-size:10.5px; line-height:16px;">
+              <p style="text-indent:0;">on the far wall.</p>
+              <p>Cooling was slow on purpose: a crash to 900°C, a long hold there, then
+              free fall with both dampers shut and the spy holes plugged. Opened
+              Thursday morning at 60°C, warm enough to hold but not to hurry.</p>
+              <p>Everything came out. The beakers took the glaze evenly and the dishes
+              are the best of the year. Two tiles at the back of the second shelf ran
+              glassy where the same glaze stayed dry and matte at the front, which is
+              the temperature difference showing itself rather than the glaze
+              misbehaving.</p>
+              <p>Next load: move the thermocouple, and weigh the silica before
+              starting rather than after.</p>
+            </div>
+            <div class="slug" style="font-size:9.5px; position:absolute; left:0; bottom:0;">Continues on 7.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hairq" style="position:absolute; left:56px; right:44px; bottom:32px;"></div>
+      <div class="pfoot" style="left:56px; right:44px; bottom:14px; font-size:7.5px;">
+        <span>STUDIO LOG · KILN · WORKSHOP</span><span>6</span>
+      </div>
+    </div>
+
+    <div class="mark" style="left:447px; top:256px;">01</div>
+    <div class="mark" style="left:734px; top:256px;">02</div>
+    <div class="leader h" style="left:106px; top:110px; width:70px;"></div>
+    <div class="mark" style="left:84px; top:100px;">03</div>
+    <div class="leader h" style="left:106px; top:228px; width:70px;"></div>
+    <div class="mark" style="left:84px; top:218px;">04</div>
+    <div class="mark" style="left:1026px; top:528px;">05</div>
+    <div class="mark" style="left:1026px; top:562px;">06</div>
+    <div class="mark" style="left:447px; top:470px;">07</div>
+    <div class="mark" style="left:140px; top:300px;">08</div>
+    <div class="mark" style="left:734px; top:44px;">09</div>
+  </div>
+  <div class="folio">AMG-01 · PAGE 6 OF 9 · THREE THREADED COLUMNS</div>
+</section>
+
+<!-- ==================== 07 · NOTES ON 05 ==================== -->
+<section class="slide">
+  <div class="running"><span>MIXED MEDIA · NOTES ON 05</span><span class="fig">06 / 23</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>Threaded text, three columns</b>The Document is one flow poured through three column frames in order. Read end to end, the columns reconstruct the source exactly — nothing is dropped, reordered, or summarised on the way in.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>One baseline for the page</b>Every column sits on the same line rhythm, so the three columns align across the page and across the fold. Line height is fixed; it is not adjusted per column to close a gap.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Image modules span columns</b>A photograph takes whole column widths at its own proportion — here two of three. Modules are measured in columns so the page grid holds; they are never scaled to a leftover shape.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Caption from metadata only</b>The caption prints because the source carries one. The line below it is the source's Layer and placement, which is provenance, not a caption.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Continuation, not truncation</b>The thread reaches the end of the page and says where it resumes. Text that does not fit produces another page. AMG-01.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Folio on every page</b>Page number on the outer edge, Layer context opposite. The count is physical pagination and never becomes a title or a source tally.</span></div>
+    <div class="ann"><span class="n">07</span><span><b>Density becomes pages</b>More material never becomes smaller type or a tighter measure. It becomes more pages — this is the mechanism that carries hundreds of sources without a wall of content.</span></div>
+    <div class="ann"><span class="n">08</span><span><b>The binding edge is wide</b>This is the right half of a facing spread, so the inner margin is the wider one. Nothing essential is placed where the binding would damage or hide it.</span></div>
+    <div class="ann"><span class="n">09</span><span><b>Three sources, three identities</b>Three sources share this page and each keeps its own label, provenance, and route. A shared page never merges separate sources into one voice or one title.</span></div>
+  </div>
+  <div class="folio">TIER 03 · D ≥ 3.0 · PAGINATION IS THE CAPACITY MECHANISM</div>
+</section>
+
+<!-- ==================== 08 · PLATE · BROCHURE TEMPLATES ==================== -->
+<section class="slide">
+  <div class="running"><span>MIXED MEDIA · BROCHURE TEMPLATES</span><span class="fig">07 / 23</span></div>
+  <div class="stage bleed">
+
+    <!-- B-01 · single panel -->
+    <div class="sheet" style="left:126px; top:2px; width:328px; height:205px;">
+      <div style="position:absolute; left:16px; right:16px; top:16px; bottom:22px; display:flex; gap:14px;">
+        <div style="width:140px;">
+          <div class="plate warm" style="width:140px; height:94px;"></div>
+          <div class="cap" style="font-size:6px; line-height:8px; margin-top:5px;">Iron saturate over porcelain</div>
+          <div class="prov" style="font-size:5.5px; letter-spacing:0.06em; margin-top:4px;">KILN · 1 PLACEMENT</div>
+        </div>
+        <div style="flex:1; min-width:0;">
+          <div class="slabel" style="font-size:9px; line-height:11px;">Firing log</div>
+          <div class="prov" style="font-size:5.5px; letter-spacing:0.06em; margin-top:3px;">STUDIO LOG · 1 PLACEMENT</div>
+          <div class="hairq" style="margin-top:5px;"></div>
+          <div class="btext" style="font-size:6.5px; line-height:9px; margin-top:6px;">
+            Loaded Tuesday evening: twenty-two shelves of test tiles and the four
+            porcelain beakers. Candled at 95°C for three hours because the beakers
+            were thrown on Sunday and still felt cool against the back of the hand.
+            Ramp one held a hundred and thirty degrees an hour to 600°C.
+          </div>
+        </div>
+      </div>
+      <div class="pfoot" style="left:16px; right:16px; bottom:8px; font-size:5.5px; letter-spacing:0.12em;"><span>STUDIO LOG · KILN</span><span></span></div>
+    </div>
+
+    <!-- B-02 · tri-fold · six panels in two strips -->
+    <div class="sheet" style="left:634px; top:2px; width:520px; height:95px;">
+      <div class="creaseV" style="left:173px;"></div><div class="creaseV" style="left:347px;"></div>
+      <div style="position:absolute; inset:10px 0; display:flex;">
+        <div style="flex:1; padding:0 11px; min-width:0;">
+          <div class="prov" style="font-size:5.5px; letter-spacing:0.06em;">KILN · 2 PLACEMENTS</div>
+          <div class="btext" style="font-size:6.5px; line-height:9px; margin-top:5px;">The second shelf ran hotter than the first the whole way through. Tiles nearest the back wall went glassy.</div>
+        </div>
+        <div style="flex:1; padding:0 11px; min-width:0;">
+          <div class="plate moss" style="height:52px;"></div>
+          <div class="prov" style="font-size:5.5px; letter-spacing:0.06em; margin-top:5px;">KILN · 1 PLACEMENT</div>
+        </div>
+        <div style="flex:1; padding:0 11px; min-width:0;">
+          <div class="slabel" style="font-size:8px; line-height:10px;">Firing log</div>
+          <div class="btext" style="font-size:6.5px; line-height:9px; margin-top:4px;">Loaded Tuesday evening: twenty-two shelves of test tiles and four porcelain beakers.</div>
+        </div>
+      </div>
+    </div>
+    <div class="sheet" style="left:634px; top:113px; width:520px; height:95px;">
+      <div class="creaseV" style="left:173px;"></div><div class="creaseV" style="left:347px;"></div>
+      <div style="position:absolute; inset:10px 0; display:flex;">
+        <div style="flex:1; padding:0 11px; min-width:0;">
+          <div class="plate cool" style="height:52px;"></div>
+          <div class="cap" style="font-size:6px; line-height:8px; margin-top:5px;">Second shelf before unloading</div>
+        </div>
+        <div style="flex:1; padding:0 11px; min-width:0;">
+          <div class="prov" style="font-size:5.5px; letter-spacing:0.06em;">STUDIO LOG · 1 PLACEMENT</div>
+          <div class="btext" style="font-size:6.5px; line-height:9px; margin-top:5px;">Cooling was slow on purpose. Crash to 900°C, a long hold there, then free fall with both dampers shut.</div>
+        </div>
+        <div style="flex:1; padding:0 11px; min-width:0;">
+          <div class="prov" style="font-size:5.5px; letter-spacing:0.06em;">WORKSHOP · 1 PLACEMENT</div>
+          <div class="btext" style="font-size:6.5px; line-height:9px; margin-top:5px;">Order more silica before the next load. Half a bucket left.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- B-03 · gatefold · closed pair, then the reveal -->
+    <div class="sheet" style="left:30px; top:222px; width:520px; height:95px;">
+      <div class="creaseV" style="left:130px; border-left-style:solid; border-left-color:rgba(26,26,26,0.5);"></div>
+      <div class="creaseV" style="left:390px; border-left-style:solid; border-left-color:rgba(26,26,26,0.5);"></div>
+      <div class="bindV" style="left:260px;"></div>
+      <div style="position:absolute; inset:10px 0; display:flex;">
+        <div style="width:130px; padding:0 11px; min-width:0;">
+          <div class="prov" style="font-size:5.5px; letter-spacing:0.06em;">KILN · 1 PLACEMENT</div>
+          <div class="btext" style="font-size:6.5px; line-height:9px; margin-top:5px;">The second shelf ran hotter than the first.</div>
+        </div>
+        <div style="width:130px; padding:0 11px; min-width:0;">
+          <div class="plate warm" style="height:52px;"></div>
+        </div>
+        <div style="width:130px; padding:0 11px; min-width:0;">
+          <div class="plate moss" style="height:52px;"></div>
+        </div>
+        <div style="width:130px; padding:0 11px; min-width:0;">
+          <div class="slabel" style="font-size:8px; line-height:10px;">Firing log</div>
+          <div class="btext" style="font-size:6.5px; line-height:9px; margin-top:4px;">Loaded Tuesday evening.</div>
+        </div>
+      </div>
+    </div>
+    <div class="sheet" style="left:30px; top:333px; width:520px; height:95px;">
+      <div class="creaseV" style="left:104px; border-left-style:solid; border-left-color:rgba(26,26,26,0.5);"></div>
+      <div class="creaseV" style="left:416px; border-left-style:solid; border-left-color:rgba(26,26,26,0.5);"></div>
+      <div style="position:absolute; inset:10px 0; display:flex;">
+        <div style="width:104px; padding:0 11px; min-width:0;">
+          <div class="prov" style="font-size:5.5px; letter-spacing:0.06em;">KILN · 1</div>
+          <div class="btext" style="font-size:6.5px; line-height:9px; margin-top:5px;">Tiles nearest the back wall went glassy.</div>
+        </div>
+        <div style="width:312px; padding:0 14px; min-width:0;">
+          <div class="plate cool" style="height:60px;"></div>
+          <div class="cap" style="font-size:6px; line-height:8px; margin-top:4px;">Second shelf before unloading, dampers still shut</div>
+        </div>
+        <div style="width:104px; padding:0 11px; min-width:0;">
+          <div class="prov" style="font-size:5.5px; letter-spacing:0.06em;">STUDIO LOG · 1</div>
+          <div class="btext" style="font-size:6.5px; line-height:9px; margin-top:5px;">Opened Thursday at 60°C.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- B-04 · accordion · six panels, alternating creases -->
+    <div class="sheet" style="left:634px; top:222px; width:520px; height:95px;">
+      <div class="creaseV" style="left:86.7px;"></div>
+      <div class="creaseV" style="left:173.3px; border-left-style:solid; border-left-color:rgba(26,26,26,0.5);"></div>
+      <div class="creaseV" style="left:260px;"></div>
+      <div class="creaseV" style="left:346.7px; border-left-style:solid; border-left-color:rgba(26,26,26,0.5);"></div>
+      <div class="creaseV" style="left:433.3px;"></div>
+      <div style="position:absolute; inset:10px 0; display:flex;">
+        <div style="flex:1; padding:0 8px; min-width:0;"><div class="prov" style="font-size:5px; letter-spacing:0.04em;">KILN · 1</div><div class="btext" style="font-size:6px; line-height:8.5px; margin-top:4px;">Loaded Tuesday evening.</div></div>
+        <div style="flex:1; padding:0 8px; min-width:0;"><div class="plate warm" style="height:44px;"></div></div>
+        <div style="flex:1; padding:0 8px; min-width:0;"><div class="prov" style="font-size:5px; letter-spacing:0.04em;">STUDIO · 1</div><div class="btext" style="font-size:6px; line-height:8.5px; margin-top:4px;">Ramp one held to 600°C.</div></div>
+        <div style="flex:1; padding:0 8px; min-width:0;"><div class="plate moss" style="height:44px;"></div></div>
+        <div style="flex:1; padding:0 8px; min-width:0;"><div class="prov" style="font-size:5px; letter-spacing:0.04em;">KILN · 2</div><div class="btext" style="font-size:6px; line-height:8.5px; margin-top:4px;">Soak stretched to twenty minutes.</div></div>
+        <div style="flex:1; padding:0 8px; min-width:0;"><div class="plate dusk" style="height:44px;"></div></div>
+      </div>
+    </div>
+    <div class="sheet" style="left:634px; top:333px; width:520px; height:95px;">
+      <div class="creaseV" style="left:86.7px; border-left-style:solid; border-left-color:rgba(26,26,26,0.5);"></div>
+      <div class="creaseV" style="left:173.3px;"></div>
+      <div class="creaseV" style="left:260px; border-left-style:solid; border-left-color:rgba(26,26,26,0.5);"></div>
+      <div class="creaseV" style="left:346.7px;"></div>
+      <div class="creaseV" style="left:433.3px; border-left-style:solid; border-left-color:rgba(26,26,26,0.5);"></div>
+      <div style="position:absolute; inset:10px 0; display:flex;">
+        <div style="flex:1; padding:0 8px; min-width:0;"><div class="plate cool" style="height:44px;"></div></div>
+        <div style="flex:1; padding:0 8px; min-width:0;"><div class="prov" style="font-size:5px; letter-spacing:0.04em;">KILN · 1</div><div class="btext" style="font-size:6px; line-height:8.5px; margin-top:4px;">Cooling was slow on purpose.</div></div>
+        <div style="flex:1; padding:0 8px; min-width:0;"><div class="plate moss" style="height:44px;"></div></div>
+        <div style="flex:1; padding:0 8px; min-width:0;"><div class="prov" style="font-size:5px; letter-spacing:0.04em;">WORKSHOP · 1</div><div class="btext" style="font-size:6px; line-height:8.5px; margin-top:4px;">Bought the extruder.</div></div>
+        <div style="flex:1; padding:0 8px; min-width:0;"><div class="plate warm" style="height:44px;"></div></div>
+        <div style="flex:1; padding:0 8px; min-width:0;"><div class="prov" style="font-size:5px; letter-spacing:0.04em;">STUDIO · 1</div><div class="btext" style="font-size:6px; line-height:8.5px; margin-top:4px;">Order more silica.</div></div>
+      </div>
+    </div>
+
+    <!-- fold catalogue · panel counts, front and back -->
+    <div class="sheet" style="left:10px; top:472px; width:200px; height:30px;"><div class="creaseV" style="left:100px;"></div></div>
+    <div class="sheet" style="left:10px; top:508px; width:200px; height:30px;"><div class="creaseV" style="left:100px;"></div></div>
+
+    <div class="sheet" style="left:251px; top:472px; width:200px; height:30px;"><div class="creaseV" style="left:66.7px;"></div><div class="creaseV" style="left:133.3px;"></div></div>
+    <div class="sheet" style="left:251px; top:508px; width:200px; height:30px;"><div class="creaseV" style="left:66.7px;"></div><div class="creaseV" style="left:133.3px;"></div></div>
+
+    <div class="sheet" style="left:492px; top:472px; width:200px; height:30px;"><div class="creaseV" style="left:50px; border-left-style:solid; border-left-color:rgba(26,26,26,0.5);"></div><div class="creaseV" style="left:150px; border-left-style:solid; border-left-color:rgba(26,26,26,0.5);"></div></div>
+    <div class="sheet" style="left:492px; top:508px; width:200px; height:30px;"><div class="creaseV" style="left:50px; border-left-style:solid; border-left-color:rgba(26,26,26,0.5);"></div><div class="creaseV" style="left:150px; border-left-style:solid; border-left-color:rgba(26,26,26,0.5);"></div></div>
+
+    <div class="sheet" style="left:733px; top:472px; width:200px; height:30px;"><div class="creaseV" style="left:66.7px;"></div><div class="creaseV" style="left:133.3px; border-left-style:solid; border-left-color:rgba(26,26,26,0.5);"></div></div>
+    <div class="sheet" style="left:733px; top:508px; width:200px; height:30px;"><div class="creaseV" style="left:66.7px;"></div><div class="creaseV" style="left:133.3px; border-left-style:solid; border-left-color:rgba(26,26,26,0.5);"></div></div>
+
+    <div class="sheet" style="left:974px; top:472px; width:200px; height:30px;"><div class="creaseV" style="left:56px;"></div><div class="creaseV" style="left:108px;"></div><div class="creaseV" style="left:156px;"></div></div>
+    <div class="sheet" style="left:974px; top:508px; width:200px; height:30px;"><div class="creaseV" style="left:56px;"></div><div class="creaseV" style="left:108px;"></div><div class="creaseV" style="left:156px;"></div></div>
+
+    <div class="mark" style="left:100px; top:0px;">01</div>
+    <div class="mark" style="left:608px; top:0px;">02</div>
+    <div class="mark" style="left:4px; top:220px;">03</div>
+    <div class="mark" style="left:608px; top:220px;">04</div>
+    <div class="mark" style="left:10px; top:444px;">05</div>
+    <div class="mark" style="left:251px; top:444px;">06</div>
+    <div class="mark" style="left:492px; top:444px;">07</div>
+    <div class="mark" style="left:733px; top:444px;">08</div>
+    <div class="mark" style="left:974px; top:444px;">09</div>
+  </div>
+  <div class="folio">B-01 … B-04 · FOLD CATALOGUE BELOW</div>
+</section>
+
+<!-- ==================== 09 · NOTES ON 07 ==================== -->
+<section class="slide">
+  <div class="running"><span>MIXED MEDIA · NOTES ON 07</span><span class="fig">08 / 23</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>B-01 · single panel</b>One leaf, no fold. Used when the grouping is one short sequence that a single sheet can hold whole. An image may lead beside one readable column; nothing is added to make the sheet look busier.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>B-02 · tri-fold</b>Six reading panels in a consecutive three-up arrangement — the two strips here are the outside and the inside of one sheet. A tri-fold is six bounded panels, never one page with three loose columns.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>B-03 · gatefold</b>Two outer panels fold in to meet, then open to a wider centre. Six panels, with the reveal reserved for the image or relationship that earns the extra width. Solid creases fold inward.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>B-04 · accordion</b>A concertina of six panels with creases alternating inward and outward, so the sequence has order without a single cover. Used when no one panel should lead.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Half fold · four panels</b>One crease. Two panels a side. The smallest fold that still produces a reading order rather than a single face.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Tri fold · six panels</b>Two creases in the same direction; panels stack inward. The physical count behind B-02.</span></div>
+    <div class="ann"><span class="n">07</span><span><b>Gate fold · six panels</b>Two creases folding inward with a wider centre. The count matches the tri-fold but the reading geometry does not, so it stays a separate template.</span></div>
+    <div class="ann"><span class="n">08</span><span><b>Z fold · six panels</b>Two creases in opposite directions. Same panel count as the tri-fold, zig-zag reveal order — again a different geometry, again a different template.</span></div>
+    <div class="ann"><span class="n">09</span><span><b>Roll fold · eight panels</b>Three creases, each panel slightly narrower so it can roll inside the one before it. The widest capacity a brochure reaches before the set becomes a pamphlet.</span></div>
+  </div>
+  <div class="folio">A FOLD IS A READING GEOMETRY, NOT A DECORATION</div>
+</section>
+
+<!-- ==================== 10 · PLATE · PAMPHLET TEMPLATES ==================== -->
+<section class="slide">
+  <div class="running"><span>MIXED MEDIA · PAMPHLET TEMPLATES</span><span class="fig">09 / 23</span></div>
+  <div class="stage bleed">
+
+    <!-- P-01 · text leaf -->
+    <div class="sheet" style="left:190px; top:10px; width:200px; height:267px;">
+      <div style="position:absolute; left:18px; right:18px; top:18px; bottom:30px;">
+        <div class="slabel" style="font-size:9px; line-height:11px;">Firing log</div>
+        <div class="prov" style="font-size:5.5px; letter-spacing:0.06em; margin-top:4px;">STUDIO LOG · 1 PLACEMENT</div>
+        <div class="hairq" style="margin-top:5px;"></div>
+        <div class="btext" style="font-size:6.5px; line-height:9.5px; margin-top:7px;">
+          <p>Loaded Tuesday evening: twenty-two shelves of test tiles, the four
+          porcelain beakers, and the two press-moulded dishes that have been waiting
+          since March. Candled at 95°C for three hours because the beakers were
+          thrown on Sunday and still felt cool against the back of the hand.</p>
+          <p>Ramp one held a hundred and thirty degrees an hour to 600°C without
+          complaint. Front and back sat within four degrees of each other for the
+          whole of it, which is better than this kiln usually manages.</p>
+          <p>Ramp two ran faster than asked. The panel read two hundred and five
+          degrees an hour where the schedule said one hundred and eighty, and by the
+          time it was noticed the back of the chamber was twelve degrees ahead of the
+          front.</p>
+        </div>
+      </div>
+      <div class="pfoot" style="left:18px; right:18px; bottom:12px; font-size:5.5px; letter-spacing:0.12em;"><span>STUDIO LOG</span><span>3</span></div>
+    </div>
+
+    <!-- P-02 · facing leaves -->
+    <div class="sheet" style="left:702px; top:10px; width:404px; height:267px;">
+      <div class="bindV" style="left:202px;"></div>
+      <div style="position:absolute; left:16px; top:18px; width:166px; bottom:30px;">
+        <div class="plate warm" style="width:166px; height:112px;"></div>
+        <div class="cap" style="font-size:6px; line-height:8.5px; margin-top:6px;">Iron saturate over porcelain, second shelf</div>
+        <div class="prov" style="font-size:5.5px; letter-spacing:0.06em; margin-top:6px;">KILN · 1 PLACEMENT</div>
+        <div class="routes" style="font-size:5px; letter-spacing:0.05em; margin-top:8px;">GRID PLACEMENT · CORE MEMORY · IMAGE VIEWER</div>
+      </div>
+      <div class="pfoot" style="left:16px; width:166px; bottom:12px; font-size:5.5px; letter-spacing:0.12em;"><span>4</span><span>KILN</span></div>
+      <div style="position:absolute; left:222px; top:18px; width:166px; bottom:30px;">
+        <div class="prov" style="font-size:5.5px; letter-spacing:0.06em;">KILN · 2 PLACEMENTS</div>
+        <div class="hairq" style="margin-top:5px;"></div>
+        <div class="btext" style="font-size:6.5px; line-height:9.5px; margin-top:7px;">
+          <p>The second shelf ran hotter than the first the whole way through. Tiles
+          nearest the back wall went glassy where the same glaze on the front shelf
+          stayed dry and matte.</p>
+          <p>Worth moving the thermocouple next time rather than trusting the readout,
+          which has been reading low since the element change in February and has
+          never quite been believed since.</p>
+          <p>The tile at the far corner is the one to keep. Everything else on that
+          shelf is a variation on it, and most of the variations are duller.</p>
+        </div>
+      </div>
+      <div class="pfoot" style="left:222px; width:166px; bottom:12px; font-size:5.5px; letter-spacing:0.12em;"><span>KILN</span><span>5</span></div>
+    </div>
+
+    <!-- P-03 · column leaf -->
+    <div class="sheet" style="left:190px; top:316px; width:200px; height:267px;">
+      <div style="position:absolute; left:16px; right:16px; top:18px; bottom:30px;">
+        <div class="slabel" style="font-size:9px; line-height:11px;">Firing log</div>
+        <div class="prov" style="font-size:5.5px; letter-spacing:0.06em; margin-top:4px;">STUDIO LOG · 1 PLACEMENT</div>
+        <div class="hairq" style="margin-top:5px;"></div>
+        <div style="display:flex; gap:12px; margin-top:7px;">
+          <div class="btext" style="flex:1; font-size:6px; line-height:9px; min-width:0;">
+            Loaded Tuesday evening: twenty-two shelves of test tiles, the four
+            porcelain beakers, and the two press-moulded dishes that have been
+            waiting since March. Candled at 95°C for three hours because the beakers
+            were thrown on Sunday and still felt cool against the back of the hand.
+            Ramp one held a hundred and thirty degrees an hour to 600°C
+          </div>
+          <div class="btext" style="flex:1; font-size:6px; line-height:9px; min-width:0;">
+            without complaint. Ramp two ran faster than asked. The panel read two
+            hundred and five degrees an hour where the schedule said one hundred and
+            eighty, and by the time it was noticed the back of the chamber was
+            twelve degrees ahead of the front. The soak was stretched to twenty
+            minutes rather than fifteen.
+          </div>
+        </div>
+      </div>
+      <div class="pfoot" style="left:16px; right:16px; bottom:12px; font-size:5.5px; letter-spacing:0.12em;"><span>STUDIO LOG</span><span>7</span></div>
+    </div>
+
+    <!-- P-04 · continuation across a stitched sequence -->
+    <div class="sheet" style="left:620px; top:364px; width:128px; height:171px;">
+      <div style="position:absolute; left:12px; right:12px; top:13px; bottom:22px;">
+        <div class="slabel" style="font-size:7px; line-height:9px;">Firing log</div>
+        <div class="prov" style="font-size:5px; letter-spacing:0.04em; margin-top:3px;">STUDIO LOG · 1</div>
+        <div class="hairq" style="margin-top:4px;"></div>
+        <div class="btext" style="font-size:5.5px; line-height:8px; margin-top:5px;">Loaded Tuesday evening: twenty-two shelves of test tiles, the four porcelain beakers, and the two press-moulded dishes that have been waiting since March. Candled at 95°C for three</div>
+      </div>
+      <div class="pfoot" style="left:12px; right:12px; bottom:8px; font-size:5px; letter-spacing:0.1em;"><span>8</span><span></span></div>
+    </div>
+    <div class="sheet" style="left:762px; top:364px; width:128px; height:171px;">
+      <div style="position:absolute; left:12px; right:12px; top:13px; bottom:22px;">
+        <div class="btext" style="font-size:5.5px; line-height:8px;">hours because the beakers were thrown on Sunday and still felt cool against the back of the hand. Ramp one held a hundred and thirty degrees an hour to 600°C without complaint, front and back within four degrees of each other for the</div>
+      </div>
+      <div class="pfoot" style="left:12px; right:12px; bottom:8px; font-size:5px; letter-spacing:0.1em;"><span></span><span>9</span></div>
+    </div>
+    <div class="sheet" style="left:904px; top:364px; width:128px; height:171px;">
+      <div style="position:absolute; left:12px; right:12px; top:13px; bottom:22px;">
+        <div class="plate moss" style="height:56px;"></div>
+        <div class="prov" style="font-size:5px; letter-spacing:0.04em; margin-top:5px;">KILN · 1</div>
+        <div class="btext" style="font-size:5.5px; line-height:8px; margin-top:5px;">whole of it. Ramp two ran faster than asked. The panel read two hundred and five degrees an hour where the</div>
+      </div>
+      <div class="pfoot" style="left:12px; right:12px; bottom:8px; font-size:5px; letter-spacing:0.1em;"><span>10</span><span></span></div>
+    </div>
+    <div class="sheet" style="left:1046px; top:364px; width:128px; height:171px;">
+      <div style="position:absolute; left:12px; right:12px; top:13px; bottom:22px;">
+        <div class="btext" style="font-size:5.5px; line-height:8px;">schedule said one hundred and eighty. The soak was stretched to twenty minutes rather than fifteen to bring the two ends level again.</div>
+        <div class="slug" style="font-size:6px; margin-top:7px;">Continues on 12.</div>
+      </div>
+      <div class="pfoot" style="left:12px; right:12px; bottom:8px; font-size:5px; letter-spacing:0.1em;"><span></span><span>11</span></div>
+    </div>
+
+    <div class="mark" style="left:166px; top:8px;">01</div>
+    <div class="mark" style="left:678px; top:8px;">02</div>
+    <div class="mark" style="left:1112px; top:246px;">03</div>
+    <div class="mark" style="left:166px; top:314px;">04</div>
+    <div class="leader h" style="left:186px; top:460px; width:96px;"></div>
+    <div class="mark" style="left:164px; top:450px;">05</div>
+    <div class="mark" style="left:594px; top:356px;">06</div>
+    <div class="mark" style="left:878px; top:340px;">07</div>
+    <div class="mark" style="left:1152px; top:406px;">08</div>
+    <div class="mark" style="left:594px; top:492px;">09</div>
+  </div>
+  <div class="folio">P-01 … P-04 · LEAVES, NOT PANELS</div>
+</section>
+
+<!-- ==================== 11 · NOTES ON 09 ==================== -->
+<section class="slide">
+  <div class="running"><span>MIXED MEDIA · NOTES ON 09</span><span class="fig">10 / 23</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>P-01 · text leaf</b>One folio page, one column, no image. Used when text leads and no visual source is present. The absence of an image is not a hole to fill; no plate is invented for balance.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>P-02 · facing leaves</b>An illustrated folio: image on one leaf, the text it explains on the facing leaf. Used when proximity has already grouped a picture with its account of itself.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Each leaf keeps its own footer</b>Facing leaves are two pages, not one canvas. Each carries its own page number on the outer edge and its own Layer context — because their sources differ.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>P-03 · column leaf</b>A short article page: one leaf, two measures. Used when text demand needs a second column but not a second leaf. The measure is chosen once and holds for the whole sequence.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>The gutter is explicit</b>Column separation is a stated value, not whatever space happens to be left. The same gutter appears on every leaf of the sequence.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>P-04 · continuation</b>A stitched sequence for one source that exceeds a leaf. One sheet folded once makes four pages; folios stack until the source is complete.</span></div>
+    <div class="ann"><span class="n">07</span><span><b>An image may take its own leaf</b>When a picture needs more area than a shared leaf allows, it gets a plate leaf of its own rather than being reduced to fit beside the text.</span></div>
+    <div class="ann"><span class="n">08</span><span><b>The sequence states where it goes</b>The final leaf names the leaf that continues it. A pamphlet may hold one source, several, or no image at all; the count changes pagination, never the form's name and never a generated title.</span></div>
+    <div class="ann"><span class="n">09</span><span><b>Orientation follows the source</b>A leaf is near portrait by default because that suits a column of text, but the composition of the sources decides. Portrait is a consequence, not a fixed shell.</span></div>
+  </div>
+  <div class="folio">FIVE TO FORTY-EIGHT PAGES · THE LEAF IS THE UNIT</div>
+</section>
+
+<!-- ==================== 12 · PLATE · MAGAZINE TEMPLATES ==================== -->
+<section class="slide">
+  <div class="running"><span>MIXED MEDIA · MAGAZINE TEMPLATES</span><span class="fig">11 / 23</span></div>
+  <div class="stage bleed">
+
+    <!-- M-01 · image opener -->
+    <div class="sheet" style="left:70px; top:6px; width:440px; height:275px;">
+      <div class="plate cool" style="position:absolute; left:0; top:0; right:0; height:212px;"></div>
+      <div class="cap" style="position:absolute; left:26px; right:26px; top:224px; font-size:7px; line-height:10px;">Second shelf before unloading, dampers still shut</div>
+      <div class="prov" style="position:absolute; left:26px; top:240px; font-size:5.5px; letter-spacing:0.06em;">KILN · 1 PLACEMENT</div>
+      <div class="pfoot" style="left:26px; right:26px; bottom:10px; font-size:5.5px; letter-spacing:0.12em;"><span>KILN</span><span>2</span></div>
+    </div>
+
+    <!-- M-02 · mixed spread -->
+    <div class="sheet" style="left:604px; top:56px; width:560px; height:175px;">
+      <div class="bindV" style="left:280px;"></div>
+      <div style="position:absolute; left:20px; top:16px; width:240px; bottom:22px;">
+        <div class="plate warm" style="height:96px;"></div>
+        <div class="cap" style="font-size:5.5px; line-height:8px; margin-top:5px;">Iron saturate over porcelain, second shelf</div>
+        <div class="prov" style="font-size:5px; letter-spacing:0.04em; margin-top:4px;">KILN · 1 PLACEMENT</div>
+      </div>
+      <div class="pfoot" style="left:20px; width:240px; bottom:8px; font-size:5px; letter-spacing:0.1em;"><span>14</span><span>KILN</span></div>
+      <div style="position:absolute; left:300px; top:16px; width:240px; bottom:22px; display:flex; gap:14px;">
+        <div style="flex:1; min-width:0;">
+          <div class="slabel" style="font-size:8px; line-height:10px;">Firing log</div>
+          <div class="prov" style="font-size:5px; letter-spacing:0.04em; margin-top:3px;">STUDIO LOG · 1</div>
+          <div class="hairq" style="margin-top:4px;"></div>
+          <div class="btext" style="font-size:5.5px; line-height:8px; margin-top:5px;">Loaded Tuesday evening: twenty-two shelves of test tiles and the four porcelain beakers. Candled at 95°C for three hours because the beakers were thrown on Sunday and still felt cool against</div>
+        </div>
+        <div style="flex:1; min-width:0;">
+          <div class="btext" style="font-size:5.5px; line-height:8px;">the back of the hand. Ramp one held a hundred and thirty degrees an hour to 600°C without complaint, front and back within four degrees of each other for the whole of it.</div>
+        </div>
+      </div>
+      <div class="pfoot" style="left:300px; width:240px; bottom:8px; font-size:5px; letter-spacing:0.1em;"><span>STUDIO LOG</span><span>15</span></div>
+    </div>
+
+    <!-- M-03 · multi-image sequence -->
+    <div class="sheet" style="left:70px; top:330px; width:560px; height:210px;">
+      <div class="bindV" style="left:280px;"></div>
+      <div style="position:absolute; left:20px; top:16px; width:240px; bottom:22px;">
+        <div style="display:flex; gap:8px;">
+          <div class="plate warm" style="flex:1; height:82px;"></div>
+          <div class="plate moss" style="flex:1; height:82px;"></div>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <div class="plate dusk" style="width:96px; height:64px;"></div>
+          <div style="flex:1; min-width:0;">
+            <div class="cap" style="font-size:5.5px; line-height:8px;">Tiles from the front shelf, same glaze</div>
+            <div class="prov" style="font-size:5px; letter-spacing:0.04em; margin-top:4px;">KILN · 3 PLACEMENTS</div>
+          </div>
+        </div>
+      </div>
+      <div class="pfoot" style="left:20px; width:240px; bottom:8px; font-size:5px; letter-spacing:0.1em;"><span>22</span><span>KILN</span></div>
+      <div style="position:absolute; left:300px; top:16px; width:240px; bottom:22px;">
+        <div class="plate cool" style="height:120px;"></div>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <div class="plate warm" style="flex:1; height:44px;"></div>
+          <div class="plate moss" style="flex:1; height:44px;"></div>
+          <div class="plate dusk" style="flex:1; height:44px;"></div>
+        </div>
+      </div>
+      <div class="pfoot" style="left:300px; width:240px; bottom:8px; font-size:5px; letter-spacing:0.1em;"><span>KILN</span><span>23</span></div>
+    </div>
+
+    <!-- M-04 · long-run pagination -->
+    <div class="sheet" style="left:664px; top:370px; width:88px; height:160px;">
+      <div style="position:absolute; inset:9px 9px 18px;"><div class="slabel" style="font-size:6px; line-height:8px;">Firing log</div><div class="hairq" style="margin-top:3px;"></div><div class="btext" style="font-size:5px; line-height:7px; margin-top:4px;">Loaded Tuesday evening: twenty-two shelves of test tiles and the four porcelain beakers, candled at 95°C for three hours before the first ramp</div></div>
+      <div class="pfoot" style="left:9px; right:9px; bottom:6px; font-size:4.5px; letter-spacing:0.1em;"><span>31</span><span></span></div>
+    </div>
+    <div class="sheet" style="left:762px; top:370px; width:88px; height:160px;">
+      <div style="position:absolute; inset:9px 9px 18px;"><div class="btext" style="font-size:5px; line-height:7px;">began. Ramp one held a hundred and thirty degrees an hour to 600°C without complaint, front and back within four degrees of each other for the whole</div></div>
+      <div class="pfoot" style="left:9px; right:9px; bottom:6px; font-size:4.5px; letter-spacing:0.1em;"><span></span><span>32</span></div>
+    </div>
+    <div class="sheet" style="left:860px; top:370px; width:88px; height:160px;">
+      <div style="position:absolute; inset:9px 9px 18px;"><div class="plate cool" style="height:40px;"></div><div class="prov" style="font-size:4.5px; letter-spacing:0.03em; margin-top:4px;">KILN · 1</div><div class="btext" style="font-size:5px; line-height:7px; margin-top:4px;">of it. Ramp two ran faster than asked, the panel</div></div>
+      <div class="pfoot" style="left:9px; right:9px; bottom:6px; font-size:4.5px; letter-spacing:0.1em;"><span>33</span><span></span></div>
+    </div>
+    <div class="sheet" style="left:958px; top:370px; width:88px; height:160px;">
+      <div style="position:absolute; inset:9px 9px 18px;"><div class="btext" style="font-size:5px; line-height:7px;">reading two hundred and five degrees an hour where the schedule said one hundred and eighty, and the soak stretched to twenty minutes to bring the</div></div>
+      <div class="pfoot" style="left:9px; right:9px; bottom:6px; font-size:4.5px; letter-spacing:0.1em;"><span></span><span>34</span></div>
+    </div>
+    <div class="sheet" style="left:1056px; top:370px; width:88px; height:160px;">
+      <div style="position:absolute; inset:9px 9px 18px;"><div class="btext" style="font-size:5px; line-height:7px;">two ends level again.</div><div class="slug" style="font-size:5px; margin-top:5px;">Continues on 36.</div></div>
+      <div class="pfoot" style="left:9px; right:9px; bottom:6px; font-size:4.5px; letter-spacing:0.1em;"><span>35</span><span></span></div>
+    </div>
+
+    <div class="mark" style="left:46px; top:4px;">01</div>
+    <div class="mark" style="left:46px; top:236px;">02</div>
+    <div class="mark" style="left:580px; top:48px;">03</div>
+    <div class="mark" style="left:874px; top:136px;">04</div>
+    <div class="mark" style="left:46px; top:328px;">05</div>
+    <div class="mark" style="left:338px; top:310px;">06</div>
+    <div class="mark" style="left:640px; top:348px;">07</div>
+    <div class="mark" style="left:1152px; top:424px;">08</div>
+    <div class="mark" style="left:640px; top:508px;">09</div>
+  </div>
+  <div class="folio">M-01 … M-04 · PAGES AND SPREADS</div>
+</section>
+
+<!-- ==================== 13 · NOTES ON 11 ==================== -->
+<section class="slide">
+  <div class="running"><span>MIXED MEDIA · NOTES ON 11</span><span class="fig">12 / 23</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>M-01 · image opener</b>One picture takes a full page. Chosen when a single image carries the group and has the resolution to hold the area — never to fill a page that text could not fill.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>An opener still carries its footer</b>A dominant image does not suspend page context. Caption where metadata exists, provenance beneath it, page number and Layer at the foot.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>M-02 · mixed spread</b>Image and text hold distinct regions across facing pages. Chosen when both make a real claim on the page and neither should be reduced to an inset of the other.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>The binding is left clear</b>Nothing essential crosses the fold. A spread can lose content at the binding, so the region is treated as unusable rather than optimistic.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>M-03 · multi-image sequence</b>Several pictures paced across a spread at different sizes. Size follows each image's role and resolution, not a uniform tile — frames keep their own proportions.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Deliberate asymmetry is allowed</b>A spread may be unbalanced on purpose. What it may not do is crop a frame or invent a caption to make the two halves match.</span></div>
+    <div class="ann"><span class="n">07</span><span><b>M-04 · long-run pagination</b>The threaded feature: one long text, or many sources, carried across an ordered run of pages. This is the capacity mechanism for hundreds of sources.</span></div>
+    <div class="ann"><span class="n">08</span><span><b>The run states its continuation</b>Each page ends by naming the next. Read in order, the pages reconstruct every source exactly once, complete and in source order.</span></div>
+    <div class="ann"><span class="n">09</span><span><b>No issue title is invented</b>A long run has page numbers and Layer context and nothing else. It does not gain a masthead, an issue number, or a header synthesised from the source count.</span></div>
+  </div>
+  <div class="folio">A LONG RUN IS PAGINATION, NOT A PUBLICATION IDENTITY</div>
+</section>
+
+<!-- ==================== 14 · MEASURING DEMAND ==================== -->
+<section class="slide">
+  <div class="running"><span>MIXED MEDIA · MEASURING DEMAND</span><span class="fig">13 / 23</span></div>
+
+  <div style="position:absolute; left:48px; right:48px; top:82px; bottom:74px;">
+    <div style="display:grid; grid-template-columns:1fr 1fr; column-gap:56px;">
+
+      <div>
+        <div class="sectionlbl">Text demand · A<span style="text-transform:none">text</span></div>
+        <div class="ann" style="margin-bottom:9px;"><span class="n">1</span><span>Normalise rich text into readable blocks. Paragraph and list boundaries are kept; they are part of the demand.</span></div>
+        <div class="ann" style="margin-bottom:9px;"><span class="n">2</span><span>Render it at the minimum readable body measure — not at whatever measure the container happens to offer.</span></div>
+        <div class="ann" style="margin-bottom:9px;"><span class="n">3</span><span>Count the resulting lines, the line height, the paragraph spacing, and the space a continuation would need.</span></div>
+        <div class="ann" style="margin-bottom:16px;"><span class="n">4</span><span>Sum the occupied areas. One 500-word source outweighs five one-line notes, though both are five records.</span></div>
+        <div class="eq">charsPerLine   = max(8, floor(measure / max(6, 0.52 × size)))
+lineCount      = body lines + heading lines + blank units
+paragraphCost  = 0.65 × paragraph breaks
+Tᵢ             = max(0.25, (lineCount + paragraphCost) / linesPerPage)
+areaᵢ          = (lineCount + paragraphCost) × size × leading × measure</div>
+      </div>
+
+      <div>
+        <div class="sectionlbl">Image demand · A<span style="text-transform:none">image</span></div>
+        <div class="ann" style="margin-bottom:9px;"><span class="n">1</span><span>Read the pixel dimensions and native aspect ratio of every image. Both come from the source, never from a thumbnail on screen.</span></div>
+        <div class="ann" style="margin-bottom:9px;"><span class="n">2</span><span>Choose the smallest complete-frame rectangle that still preserves the image's role in the group.</span></div>
+        <div class="ann" style="margin-bottom:9px;"><span class="n">3</span><span>Cap that rectangle by effective resolution. Nothing is cropped or enlarged to fill a template slot.</span></div>
+        <div class="ann" style="margin-bottom:16px;"><span class="n">4</span><span>Sum the selected display areas. A GIF is measured exactly as an image; animation changes playback, not area.</span></div>
+        <div class="eq">pixelReserve   = clamp(0.70, 1.50, 0.18 × √(w × h) / F)
+aspectReserve  = clamp(0.00, 0.45, 0.12 × |ln r|)
+roleReserve    = +0.35 hero · 0 supporting · −0.18 thumbnail
+Iᵢ             = max(0.45, pixelReserve + aspectReserve + roleReserve)
+F              = 96 thumbnail · 180 supporting · 320 hero</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; column-gap:56px; margin-top:26px; padding-top:18px; border-top:1px solid var(--hairline);">
+      <div class="note-under">FIXTURE INPUTS, NOT ACCEPTED CONSTANTS: MEASURE 340PX · SIZE 16PX ·
+        LEADING 1.55 · 18 LINES PER PAGE. THEY MOVE WITH EVIDENCE, AND THE PERSON
+        NEVER TUNES THEM.</div>
+      <div class="note-under">NEVER A DEMAND INPUT: RAW CHARACTER COUNT · FILE BYTE SIZE ·
+        COMPRESSION · A THUMBNAIL'S CURRENT ON-SCREEN SIZE. AN UNAVAILABLE SOURCE
+        KEEPS A RESERVED DEMAND AND ITS PROVENANCE — IT NEVER BECOMES ZERO.</div>
+    </div>
+  </div>
+  <div class="folio">DEMAND IS RENDERED AREA · SOURCE COUNT IS A PAGINATION INPUT ONLY</div>
+</section>
+
+<!-- ==================== 15 · GATE · TIER · VERTICAL ==================== -->
+<section class="slide">
+  <div class="running"><span>MIXED MEDIA · GATE, TIER, AND FORM</span><span class="fig">14 / 23</span></div>
+
+  <div style="position:absolute; left:48px; right:48px; top:82px; bottom:74px;">
+   <div style="display:grid; grid-template-columns:1fr 1fr; column-gap:56px;">
+
+    <div>
+      <div class="sectionlbl">Totals and shares</div>
+      <div class="eq" style="margin-bottom:22px;">D  = T + I + O            O = 0 this release
+textShare  = T / D        imageShare = I / D
+R media    = A image / (A image + A text)</div>
+
+      <div class="sectionlbl">The gate</div>
+      <table class="tbl" style="margin-bottom:22px;">
+        <tr><td class="k">D &lt; 1.0</td><td>Below the gate. No reading is made; the material stays ordinary Content.</td></tr>
+        <tr><td class="k">24 / 32 cells</td><td>Field support floor, measured on a 1920×1080 calibration surface at 220px cells — eight columns by four rows.</td></tr>
+        <tr><td class="k">one Document</td><td>A single long Document qualifies on its own measured demand. An item-count rule never excludes it.</td></tr>
+      </table>
+
+      <div class="sectionlbl">Demand tiers</div>
+      <table class="tbl">
+        <tr><td class="k">1.0 ≤ D &lt; 1.75</td><td>Tier 01 · light</td><td>Brochure</td></tr>
+        <tr><td class="k">1.75 ≤ D &lt; 3.0</td><td>Tier 02 · moderate</td><td>Pamphlet</td></tr>
+        <tr><td class="k">D ≥ 3.0</td><td>Tier 03 · dense</td><td>Magazine</td></tr>
+      </table>
+    </div>
+
+    <div>
+      <div class="sectionlbl">Which vertical the shares choose</div>
+      <table class="tbl" style="margin-bottom:22px;">
+        <tr><td class="k">imageShare ≤ 0.25</td><td>Text-led — Bulletin, Berliner, Broadsheet</td></tr>
+        <tr><td class="k">0.25 &lt; imageShare &lt; 0.70</td><td>Mixed-media — Brochure, Pamphlet, Magazine</td></tr>
+        <tr><td class="k">imageShare ≥ 0.70</td><td>Image-led — Gallery, Contact sheet, Image edition</td></tr>
+      </table>
+      <div class="note-under" style="margin-bottom:22px;">BOUNDARY OWNERSHIP IS DETERMINISTIC: 0.25 BELONGS TO TEXT-LED,
+        0.70 BELONGS TO IMAGE-LED. A SHARE THAT CANNOT BE MEASURED RECORDS AN
+        UNAVAILABLE-SOURCE RECOVERY AND FALLS BACK — IT NEVER INVENTS A ROUTE.</div>
+
+      <div class="sectionlbl">Order of decision</div>
+      <div class="eq" style="margin-bottom:22px;">source set → per-source demand records → D and shares
+         → gate → vertical → tier → form → template</div>
+
+      <div class="note-under">THE SOURCE NOTES' 60–70% MEDIA BAND IS A QUALIFICATION SIGNAL, NOT A
+        TEMPLATE PICKER. A GROUP MAY STAY MIXED BELOW IT WHEN ITS TEXT AND IMAGES
+        REMAIN INTERDEPENDENT. R MEDIA IS RE-READ LOCALLY FOR EACH PAGE TO CHOOSE A
+        COMPOSITION — A PAGE-LEVEL RATIO NEVER RE-ROUTES THE WHOLE SET.</div>
+    </div>
+   </div>
+
+   <div style="margin-top:26px; padding-top:18px; border-top:1px solid var(--hairline);">
+     <div class="sectionlbl">Measured again whenever</div>
+     <div style="display:grid; grid-template-columns:repeat(3, 1fr); column-gap:48px; row-gap:14px;">
+       <div class="ann"><span class="n">1</span><span>A related Note, Document, Image, or GIF joins or leaves the set.</span></div>
+       <div class="ann"><span class="n">2</span><span>Text is edited so wrapping, headings, or page count change.</span></div>
+       <div class="ann"><span class="n">3</span><span>An image is replaced at a different resolution or aspect ratio.</span></div>
+       <div class="ann"><span class="n">4</span><span>An image's role changes between hero, supporting, and thumbnail.</span></div>
+       <div class="ann"><span class="n">5</span><span>A gate or tier threshold is crossed, in either direction.</span></div>
+       <div class="ann"><span class="n">6</span><span>The usable surface changes class — portrait, near-square, landscape.</span></div>
+     </div>
+     <div class="note-under" style="margin-top:16px;">A PROMOTION ADDS PAGES OR CHANGES FORM. IT NEVER TRUNCATES,
+       SUMMARISES, OR CREATES A MEMORY. HYSTERESIS HOLDS A SET SITTING ON A BOUNDARY
+       SO THE READING CANNOT OSCILLATE, AND THE PERSON'S CURRENT SOURCE IS KEPT
+       WHENEVER THE NEW SEQUENCE CAN CARRY IT. AP-04 · T-AN13.</div>
+   </div>
+  </div>
+  <div class="folio">D-ANNOTATION-03 · ONE DEMAND SCALE ACROSS ALL THREE VERTICALS</div>
+</section>
+
+<!-- ==================== 16 · TEMPLATE SELECTION ==================== -->
+<section class="slide">
+  <div class="running"><span>MIXED MEDIA · TEMPLATE SELECTION</span><span class="fig">15 / 23</span></div>
+
+  <div style="position:absolute; left:48px; right:48px; top:82px; bottom:74px;">
+   <div style="display:grid; grid-template-columns:750px 1fr; column-gap:48px;">
+
+    <div>
+      <table class="tbl">
+        <tr><th style="width:52px;">Form</th><th style="width:150px;">Template</th><th style="width:230px;">Physical analogue</th><th>Chosen when</th></tr>
+        <tr><td class="k">Brochure</td><td class="k">B-01 single panel</td><td>Leaf or one panel</td><td>One short grouping fits a sheet</td></tr>
+        <tr><td></td><td class="k">B-02 tri-fold</td><td>Three-up consecutive fold, six panels</td><td>A short sequence wants panels</td></tr>
+        <tr><td></td><td class="k">B-03 gatefold</td><td>Two outer folds to a wider centre</td><td>An image or a relationship needs the reveal</td></tr>
+        <tr><td></td><td class="k">B-04 accordion</td><td>Concertina, alternating creases</td><td>Ordered panels with no single cover</td></tr>
+        <tr><td class="k">Pamphlet</td><td class="k">P-01 text leaf</td><td>Folio page</td><td>Text leads and no image is present</td></tr>
+        <tr><td></td><td class="k">P-02 facing leaves</td><td>Illustrated folio</td><td>An image and its text share a grouping</td></tr>
+        <tr><td></td><td class="k">P-03 column leaf</td><td>Short article page</td><td>Text demand needs a second measure</td></tr>
+        <tr><td></td><td class="k">P-04 continuation</td><td>Stitched sequence of folios</td><td>One source exceeds one leaf</td></tr>
+        <tr><td class="k">Magazine</td><td class="k">M-01 image opener</td><td>Full-page plate</td><td>One image needs a dominant page</td></tr>
+        <tr><td></td><td class="k">M-02 mixed spread</td><td>Editorial spread</td><td>Image and text need distinct regions</td></tr>
+        <tr><td></td><td class="k">M-03 multi-image sequence</td><td>Image feature</td><td>Several images need pacing</td></tr>
+        <tr><td></td><td class="k">M-04 long-run pagination</td><td>Threaded feature</td><td>Long text, or many sources</td></tr>
+      </table>
+    </div>
+
+    <div>
+      <div class="sectionlbl">What picks the template</div>
+      <div class="ann" style="margin-bottom:8px;"><span class="n">·</span><span>Local R media for that page</span></div>
+      <div class="ann" style="margin-bottom:8px;"><span class="n">·</span><span>Image aspect ratio</span></div>
+      <div class="ann" style="margin-bottom:8px;"><span class="n">·</span><span>Image quality band</span></div>
+      <div class="ann" style="margin-bottom:8px;"><span class="n">·</span><span>Text-column demand</span></div>
+      <div class="ann" style="margin-bottom:8px;"><span class="n">·</span><span>Source proximity and order</span></div>
+      <div class="ann" style="margin-bottom:22px;"><span class="n">·</span><span>Capacity remaining in the form</span></div>
+
+      <div class="sectionlbl">Working capacity</div>
+      <div class="eq" style="margin-bottom:22px;">Brochure  1 column   1 sheet    1.75 pages
+Pamphlet  2 columns  2 frames   1.50 pages
+Magazine  3 columns  3 frames   1.25 pages</div>
+
+      <div class="note-under">WHEN A TEMPLATE CANNOT CONTAIN A COMPLETE SOURCE, THE SELECTOR MOVES TO
+        THE NEXT TEMPLATE IN THE SAME FORM, OR MAKES ANOTHER PAGE. IT DOES NOT
+        OVERFLOW, AND IT DOES NOT SHRINK. PROXIMITY GROUPS SOURCES BEFORE
+        COMPOSITION; THE RENDERER NEVER REORDERS THEM TO IMPROVE A LAYOUT.</div>
+    </div>
+   </div>
+
+   <div style="margin-top:28px; padding-top:20px; border-top:1px solid var(--hairline); display:grid; grid-template-columns:1fr 1fr 1fr; column-gap:48px;">
+     <div class="ann"><span class="n">B</span><span><b>Route to brochure</b>One short sequence fits a sheet or a small set of panels, with no threaded continuation anywhere in the group.</span></div>
+     <div class="ann"><span class="n">P</span><span><b>Route to pamphlet</b>A short ordered sequence needs several leaves or folios, yet the whole still reads as one bounded object.</span></div>
+     <div class="ann"><span class="n">M</span><span><b>Route to magazine</b>The group needs repeatable spreads, threaded text, many images, or many sources — and therefore pagination.</span></div>
+   </div>
+  </div>
+  <div class="folio">TWELVE TEMPLATES · THREE FORMS · ONE VERTICAL</div>
+</section>
+
+<!-- ==================== 17 · PLATE · IMAGE QUALITY BANDS ==================== -->
+<section class="slide">
+  <div class="running"><span>MIXED MEDIA · IMAGE QUALITY BANDS</span><span class="fig">16 / 23</span></div>
+  <div class="stage bleed">
+
+    <!-- band A · 300 PPI and above -->
+    <div class="sheet" style="left:10px; top:26px; width:350px; height:540px;">
+      <div style="position:absolute; left:26px; right:26px; top:26px; bottom:40px;">
+        <div class="plate cool" style="width:298px; height:199px;"></div>
+        <div class="cap" style="font-size:9px; line-height:13px; margin-top:9px;">Second shelf before unloading, dampers still shut</div>
+        <div class="prov" style="font-size:7px; margin-top:8px;">KILN · 1 PLACEMENT</div>
+        <div class="hairq" style="margin-top:16px;"></div>
+        <div class="btext" style="font-size:10px; line-height:16px; margin-top:14px;">
+          <p>The second shelf ran hotter than the first the whole way through. Tiles
+          nearest the back wall went glassy where the same glaze on the front shelf
+          stayed dry and matte, which is the temperature difference showing itself
+          rather than the glaze misbehaving.</p>
+          <p>Worth moving the thermocouple next time rather than trusting the
+          readout.</p>
+        </div>
+        <div class="routes" style="font-size:7px; position:absolute; left:0; bottom:0;">GRID PLACEMENT · CORE MEMORY · IMAGE VIEWER</div>
+      </div>
+      <div class="pfoot" style="left:26px; right:26px; bottom:16px; font-size:7px; letter-spacing:0.14em;"><span>KILN</span><span>2</span></div>
+    </div>
+
+    <!-- band B · 150 to 299 PPI -->
+    <div class="sheet" style="left:417px; top:26px; width:350px; height:540px;">
+      <div style="position:absolute; left:26px; right:26px; top:26px; bottom:40px;">
+        <div class="plate moss" style="width:190px; height:127px;"></div>
+        <div class="cap" style="font-size:9px; line-height:13px; margin-top:9px; width:190px;">Front shelf, same glaze</div>
+        <div class="prov" style="font-size:7px; margin-top:8px;">KILN · 1 PLACEMENT</div>
+        <div class="hairq" style="margin-top:16px;"></div>
+        <div class="btext" style="font-size:10px; line-height:16px; margin-top:14px;">
+          <p>The tile at the far corner is the one to keep. Everything else on that
+          shelf is a variation on it, and most of the variations are duller.</p>
+          <p>Two things to try before the next load. Move the tiles a hand's width
+          forward of the back wall so the wall stops radiating into them, and put a
+          second cone pack at the back where it can be seen through the spy hole
+          rather than guessed at from the front.</p>
+          <p>Everything came out. Nothing to redo except the two beakers that touched
+          at the rim.</p>
+        </div>
+        <div class="routes" style="font-size:7px; position:absolute; left:0; bottom:0;">GRID PLACEMENT · CORE MEMORY · IMAGE VIEWER</div>
+      </div>
+      <div class="pfoot" style="left:26px; right:26px; bottom:16px; font-size:7px; letter-spacing:0.14em;"><span>KILN</span><span>3</span></div>
+    </div>
+
+    <!-- band C · below 150 PPI -->
+    <div class="sheet" style="left:824px; top:26px; width:350px; height:540px;">
+      <div style="position:absolute; left:26px; right:26px; top:26px; bottom:40px;">
+        <div style="display:flex; gap:14px;">
+          <div class="plate dusk" style="width:96px; height:64px; flex:none;"></div>
+          <div style="min-width:0;">
+            <div class="prov" style="font-size:7px;">WORKSHOP · 1 PLACEMENT</div>
+            <div class="routes" style="font-size:7px; margin-top:7px;">IMAGE VIEWER</div>
+          </div>
+        </div>
+        <div class="hairq" style="margin-top:16px;"></div>
+        <div class="btext" style="font-size:10px; line-height:16px; margin-top:14px;">
+          <p>Bought the second-hand extruder from the college clearance. The dies are
+          all imperial and the barrel has a dent near the collar, but it holds
+          pressure and the price was two afternoons of helping to clear the room.</p>
+          <p>Cleaned it with a wire brush and more patience than the job deserved. It
+          will do for handles, and whether it is worth re-cutting the dies is a
+          question for a quieter week.</p>
+          <p>Order more silica before the next load. Half a bucket left.</p>
+        </div>
+        <div class="routes" style="font-size:7px; position:absolute; left:0; bottom:0;">GRID PLACEMENT · CORE MEMORY · WRITING SLATE</div>
+      </div>
+      <div class="pfoot" style="left:824px; bottom:16px; font-size:7px; letter-spacing:0.14em; left:26px; right:26px;"><span>WORKSHOP</span><span>4</span></div>
+    </div>
+
+    <div class="mark" style="left:14px; top:30px;">01</div>
+    <div class="mark" style="left:14px; top:300px;">02</div>
+    <div class="mark" style="left:421px; top:30px;">03</div>
+    <div class="mark" style="left:660px; top:186px;">04</div>
+    <div class="mark" style="left:828px; top:30px;">05</div>
+    <div class="mark" style="left:1148px; top:64px;">06</div>
+    <div class="mark" style="left:382px; top:340px;">07</div>
+  </div>
+  <div class="folio">PPI EFF = MIN(PIXEL W / PLACED W, PIXEL H / PLACED H)</div>
+</section>
+
+<!-- ==================== 18 · NOTES ON 16 ==================== -->
+<section class="slide">
+  <div class="running"><span>MIXED MEDIA · NOTES ON 16</span><span class="fig">17 / 23</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>300 PPI and above</b>The image can hold the whole rectangle the group selected for it. It may take the full text measure, lead a panel, open a page, or occupy a reveal.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Effective resolution decides, not file size</b>Placed width and height against pixel width and height; the smaller of the two ratios wins. Compression bytes never enter it. Viewing distance is the production caveat, not a licence to enlarge.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>150 to 299 PPI</b>The frame stays bounded. It keeps its complete edges and its own proportion, but it does not take a dominant page and it is never given a full-bleed emphasis it cannot support.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Bounded is not cropped</b>The middle band shows a smaller picture, not a trimmed one. Reducing the placed size raises effective resolution; cropping would lose the frame, which is never traded for area.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Below 150 PPI</b>A small supporting element, or nothing on the page at all. The source stays in its own viewer where it can be seen at its real size instead of being flattered by a page.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>The route stays open</b>Whatever band an image falls in, the Image Viewer remains one explicit step away. A quality band changes how the page places a picture, never whether the person can reach it.</span></div>
+    <div class="ann"><span class="n">07</span><span><b>Never upscaled to fill</b>No band permits enlargement past the point where the image goes soft. If a template slot is bigger than the picture can support, the template is wrong, not the picture. AMF-02.</span></div>
+  </div>
+  <div class="folio">THREE WORKING BANDS · THE SOURCE FILE REMAINS THE AUTHORITY</div>
+</section>
+
+<!-- ==================== 19 · PLATE · SOURCE IDENTITY ==================== -->
+<section class="slide">
+  <div class="running"><span>MIXED MEDIA · SOURCE IDENTITY ON THE PAGE</span><span class="fig">18 / 23</span></div>
+  <div class="stage bleed">
+
+    <div class="sheet" style="left:122px; top:4px; width:940px; height:588px;">
+      <div style="position:absolute; left:56px; right:44px; top:40px; bottom:46px; display:flex; gap:22px;">
+
+        <!-- titled Document -->
+        <div style="width:265px;">
+          <div class="slabel" style="font-size:16px; line-height:19px;">Firing log — cone 6 oxidation</div>
+          <div class="prov" style="font-size:7px; margin-top:6px;">STUDIO LOG · 1 PLACEMENT</div>
+          <div class="hair" style="margin-top:9px;"></div>
+          <div class="btext" style="font-size:10.5px; line-height:16px; margin-top:11px;">
+            <p>Loaded Tuesday evening: twenty-two shelves of test tiles, the four
+            porcelain beakers, and the two press-moulded dishes that have been waiting
+            since March. Candled at 95°C for three hours because the beakers were
+            thrown on Sunday and still felt cool against the back of the hand.</p>
+            <p>Ramp one held a hundred and thirty degrees an hour to 600°C without
+            complaint. Front and back sat within four degrees of each other for the
+            whole of it, which is better than this kiln usually manages and probably
+            owes more to the weather than to anything done at the controller.</p>
+            <p>Ramp two ran faster than asked. The panel read two hundred and five
+            degrees an hour where the schedule said one hundred and eighty, and by the
+            time it was noticed the back of the chamber was already twelve degrees
+            ahead of the front. The soak at the top was stretched to twenty minutes
+            rather than fifteen to bring the two ends level again.</p>
+            <p>Cooling was slow on purpose: a crash to 900°C, a long hold there, then
+            free fall with both dampers shut. Opened Thursday morning at 60°C.</p>
+          </div>
+          <div class="routes" style="font-size:7px; margin-top:14px;">GRID PLACEMENT · CORE MEMORY · WRITING SLATE</div>
+        </div>
+
+        <!-- untitled Note -->
+        <div style="width:265px;">
+          <div class="prov" style="font-size:7px;">KILN · 2 PLACEMENTS</div>
+          <div class="hair" style="margin-top:9px;"></div>
+          <div class="btext" style="font-size:10.5px; line-height:16px; margin-top:11px;">
+            <p>The second shelf ran hotter than the first the whole way through. Tiles
+            nearest the back wall went glassy where the same glaze on the front shelf
+            stayed dry and matte. Worth moving the thermocouple next time rather than
+            trusting the readout, which has been reading low since the element change
+            in February and has never quite been believed since.</p>
+            <p>The tile at the far corner is the one to keep. Everything else on that
+            shelf is a variation on it, and most of the variations are duller.</p>
+            <p>Two things to try before the next load. Move the tiles a hand's width
+            forward of the back wall so the wall stops radiating into them, and put a
+            second cone pack at the back where it can be seen through the spy hole
+            rather than guessed at from the front.</p>
+          </div>
+          <div class="routes" style="font-size:7px; margin-top:14px;">GRID PLACEMENT · CORE MEMORY · WRITING SLATE</div>
+          <div class="hairq" style="margin-top:22px;"></div>
+          <div class="prov" style="font-size:7px; margin-top:22px;">STUDIO LOG · 1 PLACEMENT</div>
+          <div style="font-family:var(--f-ui); font-size:10.5px; line-height:16px; color:#9B3F3C; margin-top:10px;">This source is unavailable. The original remains safe.</div>
+          <div class="routes" style="font-size:7px; margin-top:12px;">GRID PLACEMENT · CORE MEMORY</div>
+        </div>
+
+        <!-- captioned image, then an image with no caption metadata -->
+        <div style="width:265px;">
+          <div class="plate warm" style="width:265px; height:177px;"></div>
+          <div class="cap" style="font-size:9px; line-height:13px; margin-top:8px;">Iron saturate over porcelain, second shelf</div>
+          <div class="prov" style="font-size:7px; margin-top:7px;">KILN · 1 PLACEMENT</div>
+          <div class="hairq" style="margin-top:20px;"></div>
+          <div class="plate moss" style="width:265px; height:130px; margin-top:20px;"></div>
+          <div class="prov" style="font-size:7px; margin-top:8px;">WORKSHOP · 1 PLACEMENT</div>
+          <div class="routes" style="font-size:7px; margin-top:12px;">GRID PLACEMENT · CORE MEMORY · IMAGE VIEWER</div>
+        </div>
+      </div>
+
+      <div class="hairq" style="position:absolute; left:56px; right:44px; bottom:32px;"></div>
+      <div class="pfoot" style="left:56px; right:44px; bottom:14px; font-size:7.5px;">
+        <span>STUDIO LOG · KILN · WORKSHOP</span><span>4</span>
+      </div>
+    </div>
+
+    <div class="leader h" style="left:118px; top:50px; width:58px;"></div>
+    <div class="mark" style="left:96px; top:40px;">01</div>
+    <div class="mark" style="left:441px; top:40px;">02</div>
+    <div class="mark" style="left:441px; top:398px;">03</div>
+    <div class="mark" style="left:730px; top:228px;">04</div>
+    <div class="mark" style="left:730px; top:436px;">05</div>
+    <div class="mark" style="left:1030px; top:250px;">06</div>
+    <div class="mark" style="left:1030px; top:556px;">07</div>
+    <div class="leader h" style="left:118px; top:466px; width:58px;"></div>
+    <div class="mark" style="left:96px; top:456px;">08</div>
+    <div class="leader h" style="left:118px; top:566px; width:58px;"></div>
+    <div class="mark" style="left:96px; top:556px;">09</div>
+  </div>
+  <div class="folio">AMF-00 … AMF-03 · FOUR SOURCES, FOUR IDENTITIES</div>
+</section>
+
+<!-- ==================== 20 · NOTES ON 18 ==================== -->
+<section class="slide">
+  <div class="running"><span>MIXED MEDIA · NOTES ON 18</span><span class="fig">19 / 23</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>A title only where one exists</b>The Document carries title metadata, so its title prints. There is no generated title region on any page of any form.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>No title, no promotion</b>The Note has no title, so its text begins at the body measure. Its first sentence is not lifted, emboldened, or set larger to stand in for a headline.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>An unavailable source keeps its place</b>It is named, kept in order, and its provenance and routes remain. It is never dropped from the page and never quietly counted as nothing. AMF-03.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>A caption only where one exists</b>The first picture carries caption metadata, so a caption prints beneath it.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>No caption, no substitute</b>The second picture has none, so no caption line appears. A file name is not a title and never becomes one.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Provenance is per source</b>Every frame states its own Layer and how many placements it has. Four sources on one page keep four identities; they are never merged into a single voice or a single credit.</span></div>
+    <div class="ann"><span class="n">07</span><span><b>The page number is a position</b>It is physical pagination and nothing else — not a source count, not a breadcrumb, not a label like "Note 01". Layer context sits opposite it.</span></div>
+    <div class="ann"><span class="n">08</span><span><b>Routes stay understated</b>Each source keeps its own way back — placement, the canonical record, and the surface that suits its form. They read as quiet type beneath the material, never as buttons competing with it.</span></div>
+    <div class="ann"><span class="n">09</span><span><b>Zero notes is still a reading</b>A cluster with no text at all keeps the image-only templates available; a cluster with hundreds becomes a page run. Neither one synthesises a heading from the count.</span></div>
+  </div>
+  <div class="folio">IDENTITY COMES FROM THE SOURCE OR IT DOES NOT APPEAR</div>
+</section>
+
+<!-- ==================== 21 · PLATE · PAGINATION AND PROMOTION ==================== -->
+<section class="slide">
+  <div class="running"><span>MIXED MEDIA · PAGINATION AND PROMOTION</span><span class="fig">20 / 23</span></div>
+  <div class="stage bleed">
+
+    <!-- one sheet -->
+    <div class="sheet" style="left:0px; top:34px; width:300px; height:188px;">
+      <div style="position:absolute; left:14px; right:14px; top:14px; bottom:20px; display:flex; gap:12px;">
+        <div style="width:104px;"><div class="plate warm" style="height:70px;"></div><div class="prov" style="font-size:5px; letter-spacing:0.04em; margin-top:5px;">KILN · 1</div></div>
+        <div style="flex:1; min-width:0;">
+          <div class="slabel" style="font-size:8px; line-height:10px;">Firing log</div>
+          <div class="hairq" style="margin-top:4px;"></div>
+          <div class="btext" style="font-size:6px; line-height:8.5px; margin-top:5px;">Loaded Tuesday evening: twenty-two shelves of test tiles and the four porcelain beakers. Candled at 95°C for three hours because the beakers were thrown on Sunday.</div>
+        </div>
+      </div>
+      <div class="pfoot" style="left:14px; right:14px; bottom:7px; font-size:5px; letter-spacing:0.1em;"><span>STUDIO LOG · KILN</span><span></span></div>
+    </div>
+    <div class="arrow" style="left:314px; top:128px; width:44px;"></div>
+
+    <!-- a spread -->
+    <div class="sheet" style="left:372px; top:18px; width:330px; height:220px;">
+      <div class="bindV" style="left:165px;"></div>
+      <div style="position:absolute; left:14px; top:14px; width:137px; bottom:20px;">
+        <div class="plate warm" style="height:88px;"></div>
+        <div class="cap" style="font-size:5.5px; line-height:8px; margin-top:5px;">Iron saturate over porcelain</div>
+        <div class="prov" style="font-size:5px; letter-spacing:0.04em; margin-top:4px;">KILN · 1</div>
+      </div>
+      <div class="pfoot" style="left:14px; width:137px; bottom:7px; font-size:5px; letter-spacing:0.1em;"><span>2</span><span>KILN</span></div>
+      <div style="position:absolute; left:179px; top:14px; width:137px; bottom:20px;">
+        <div class="slabel" style="font-size:8px; line-height:10px;">Firing log</div>
+        <div class="hairq" style="margin-top:4px;"></div>
+        <div class="btext" style="font-size:6px; line-height:8.5px; margin-top:5px;">Loaded Tuesday evening: twenty-two shelves of test tiles and the four porcelain beakers. Candled at 95°C for three hours because the beakers were thrown on Sunday and still felt cool against the back of the hand. Ramp one held a hundred and</div>
+        <div class="slug" style="font-size:6px; margin-top:5px;">Continues on 4.</div>
+      </div>
+      <div class="pfoot" style="left:179px; width:137px; bottom:7px; font-size:5px; letter-spacing:0.1em;"><span>STUDIO LOG</span><span>3</span></div>
+    </div>
+    <div class="arrow" style="left:716px; top:128px; width:44px;"></div>
+
+    <!-- a page run -->
+    <div class="sheet" style="left:774px; top:44px; width:72px; height:168px;">
+      <div style="position:absolute; inset:8px 8px 16px;"><div class="slabel" style="font-size:6px; line-height:8px;">Firing log</div><div class="hairq" style="margin-top:3px;"></div><div class="btext" style="font-size:5px; line-height:7px; margin-top:4px;">Loaded Tuesday evening: twenty-two shelves of test tiles and the four porcelain beakers, candled at 95°C</div></div>
+      <div class="pfoot" style="left:8px; right:8px; bottom:5px; font-size:4.5px; letter-spacing:0.1em;"><span>5</span><span></span></div>
+    </div>
+    <div class="sheet" style="left:858px; top:44px; width:72px; height:168px;">
+      <div style="position:absolute; inset:8px 8px 16px;"><div class="plate cool" style="height:40px;"></div><div class="btext" style="font-size:5px; line-height:7px; margin-top:5px;">for three hours. Ramp one held a hundred and thirty degrees an hour to 600°C</div></div>
+      <div class="pfoot" style="left:8px; right:8px; bottom:5px; font-size:4.5px; letter-spacing:0.1em;"><span></span><span>6</span></div>
+    </div>
+    <div class="sheet" style="left:942px; top:44px; width:72px; height:168px;">
+      <div style="position:absolute; inset:8px 8px 16px;"><div class="btext" style="font-size:5px; line-height:7px;">without complaint, front and back within four degrees of each other for the whole of it. Ramp two ran faster</div></div>
+      <div class="pfoot" style="left:8px; right:8px; bottom:5px; font-size:4.5px; letter-spacing:0.1em;"><span>7</span><span></span></div>
+    </div>
+    <div class="sheet" style="left:1026px; top:44px; width:72px; height:168px;">
+      <div style="position:absolute; inset:8px 8px 16px;"><div class="plate moss" style="height:40px;"></div><div class="btext" style="font-size:5px; line-height:7px; margin-top:5px;">than asked. The panel read two hundred and five degrees an hour where</div></div>
+      <div class="pfoot" style="left:8px; right:8px; bottom:5px; font-size:4.5px; letter-spacing:0.1em;"><span></span><span>8</span></div>
+    </div>
+    <div class="sheet" style="left:1110px; top:44px; width:72px; height:168px;">
+      <div style="position:absolute; inset:8px 8px 16px;"><div class="btext" style="font-size:5px; line-height:7px;">the schedule said one hundred and eighty.</div><div class="slug" style="font-size:5px; margin-top:5px;">Continues on 10.</div></div>
+      <div class="pfoot" style="left:8px; right:8px; bottom:5px; font-size:4.5px; letter-spacing:0.1em;"><span>9</span><span></span></div>
+    </div>
+
+    <!-- the break itself, at reading size -->
+    <div class="sheet" style="left:40px; top:296px; width:520px; height:294px;">
+      <div style="position:absolute; left:34px; right:26px; top:26px; bottom:34px;">
+        <div class="slabel" style="font-size:14px; line-height:17px;">Firing log — cone 6 oxidation</div>
+        <div class="prov" style="font-size:7px; margin-top:6px;">STUDIO LOG · 1 PLACEMENT</div>
+        <div class="hair" style="margin-top:9px;"></div>
+        <div style="display:flex; gap:24px; margin-top:11px;">
+          <div class="btext" style="flex:1; min-width:0; font-size:10.5px; line-height:16px;">
+            <p>Ramp two ran faster than asked. The panel read two hundred and five
+            degrees an hour where the schedule said one hundred and eighty, and by the
+            time it was noticed the back of the chamber was already twelve degrees
+            ahead of the front.</p>
+            <p>The soak at the top was stretched to twenty minutes rather than</p>
+          </div>
+          <div class="btext" style="flex:1; min-width:0; font-size:10.5px; line-height:16px;">
+            <p style="text-indent:0;">fifteen, to bring the two ends level again
+            before the cooling was allowed to start. The door was left alone for a
+            further half hour after that, until the panel and the pyrometer on the far
+            wall finally agreed about what the chamber was doing, which they had not
+            done since the</p>
+          </div>
+        </div>
+      </div>
+      <div class="hairq" style="position:absolute; left:34px; right:26px; bottom:26px;"></div>
+      <div class="pfoot" style="left:34px; right:26px; bottom:10px; font-size:7px; letter-spacing:0.14em;"><span>STUDIO LOG</span><span>7</span></div>
+    </div>
+
+    <div class="sheet" style="left:600px; top:296px; width:520px; height:294px;">
+      <div style="position:absolute; left:26px; right:34px; top:26px; bottom:34px; display:flex; gap:24px;">
+        <div class="btext" style="flex:1; min-width:0; font-size:10.5px; line-height:16px;">
+          <p style="text-indent:0;">element change in February.</p>
+          <p>Cooling was slow on purpose: a crash to 900°C, a long hold there, then
+          free fall with both dampers shut and the spy holes plugged. Opened Thursday
+          morning at 60°C, warm enough to hold but not to hurry.</p>
+          <p>Everything came out. The beakers took</p>
+        </div>
+        <div class="btext" style="flex:1; min-width:0; font-size:10.5px; line-height:16px;">
+          <p style="text-indent:0;">the glaze evenly and the dishes are the best of
+          the year. Two tiles at the back of the second shelf ran glassy where the
+          same glaze stayed dry and matte at the front, which is the temperature
+          difference showing itself rather than the glaze misbehaving.</p>
+          <p>Next load: move the thermocouple.</p>
+        </div>
+      </div>
+      <div class="hairq" style="position:absolute; left:26px; right:34px; bottom:26px;"></div>
+      <div class="pfoot" style="left:26px; right:34px; bottom:10px; font-size:7px; letter-spacing:0.14em;"><span>8</span><span>STUDIO LOG</span></div>
+    </div>
+
+    <div class="mark" style="left:130px; top:12px;">01</div>
+    <div class="mark" style="left:320px; top:100px;">02</div>
+    <div class="mark" style="left:518px; top:0px;">03</div>
+    <div class="mark" style="left:722px; top:100px;">04</div>
+    <div class="mark" style="left:960px; top:20px;">05</div>
+    <div class="mark" style="left:1160px; top:220px;">06</div>
+    <div class="mark" style="left:566px; top:426px;">07</div>
+    <div class="mark" style="left:1126px; top:562px;">08</div>
+  </div>
+  <div class="folio">AP-01 → AP-02 → AP-03 · THE SAME SOURCES, MORE PAGES</div>
+</section>
+
+<!-- ==================== 22 · NOTES ON 20 ==================== -->
+<section class="slide">
+  <div class="running"><span>MIXED MEDIA · NOTES ON 20</span><span class="fig">21 / 23</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>Light · one sheet</b>The set fits a single sheet whole, so it gets one. No pagination chrome appears, because there is no sequence to move through. AP-01.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Growth promotes the form</b>When the same sources grow past what a sheet can hold, the reading becomes a leaf sequence. The promotion happens before anything is compressed, never after. AB-02.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Moderate · a spread</b>Facing leaves, each with its own folio, and a stated continuation. Source order is exactly the order it was in on the single sheet. AP-02.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Growth promotes again</b>Past the spread, the reading becomes an ordered run. Text keeps the same size and the same measure across every promotion; only the number of pages changes.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Dense · a page run</b>Ordered pages carry the material as far as it goes. This is the only capacity mechanism, and it scales to hundreds of sources without a change of grammar. AP-03.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>The run ends when the material does</b>The last page names its continuation or it does not exist. There is no final page of padding and no cover invented for the sequence.</span></div>
+    <div class="ann"><span class="n">07</span><span><b>The break at reading size</b>Here is what a page boundary actually looks like: a sentence stops at the foot of one page and resumes at the head of the next, at the same size, in the same measure, mid-clause.</span></div>
+    <div class="ann"><span class="n">08</span><span><b>Read in order, nothing is missing</b>Concatenate the pages and the source returns exactly — every word, every frame, once each. That is the whole test for pagination. AMG-01.</span></div>
+    <div class="ann"><span class="n">09</span><span><b>What is refused instead</b>Shrinking type, tightening the measure, clipping a frame, hiding an item behind a scroll, or summarising. Each is available and each is forbidden; more pages is the answer every time.</span></div>
+  </div>
+  <div class="folio">PAGINATION IS THE ONLY OVERFLOW CONTRACT</div>
+</section>
+
+<!-- ==================== 23 · LANDSCAPE READING UNIT ==================== -->
+<section class="slide">
+  <div class="running"><span>MIXED MEDIA · THE LANDSCAPE READING UNIT</span><span class="fig">22 / 23</span></div>
+
+  <div style="position:absolute; left:48px; right:48px; top:88px; height:330px;">
+
+    <!-- wide surface · landscape unit, three columns -->
+    <div style="position:absolute; left:0; top:0; width:420px;">
+      <div class="verdict keep" style="position:static; margin-bottom:12px;">Wide surface · three columns</div>
+      <div class="sheet" style="position:relative; left:0; top:0; width:420px; height:262px;">
+        <div style="position:absolute; left:24px; right:20px; top:20px; bottom:26px; display:flex; gap:14px;">
+          <div style="flex:1; min-width:0;"><div class="slabel" style="font-size:9px; line-height:11px;">Firing log</div><div class="hairq" style="margin-top:4px;"></div><div class="btext" style="font-size:6px; line-height:9px; margin-top:5px;">Loaded Tuesday evening: twenty-two shelves of test tiles and the four porcelain beakers. Candled at 95°C for three hours because the beakers were thrown on Sunday and still felt cool against the back of the hand, which is longer than the schedule asks for.</div></div>
+          <div style="flex:1; min-width:0;"><div class="btext" style="font-size:6px; line-height:9px;">Ramp one held a hundred and thirty degrees an hour to 600°C without complaint, front and back within four degrees of each other for the whole of it, which is better than this kiln usually manages and probably owes more to the weather than to</div></div>
+          <div style="flex:1; min-width:0;"><div class="plate warm" style="height:66px;"></div><div class="btext" style="font-size:6px; line-height:9px; margin-top:6px;">anything done at the controller. Ramp two ran faster than asked, and the soak was stretched to twenty minutes.</div></div>
+        </div>
+        <div class="pfoot" style="left:24px; right:20px; bottom:9px; font-size:5.5px; letter-spacing:0.12em;"><span>STUDIO LOG · KILN</span><span>6</span></div>
+      </div>
+    </div>
+
+    <!-- narrow surface · same landscape unit, two columns, one more page -->
+    <div style="position:absolute; left:452px; top:0; width:494px;">
+      <div class="verdict keep" style="position:static; margin-bottom:12px;">Narrow surface · two columns, one more page</div>
+      <div class="sheet" style="position:absolute; left:0; top:26px; width:230px; height:144px;">
+        <div style="position:absolute; left:16px; right:13px; top:14px; bottom:20px; display:flex; gap:11px;">
+          <div style="flex:1; min-width:0;"><div class="slabel" style="font-size:7px; line-height:9px;">Firing log</div><div class="hairq" style="margin-top:3px;"></div><div class="btext" style="font-size:5px; line-height:7.5px; margin-top:4px;">Loaded Tuesday evening: twenty-two shelves of test tiles and the four porcelain beakers. Candled at 95°C for three hours because the</div></div>
+          <div style="flex:1; min-width:0;"><div class="btext" style="font-size:5px; line-height:7.5px;">beakers were thrown on Sunday and still felt cool against the back of the hand. Ramp one held a hundred and thirty degrees an hour to</div></div>
+        </div>
+        <div class="pfoot" style="left:16px; right:13px; bottom:7px; font-size:5px; letter-spacing:0.1em;"><span>STUDIO LOG</span><span>6</span></div>
+      </div>
+      <div class="arrow" style="left:240px; top:98px; width:26px;"></div>
+      <div class="sheet" style="position:absolute; left:276px; top:56px; width:230px; height:144px;">
+        <div style="position:absolute; left:13px; right:16px; top:14px; bottom:20px; display:flex; gap:11px;">
+          <div style="flex:1; min-width:0;"><div class="btext" style="font-size:5px; line-height:7.5px;">600°C without complaint, front and back within four degrees of each other for the whole of it, which is better than this kiln usually</div></div>
+          <div style="flex:1; min-width:0;"><div class="plate warm" style="height:44px;"></div><div class="btext" style="font-size:5px; line-height:7.5px; margin-top:5px;">manages. Ramp two ran faster than asked.</div></div>
+        </div>
+        <div class="pfoot" style="left:13px; right:16px; bottom:7px; font-size:5px; letter-spacing:0.1em;"><span>7</span><span>KILN</span></div>
+      </div>
+    </div>
+
+    <!-- refused: a portrait book page substituted for the unit -->
+    <div style="position:absolute; left:976px; top:0; width:212px;">
+      <div class="verdict refuse" style="position:static; margin-bottom:12px;">Portrait book page</div>
+      <div style="position:relative; width:198px; height:262px; border:1px solid var(--invalid); padding:6px;">
+        <div class="sheet" style="position:absolute; left:6px; top:6px; width:184px; height:248px; box-shadow:none;">
+          <div style="position:absolute; left:16px; right:16px; top:16px; bottom:22px;">
+            <div class="slabel" style="font-size:7px; line-height:9px;">Firing log</div>
+            <div class="hairq" style="margin-top:3px;"></div>
+            <div class="btext" style="font-size:5px; line-height:7.5px; margin-top:4px;">Loaded Tuesday evening: twenty-two shelves of test tiles and the four porcelain beakers. Candled at 95°C for three hours because the beakers were thrown on Sunday and still felt cool against the back of the hand. Ramp one held a hundred and thirty degrees an hour to 600°C without complaint, front and back within four degrees of each other for the whole of it.</div>
+          </div>
+          <div class="pfoot" style="left:16px; right:16px; bottom:8px; font-size:5px; letter-spacing:0.1em;"><span>STUDIO LOG</span><span>6</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="position:absolute; left:48px; right:48px; top:452px; bottom:64px; padding-top:22px; border-top:1px solid var(--hairline);">
+    <div style="display:grid; grid-template-columns:repeat(3, 1fr); column-gap:56px;">
+      <div class="ann"><span class="n">01</span><span><b>The unit is landscape at every tier</b>Brochure, pamphlet, and magazine all read on a landscape sheet. That geometry is what gives column systems, complete image frames, explicit gutters, and room to continue.</span></div>
+      <div class="ann"><span class="n">02</span><span><b>A narrow surface reflows</b>It changes the column count, adds pages, or advances horizontally. The material, the measure, and the type size are the same as they were on the wide surface.</span></div>
+      <div class="ann"><span class="n">03</span><span><b>It never becomes a portrait book</b>Substituting a portrait page changes the reading grammar rather than reflowing it — a different form pretending to be the same one. Refused at every tier and in every vertical.</span></div>
+    </div>
+  </div>
+  <div class="folio">D-ANNOTATION-03 · ALL NINE FORMS USE A LANDSCAPE READING UNIT</div>
+</section>
+
+<!-- ==================== 24 · REFUSALS ==================== -->
+<section class="slide">
+  <div class="running"><span>MIXED MEDIA · REFUSALS</span><span class="fig">23 / 23</span></div>
+
+  <div style="position:absolute; left:48px; right:48px; top:88px; height:250px;">
+
+    <div style="position:absolute; left:0; top:0; width:350px;">
+      <div class="verdict refuse" style="position:static; margin-bottom:10px;">Type shrunk to save a page</div>
+      <div style="border:1px solid var(--invalid); padding:5px;">
+        <div class="sheet" style="position:relative; width:338px; height:186px; box-shadow:none;">
+          <div style="position:absolute; left:14px; right:14px; top:12px; bottom:16px; display:flex; gap:9px;">
+            <div style="flex:1; min-width:0;" class="btext"><span style="font-size:3.4px; line-height:4.6px; display:block;">Loaded Tuesday evening: twenty-two shelves of test tiles, the four porcelain beakers, and the two press-moulded dishes that have been waiting since March. Candled at 95°C for three hours because the beakers were thrown on Sunday and still felt cool against the back of the hand. Ramp one held a hundred and thirty degrees an hour to 600°C without complaint, front and back within four degrees of each other for the whole of it.</span></div>
+            <div style="flex:1; min-width:0;" class="btext"><span style="font-size:3.4px; line-height:4.6px; display:block;">Ramp two ran faster than asked. The panel read two hundred and five degrees an hour where the schedule said one hundred and eighty, and by the time it was noticed the back of the chamber was already twelve degrees ahead of the front. The soak at the top was stretched to twenty minutes rather than fifteen to bring the two ends level again before the cooling was allowed to start.</span></div>
+            <div style="flex:1; min-width:0;" class="btext"><span style="font-size:3.4px; line-height:4.6px; display:block;">Cooling was slow on purpose: a crash to 900°C, a long hold there, then free fall with both dampers shut and the spy holes plugged. Opened Thursday morning at 60°C, warm enough to hold but not to hurry. Everything came out. The beakers took the glaze evenly and the dishes are the best of the year.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="position:absolute; left:392px; top:0; width:350px;">
+      <div class="verdict refuse" style="position:static; margin-bottom:10px;">Frame cropped to fit a slot</div>
+      <div style="border:1px solid var(--invalid); padding:5px;">
+        <div class="sheet" style="position:relative; width:338px; height:186px; box-shadow:none;">
+          <div style="position:absolute; left:22px; right:22px; top:24px;">
+            <div style="position:relative; height:110px;">
+              <div style="position:absolute; left:0; top:0; width:294px; height:110px; border:1px dashed rgba(226,98,92,0.8);"></div>
+              <div class="plate warm" style="position:absolute; left:92px; top:0; width:110px; height:110px;"></div>
+            </div>
+            <div class="cap" style="font-size:7px; line-height:10px; margin-top:9px;">Iron saturate over porcelain, second shelf</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="position:absolute; right:0; top:0; width:350px;">
+      <div class="verdict refuse" style="position:static; margin-bottom:10px;">Headline and label invented</div>
+      <div style="border:1px solid var(--invalid); padding:5px;">
+        <div class="sheet" style="position:relative; width:338px; height:186px; box-shadow:none;">
+          <div style="position:absolute; left:22px; right:22px; top:20px; bottom:26px;">
+            <div class="slabel" style="font-size:15px; line-height:18px; color:#9B3F3C;">The second shelf ran hotter</div>
+            <div class="hair" style="margin-top:9px;"></div>
+            <div class="btext" style="font-size:8px; line-height:12px; margin-top:10px;">than the first the whole way through. Tiles nearest the back wall went glassy where the same glaze on the front shelf stayed dry and matte. Worth moving the thermocouple next time rather than trusting the readout.</div>
+          </div>
+          <div class="pfoot" style="left:22px; right:22px; bottom:10px; font-size:6.5px; letter-spacing:0.14em; color:#9B3F3C;"><span>KILN</span><span>NOTE 01</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="position:absolute; left:48px; right:48px; top:378px; bottom:60px; padding-top:24px; border-top:1px solid var(--hairline);">
+    <div style="display:grid; grid-template-columns:repeat(3, 1fr); column-gap:56px; row-gap:26px;">
+      <div class="ann"><span class="n" style="color:var(--invalid);">×</span><span><b>No shrinking to fit</b>Type never goes below the readable measure to save a page. More material means more pages — at every tier, on every surface.</span></div>
+      <div class="ann"><span class="n" style="color:var(--invalid);">×</span><span><b>No cropping, no upscaling</b>A frame keeps its complete edges and its own proportion. An image that cannot support an area gets a smaller one, never a trimmed one.</span></div>
+      <div class="ann"><span class="n" style="color:var(--invalid);">×</span><span><b>No invented identity</b>No generated title, no headline lifted from a first sentence, no caption made from a file name, no page label like "Note 01".</span></div>
+      <div class="ann"><span class="n" style="color:var(--invalid);">×</span><span><b>No empty template chrome</b>A text-only group gets no empty image slot; a panel with nothing left to say stays empty rather than being filled with a label.</span></div>
+      <div class="ann"><span class="n" style="color:var(--invalid);">×</span><span><b>No merged voices</b>Sources sharing a page keep separate labels, provenance, and routes. Nothing is reordered, combined, or summarised to make a page compose better.</span></div>
+      <div class="ann"><span class="n" style="color:var(--invalid);">×</span><span><b>No audio, video, PDF, or EPUB</b>Notes, Documents, Images, and GIFs are the supported material. Unsupported forms never appear as a greyed option or a broken frame.</span></div>
+    </div>
+  </div>
+  <div class="folio">END · MIXED MEDIA</div>
+</section>
+
+</body>
+</html>

@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Text led</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/catalogue.css">
+<style>
+  /* ---- deck-local: paper pages in newspaper grammar ----
+     Every page scales from one font-size on .sheet; all interior
+     measures are em, so one number reproduces a whole page larger
+     or smaller without restyling it. */
+
+  .sheet {
+    position: relative;
+    background: var(--paper);
+    color: var(--paper-ink);
+    display: flex;
+    font-family: var(--f-ui);
+  }
+  .leaf {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 2.4em 2.4em 1.2em;
+  }
+  .gut { flex: none; position: relative; }
+  .gut::before {
+    content: "";
+    position: absolute;
+    left: 50%; top: 2.4em; bottom: 2.4em;
+    width: 1px;
+    background: rgba(26, 26, 26, 0.20);
+  }
+
+  .toprule { flex: none; height: 2px; background: var(--paper-ink); margin-bottom: 0.9em; }
+  .toprule.thin { height: 1px; background: rgba(26, 26, 26, 0.55); }
+
+  .flow {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    column-gap: 1.7em;
+    column-rule: 1px solid rgba(26, 26, 26, 0.16);
+  }
+  .c1 { column-count: 1; }
+  .c2 { column-count: 2; }
+  .c3 { column-count: 3; }
+
+  .src { margin-bottom: 1.1em; }
+  .srchead {
+    break-inside: avoid;
+    break-after: avoid;
+    padding-left: 0.65em;
+    border-left: 2px solid rgba(49, 74, 117, 0.62);
+    margin-bottom: 0.55em;
+  }
+  .hl {
+    font-family: var(--f-display);
+    font-weight: 500;
+    font-size: 1.85em;
+    line-height: 1.04;
+    letter-spacing: 0.005em;
+  }
+  .prov {
+    font-family: var(--f-mono);
+    font-size: 0.66em;
+    font-weight: 500;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: rgba(49, 74, 117, 0.88);
+    margin-top: 0.4em;
+  }
+  .bd p {
+    font-size: 1em;
+    line-height: 1.62;
+    text-align: justify;
+    hyphens: auto;
+    color: rgba(26, 26, 26, 0.90);
+  }
+  .bd p + p { text-indent: 1.15em; }
+  /* a heading the source itself carries — never one written for it */
+  .sub {
+    font-family: var(--f-display);
+    font-weight: 500;
+    font-size: 1.2em;
+    line-height: 1.2;
+    letter-spacing: 0.03em;
+    margin: 0.8em 0 0.3em;
+    break-after: avoid;
+  }
+  .bd .sub + p { text-indent: 0; }
+
+  .cont {
+    font-family: var(--f-mono);
+    font-size: 0.66em;
+    font-weight: 500;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: rgba(26, 26, 26, 0.52);
+  }
+  .cont.lead { display: block; margin-bottom: 0.5em; break-after: avoid; }
+  .cont.tail { display: block; margin-top: 0.5em; break-before: avoid; }
+
+  .foot {
+    flex: none;
+    margin-top: 0.9em;
+    padding-top: 0.45em;
+    border-top: 1px solid rgba(26, 26, 26, 0.32);
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--f-mono);
+    font-size: 0.66em;
+    font-weight: 500;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: rgba(26, 26, 26, 0.55);
+  }
+
+  /* a complete supporting frame inside a text page — never a slot */
+  .figure { break-inside: avoid; margin-bottom: 0.8em; }
+  .figure .fr { width: 100%; }
+  .figure .cap {
+    font-family: var(--f-mono);
+    font-size: 0.66em;
+    letter-spacing: 0.1em;
+    color: rgba(26, 26, 26, 0.6);
+    margin-top: 0.4em;
+  }
+
+  /* route chips shown on the piece a person is pointing at */
+  .routes { display: flex; gap: 0.4em; margin-top: 0.55em; break-inside: avoid; }
+  .routes span {
+    font-family: var(--f-ui);
+    font-size: 0.68em;
+    color: rgba(49, 74, 117, 0.95);
+    border: 1px solid rgba(49, 74, 117, 0.42);
+    border-radius: var(--r);
+    padding: 0.15em 0.5em;
+    white-space: nowrap;
+  }
+
+  /* ---- Grid context context + the local reading surface ---- */
+  .grid-context {
+    position: relative;
+    width: 100%; height: 100%;
+    background-color: var(--canvas);
+    background-image:
+      linear-gradient(rgba(38,38,42,0.85) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(38,38,42,0.85) 1px, transparent 1px);
+    background-size: 70px 70px;
+    border: 1px solid var(--hairline);
+    border-radius: var(--r);
+    overflow: hidden;
+  }
+  .srccard { position: absolute; background: var(--paper); padding: 7px; }
+  .srccard i { display: block; height: 2px; background: rgba(26,26,26,0.24); margin-bottom: 4px; }
+  .reader {
+    position: absolute;
+    background: var(--surface);
+    border: 1px solid var(--view-border);
+    border-radius: var(--r);
+    padding: 14px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+  }
+  .rhead { display: flex; justify-content: space-between; align-items: baseline; }
+  .rtitle { font-family: var(--f-ui); font-size: 13px; color: var(--text); }
+  .rstatus {
+    font-family: var(--f-mono); font-size: 9.5px; letter-spacing: 0.06em;
+    color: rgba(234,234,234,0.45); margin: 3px 0 10px;
+  }
+  .rbtn {
+    font-family: var(--f-ui); font-size: 11px; color: var(--view);
+    border: 1px solid rgba(234,234,234,0.18); background: var(--canvas);
+    border-radius: var(--r); padding: 3px 9px;
+  }
+  .rfoot { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+  .pager { font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.14em; color: rgba(234,234,234,0.6); }
+  .step {
+    font-family: var(--f-mono); font-size: 11px; color: rgba(234,234,234,0.7);
+    border: 1px solid rgba(234,234,234,0.18); border-radius: var(--r); padding: 1px 7px;
+  }
+
+  /* ---- catalogue-layer helpers ---- */
+  .lbl {
+    font-family: var(--f-mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.24em; text-transform: uppercase; color: var(--ann);
+  }
+  .lbl.on { color: var(--ann-strong); }
+  .why {
+    font-family: var(--f-mono); font-size: 10px; line-height: 1.8;
+    letter-spacing: 0.02em; color: var(--ann);
+  }
+  .band {
+    position: absolute; top: 88px; left: 48px; right: 48px; bottom: 60px;
+  }
+  .eq {
+    font-family: var(--f-mono); font-size: 11.5px; line-height: 2.05;
+    letter-spacing: 0.02em; color: var(--ann-strong);
+  }
+  .eq em { font-style: normal; color: var(--interaction); }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); column-gap: 32px; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); column-gap: 64px; }
+</style>
+</head>
+<body>
+
+<!-- ============================ 01 · COVER ============================ -->
+<section class="slide cover">
+  <div class="running"><span>GROVE · DESIGN CATALOGUE</span><span class="fig">06</span></div>
+  <div class="plane">INFORMATION PLANE · READING VERTICAL</div>
+  <h1>Text<br>led</h1>
+  <div class="rule"></div>
+  <div class="scope">
+    Tier 01 bulletin · Tier 02 Berliner / compact · Tier 03 broadsheet ·
+    Nine layout families · Capacity and routing · Continuation ·
+    Reflow · Refusals
+  </div>
+  <div class="folio">SOURCE: TEXT-LED PHYSICAL FORMS · D-ANNOTATION-03 · DESIGN.MD (ALPHA)</div>
+</section>
+
+<!-- ============================ 02 · PLATE · THE READING IN PLACE ============================ -->
+<section class="slide">
+  <div class="running"><span>TEXT LED · THE READING IN PLACE</span><span class="fig">01 / 16</span></div>
+
+  <div class="stage bleed">
+    <div class="grid-context">
+      <!-- source placements the reading was gathered from -->
+      <div class="srccard" style="left:52px; top:150px; width:118px;">
+        <i style="width:74%"></i><i style="width:96%"></i><i style="width:88%"></i><i style="width:60%"></i><i style="width:0"></i>
+      </div>
+      <div class="srccard" style="left:112px; top:262px; width:104px;">
+        <i style="width:88%"></i><i style="width:70%"></i><i style="width:94%"></i><i style="width:0"></i>
+      </div>
+      <div class="srccard" style="left:36px; top:372px; width:132px;">
+        <i style="width:92%"></i><i style="width:64%"></i><i style="width:86%"></i><i style="width:78%"></i><i style="width:0"></i>
+      </div>
+      <div style="position:absolute; left:150px; top:474px; width:96px; height:54px; background:#1C1C20; border:1px solid var(--hairline);"></div>
+
+      <!-- the reading, open beside the material -->
+      <div class="reader" style="left:296px; top:16px; width:760px;">
+        <div class="rhead">
+          <div class="rtitle">Bulletin reading</div>
+          <div class="rbtn">Pin reading</div>
+        </div>
+        <div class="rstatus">6 pieces gathered nearby</div>
+
+        <div class="sheet" style="width:732px; height:457px; font-size:8px;">
+          <div class="leaf">
+            <div class="toprule"></div>
+            <div class="flow c3">
+              <div class="src">
+                <div class="srchead">
+                  <div class="hl">Harbor archive — first pass</div>
+                  <div class="prov">Field notes · 2 placements</div>
+                </div>
+                <div class="bd">
+                  <p>The harbor office kept two sets of books. One recorded arrivals, the other recorded repairs, and after 1931 the two stop agreeing with each other.</p>
+                  <p>The disagreement is the useful part. It dates the year the second pier was rebuilt, which none of the surviving photographs establish on their own.</p>
+                  <p>Everything before that year reads as one continuous account. Everything after has to be assembled from the repair book, the county ledger, and whatever the pilot station chose to write down that week.</p>
+                  <p>The second pier appears in the repair book eleven times before it appears in the arrivals book once. Whatever it was used for in those years, it was not receiving traffic.</p>
+                  <p>Two hands wrote the arrivals book. The first is careful and abbreviates nothing. The second writes fast and drops the vessel class entirely after 1936.</p>
+                  <p>There is a third hand in the margins of both books, later, in pencil. It corrects dates and nothing else, and it is almost certainly an archivist rather than a clerk.</p>
+                </div>
+              </div>
+              <div class="src">
+                <div class="srchead"><div class="prov">Field notes · 1 placement</div></div>
+                <div class="bd">
+                  <p>Four months of 1938 are missing from both books, and the gap sits exactly where the storm damage should be.</p>
+                  <p>A lost volume is the likeliest explanation. The archivist thinks the binder was never returned after the county borrowed it, and that it may still be in a box in the annex.</p>
+                  <p>Weather is recorded only when it stopped work. A quiet year in these books is not a quiet year on the water.</p>
+                </div>
+              </div>
+              <div class="src">
+                <div class="srchead">
+                  <div class="hl">Tide tables, 1912–1948</div>
+                  <div class="prov">Archive · 1 placement</div>
+                </div>
+                <div class="bd">
+                  <p>Tide tables were printed locally until 1948, when the county took the work over.</p>
+                  <p>The local printings carry marginal notes in at least three hands, two of them dated. The third appears only beside the spring tides and is probably the harbormaster's own.</p>
+                  <p>This is the only run in the set that is complete from start to finish, and that completeness is what makes the gaps elsewhere legible.</p>
+                  <p>Photographs are dated by the pier, not by the caption. Captions were added in the 1970s by someone working from memory.</p>
+                  <p>They are wrong often enough that they cannot stand as evidence on their own, though they are rarely wrong by more than a few years.</p>
+                </div>
+              </div>
+              <div class="src">
+                <div class="srchead">
+                  <div class="hl">Letters from the pilot station</div>
+                  <div class="prov">Archive · 3 placements</div>
+                </div>
+                <div class="bd">
+                  <p>The pilot station letters are the only place where the crews are named. Sixty-one names across nine years, most of them appearing once.</p>
+                  <p>Where a name repeats it usually belongs to a family rather than to a person. Three generations of Ellises appear between 1912 and 1940 without a single first name written the same way twice.</p>
+                  <p>The letters use a house style that changes twice. Salutations are formal until 1921, plain until 1934, and formal again after the station changed hands.</p>
+                  <p>That change is the clearest dating tool in the whole set, and it is worth checking against the repair book before trusting it.</p>
+                </div>
+                <div class="routes"><span>Grid placement</span><span>Core Memory</span><span>Writing Slate</span></div>
+              </div>
+              <div class="src">
+                <div class="srchead"><div class="prov">Drafts · 1 placement</div></div>
+                <div class="bd">
+                  <p>Ask about the missing quarter before ordering copies. If the volume turns up it changes the order of everything after it, and there is no point paying for pages twice.</p>
+                  <p>Copy order: the repair book first, then the tide tables, then the letters. The letters are fragile and the reading room will only bring out one box a day.</p>
+                </div>
+              </div>
+              <div class="src">
+                <div class="srchead">
+                  <div class="hl">County ledger, 1908–1952</div>
+                  <div class="prov">Archive · 1 placement</div>
+                </div>
+                <div class="bd">
+                  <p>The county ledger is the only source in the set that gives money. It is also the only one that survives complete, which is a warning about what survives and why.</p>
+                  <p>It records a payment for timber in the quarter the letters describe a fire, larger than any other timber entry in the decade.</p>
+                  <p>That is not proof. It is the kind of agreement between two indifferent sources that is worth writing down and returning to.</p>
+                </div>
+              </div>
+            </div>
+            <div class="foot"><span>Field notes · Archive · Drafts</span><span>1 / 1</span></div>
+          </div>
+        </div>
+
+        <div class="rfoot">
+          <div class="qk">Esc closes · P pins</div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="step">‹</div>
+            <div class="pager">1 / 1</div>
+            <div class="step">›</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mark" style="left:316px; top:78px;">1</div>
+      <div class="mark" style="left:270px; top:296px;">2</div>
+      <div class="mark" style="left:196px; top:262px;">3</div>
+      <div class="mark" style="left:430px; top:22px;">4</div>
+      <div class="mark" style="left:524px; top:44px;">5</div>
+      <div class="mark" style="left:1002px; top:536px;">6</div>
+      <div class="mark" style="left:943px; top:214px;">7</div>
+      <div class="mark" style="left:332px; top:492px;">8</div>
+    </div>
+  </div>
+  <div class="folio">STATE: AT-01 · TIER 01 BULLETIN, OPEN</div>
+</section>
+
+<!-- ============================ 03 · NOTES ON 01 ============================ -->
+<section class="slide">
+  <div class="running"><span>TEXT LED · NOTES ON 01</span><span class="fig">01 / 16</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>Paper, at reading size</b>A reading is a printed page, not a panel of text. Paper fill, ink text, a measure a person can actually read across, and a steady line rhythm all three forms share.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Looking, not editing</b>The 1px #3F5F8A border is the View role. Nothing on this page changes a source; every action it offers takes you to the source instead.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Beside the material</b>The reading opens next to the pieces it gathered. The Grid context behind stays lit and every original stays where it was placed.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>The form is named, once</b>The name sits in the chrome, never on the page. The page itself has no nameplate, no masthead, and no issue line — those belong to a publication, and this is a set of someone's own pieces.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>What was gathered</b>One quiet line states how many pieces are in the reading. It is a count, not a summary: nothing is described on the person's behalf.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Pages, not scroll</b>The reading advances page by page. A single sheet reads 1 / 1; more material makes more pages, and the count is always visible before the first move.</span></div>
+    <div class="ann"><span class="n">07</span><span><b>Routes on the piece</b>Pointing at a piece reveals where it came from: Grid placement, Core Memory, Writing Slate — Image Viewer when the piece is an image. Four destinations, never inferred from the kind alone.</span></div>
+    <div class="ann"><span class="n">08</span><span><b>Footer note</b>The foot carries the Layers on the page and the page number, the way a magazine carries its folio. Provenance is the page's only running text.</span></div>
+  </div>
+  <div class="folio">FIG 01 · SEE ALSO FIG 13 · REFLOW</div>
+</section>
+
+<!-- ============================ 04 · PLATE · TIER 01 BULLETIN ============================ -->
+<section class="slide">
+  <div class="running"><span>TEXT LED · TIER 01 · BULLETIN</span><span class="fig">02 / 16</span></div>
+
+  <div class="stage bleed">
+    <div class="sheet" style="position:absolute; left:115px; top:0; width:954px; height:596px; font-size:10.5px;">
+      <div class="leaf">
+        <div class="toprule"></div>
+        <div class="flow c3">
+          <div class="src">
+            <div class="srchead">
+              <div class="hl">Harbor archive — first pass</div>
+              <div class="prov">Field notes · 2 placements</div>
+            </div>
+            <div class="bd">
+              <p>The harbor office kept two sets of books. One recorded arrivals, the other recorded repairs, and after 1931 the two stop agreeing with each other.</p>
+              <p>The disagreement is the useful part. It dates the year the second pier was rebuilt, which none of the surviving photographs establish on their own.</p>
+              <p>Everything before that year reads as one continuous account. Everything after has to be assembled from the repair book, the county ledger, and whatever the pilot station chose to write down that week.</p>
+              <p>The second pier appears in the repair book eleven times before it appears in the arrivals book once. Whatever it was used for in those years, it was not receiving traffic.</p>
+              <p>Two hands wrote the arrivals book. The first is careful and abbreviates nothing. The second writes fast and drops the vessel class entirely after 1936.</p>
+              <p>There is a third hand in the margins of both books, later, in pencil. It corrects dates and nothing else, and it is almost certainly an archivist rather than a clerk.</p>
+            </div>
+          </div>
+          <div class="src">
+            <div class="srchead"><div class="prov">Field notes · 1 placement</div></div>
+            <div class="bd">
+              <p>Four months of 1938 are missing from both books, and the gap sits exactly where the storm damage should be.</p>
+              <p>A lost volume is the likeliest explanation. The archivist thinks the binder was never returned after the county borrowed it, and that it may still be in a box in the annex.</p>
+              <p>Weather is recorded only when it stopped work. A quiet year in these books is not a quiet year on the water.</p>
+            </div>
+          </div>
+          <div class="src">
+            <div class="srchead">
+              <div class="hl">Tide tables, 1912–1948</div>
+              <div class="prov">Archive · 1 placement</div>
+            </div>
+            <div class="bd">
+              <p>Tide tables were printed locally until 1948, when the county took the work over.</p>
+              <p>The local printings carry marginal notes in at least three hands, two of them dated. The third appears only beside the spring tides and is probably the harbormaster's own.</p>
+              <p>This is the only run in the set that is complete from start to finish, and that completeness is what makes the gaps elsewhere legible.</p>
+              <p>Photographs are dated by the pier, not by the caption. Captions were added in the 1970s by someone working from memory.</p>
+              <p>They are wrong often enough that they cannot stand as evidence on their own, though they are rarely wrong by more than a few years.</p>
+            </div>
+          </div>
+          <div class="src">
+            <div class="srchead">
+              <div class="hl">Letters from the pilot station</div>
+              <div class="prov">Archive · 3 placements</div>
+            </div>
+            <div class="bd">
+              <p>The pilot station letters are the only place where the crews are named. Sixty-one names across nine years, most of them appearing once.</p>
+              <p>Where a name repeats it usually belongs to a family rather than to a person. Three generations of Ellises appear between 1912 and 1940 without a single first name written the same way twice.</p>
+              <p>The letters use a house style that changes twice. Salutations are formal until 1921, plain until 1934, and formal again after the station changed hands.</p>
+              <p>That change is the clearest dating tool in the whole set, and it is worth checking against the repair book before trusting it.</p>
+            </div>
+          </div>
+          <div class="src">
+            <div class="srchead"><div class="prov">Drafts · 1 placement</div></div>
+            <div class="bd">
+              <p>Ask about the missing quarter before ordering copies. If the volume turns up it changes the order of everything after it, and there is no point paying for pages twice.</p>
+              <p>Copy order: the repair book first, then the tide tables, then the letters. The letters are fragile and the reading room will only bring out one box a day.</p>
+            </div>
+          </div>
+          <div class="src">
+            <div class="srchead">
+              <div class="hl">County ledger, 1908–1952</div>
+              <div class="prov">Archive · 1 placement</div>
+            </div>
+            <div class="bd">
+              <p>The county ledger is the only source in the set that gives money. It is also the only one that survives complete, which is a warning about what survives and why.</p>
+              <p>It records a payment for timber in the quarter the letters describe a fire, larger than any other timber entry in the decade.</p>
+              <p>That is not proof. It is the kind of agreement between two indifferent sources that is worth writing down and returning to.</p>
+            </div>
+          </div>
+        </div>
+        <div class="foot"><span>Field notes · Archive · Drafts</span><span>1 / 1</span></div>
+      </div>
+    </div>
+
+    <div class="mark" style="left:1012px; top:18px;">1</div>
+    <div class="mark" style="left:400px; top:38px;">2</div>
+    <div class="mark" style="left:428px; top:280px;">3</div>
+    <div class="mark" style="left:116px; top:44px;">4</div>
+    <div class="mark" style="left:734px; top:400px;">5</div>
+    <div class="mark" style="left:150px; top:530px;">6</div>
+    <div class="mark" style="left:1008px; top:530px;">7</div>
+  </div>
+  <div class="folio">STATE: AT-01 · 1.0 ≤ D &lt; 1.75 · ONE SHEET, NO THREAD</div>
+</section>
+
+<!-- ============================ 05 · NOTES ON 02 ============================ -->
+<section class="slide">
+  <div class="running"><span>TEXT LED · NOTES ON 02</span><span class="fig">02 / 16</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>The page opens with a rule</b>A real bulletin may carry a small publication mark. Grove's does not: a nameplate would name a publication that does not exist. The live area starts at a rule and nothing else.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>A name only if the piece has one</b>The heading is the Document's own title, carried through unchanged. Nothing is generated — no headline written for the material, no standfirst summarising what follows.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Three measures on one sheet</b>One, two, or three readable measures; a fourth only while the line stays comfortable. Columns are a reading device — they set line length and the order a person moves in, not decoration.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Where one piece ends</b>A short rule in the source tint marks every boundary. Independent pieces sit on one sheet without being concatenated into a single article.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Justified, baseline-aligned</b>Every column sits on the same baseline across the sheet, so the eye crosses the gutter without re-finding the line. Body type is UI type; the reading voice never changes between forms.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Footer note names the Layers</b>The foot states which Layers the sheet drew from. It identifies provenance; it never titles the sheet.</span></div>
+    <div class="ann"><span class="n">07</span><span><b>1 / 1 — it ends here</b>A bulletin is one sheet: short items, or one short piece, read together without a second leaf. The last column may end early. Material that needs a thread is not a bulletin.</span></div>
+    <div class="ann"><span class="n">08</span><span><b>Bulletin is a grammar, not a paper size</b>The name describes how the page behaves — one sheet, few measures, no continuation — not 470mm of newsprint. The reading unit stays landscape and proportional to the room it has.</span></div>
+  </div>
+  <div class="folio">FIG 02 · SIX PIECES · D = 1.42</div>
+</section>
+
+<!-- ============================ 06 · PLATE · TIER 01 LAYOUT FAMILIES ============================ -->
+<section class="slide">
+  <div class="running"><span>TEXT LED · TIER 01 · LAYOUT FAMILIES</span><span class="fig">03 / 16</span></div>
+
+  <div class="stage bleed">
+    <!-- T1-A · single measure bulletin -->
+    <div class="sheet" style="position:absolute; left:0; top:30px; width:381px; height:238px; font-size:6px;">
+      <div class="leaf">
+        <div class="toprule"></div>
+        <div class="flow c1">
+          <div style="max-width:56%; margin:0 auto;">
+            <div class="src">
+              <div class="srchead">
+                <div class="hl">Harbor archive — first pass</div>
+                <div class="prov">Field notes · 2 placements</div>
+              </div>
+              <div class="bd">
+                <p>The harbor office kept two sets of books. One recorded arrivals, the other recorded repairs, and after 1931 the two stop agreeing with each other.</p>
+                <p>The disagreement is the useful part. It dates the year the second pier was rebuilt, which none of the surviving photographs establish on their own.</p>
+                <p>Everything before that year reads as one continuous account. Everything after has to be assembled from the repair book, the county ledger, and whatever the pilot station chose to write down that week.</p>
+                <p>The second pier appears in the repair book eleven times before it appears in the arrivals book once. Whatever it was used for in those years, it was not receiving traffic.</p>
+                <p>Two hands wrote the arrivals book. The first is careful and abbreviates nothing. The second writes fast and drops the vessel class entirely after 1936.</p>
+                <p>There is a third hand in the margins of both books, later, in pencil. It corrects dates and nothing else, and it is almost certainly an archivist rather than a clerk.</p>
+                <p>What is missing is consistent: anything that would have shown fault. No source here explains the 1938 gap, and the silence is the same silence in every hand.</p>
+                <p>Nothing in the set is a copy of anything else. Every hand is writing from its own position, and the disagreements are the evidence rather than the noise.</p>
+                <p>End of the first pass. Everything above is what the material says; what it means can wait until the annex boxes have been opened.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="foot"><span>Field notes</span><span>1 / 1</span></div>
+      </div>
+    </div>
+
+    <!-- T1-B · two measure bulletin -->
+    <div class="sheet" style="position:absolute; left:401px; top:190px; width:381px; height:238px; font-size:6px;">
+      <div class="leaf">
+        <div class="toprule"></div>
+        <div class="flow c2">
+          <div class="src">
+            <div class="srchead"><div class="prov">Field notes · 1 placement</div></div>
+            <div class="bd">
+              <p>Four months of 1938 are missing from both books, and the gap sits exactly where the storm damage should be.</p>
+              <p>A lost volume is the likeliest explanation. The archivist thinks the binder was never returned after the county borrowed it, and that it may still be in a box in the annex.</p>
+              <p>Weather is recorded only when it stopped work. A quiet year in these books is not a quiet year on the water.</p>
+              <p>Ask about the missing quarter before ordering copies. If the volume turns up it changes the order of everything after it, and there is no point paying for pages twice.</p>
+              <p>Assume two visits. One to find the boxes, one to read them, and no photography until the second.</p>
+            </div>
+          </div>
+          <div class="src">
+            <div class="srchead">
+              <div class="hl">Tide tables, 1912–1948</div>
+              <div class="prov">Archive · 1 placement</div>
+            </div>
+            <div class="bd">
+              <p>Tide tables were printed locally until 1948, when the county took the work over.</p>
+              <p>The local printings carry marginal notes in at least three hands, two of them dated. The third appears only beside the spring tides and is probably the harbormaster's own.</p>
+              <p>This is the only run in the set that is complete from start to finish, and that completeness is what makes the gaps elsewhere legible.</p>
+              <p>Nothing here needs to be transcribed in full. The books are useful as runs, and only the marginal notes reward word-for-word copying.</p>
+              <p>The marginal notes are also the most fragile part of the set, written in pencil on paper that has already been handled for a century.</p>
+              <p>Nothing in the set is a copy of anything else. Every hand is writing from its own position, and the disagreements are the evidence rather than the noise.</p>
+              <p>Photographs are dated by the pier, not by the caption. Captions were added in the 1970s by someone working from memory, and they are wrong often enough that they cannot stand as evidence on their own.</p>
+            </div>
+          </div>
+        </div>
+        <div class="foot"><span>Field notes · Archive</span><span>1 / 1</span></div>
+      </div>
+    </div>
+
+    <!-- T1-C · three measure bulletin -->
+    <div class="sheet" style="position:absolute; left:803px; top:350px; width:381px; height:238px; font-size:6px;">
+      <div class="leaf">
+        <div class="toprule"></div>
+        <div class="flow c3">
+          <div class="src">
+            <div class="srchead"><div class="prov">Drafts · 1 placement</div></div>
+            <div class="bd">
+              <p>Copy order: the repair book first, then the tide tables, then the letters. The letters are fragile and the reading room will only bring out one box a day.</p>
+              <p>The reading room closes at four and the light is gone by three in the winter. Any photography has to happen in the first hour.</p>
+            </div>
+          </div>
+          <div class="src">
+            <div class="srchead">
+              <div class="hl">Letters from the pilot station</div>
+              <div class="prov">Archive · 3 placements</div>
+            </div>
+            <div class="bd">
+              <p>The pilot station letters are the only place where the crews are named. Sixty-one names across nine years, most of them appearing once.</p>
+              <p>Where a name repeats it usually belongs to a family rather than to a person. Three generations of Ellises appear between 1912 and 1940 without a single first name written the same way twice.</p>
+              <p>The letters use a house style that changes twice. Salutations are formal until 1921, plain until 1934, and formal again after the station changed hands.</p>
+            </div>
+          </div>
+          <div class="src">
+            <div class="srchead">
+              <div class="hl">County ledger, 1908–1952</div>
+              <div class="prov">Archive · 1 placement</div>
+            </div>
+            <div class="bd">
+              <p>The county ledger is the only source in the set that gives money. It is also the only one that survives complete, which is a warning about what survives and why.</p>
+              <p>It records a payment for timber in the quarter the letters describe a fire, larger than any other timber entry in the decade.</p>
+              <p>That is not proof. It is the kind of agreement between two indifferent sources that is worth writing down and returning to.</p>
+            </div>
+          </div>
+          <div class="src">
+            <div class="srchead"><div class="prov">Drafts · 1 placement</div></div>
+            <div class="bd">
+              <p>What is missing is consistent: anything that would have shown fault. No source here explains the 1938 gap, and the silence is the same silence in every hand.</p>
+              <p>Next: request the annex boxes, check the letters against the repair dates, and photograph the marginal notes before the tables go back.</p>
+              <p>Assume two visits. One to find the boxes, one to read them, and no photography until the second.</p>
+            </div>
+          </div>
+        </div>
+        <div class="foot"><span>Archive · Drafts</span><span>1 / 1</span></div>
+      </div>
+    </div>
+
+    <div class="mark" style="left:4px; top:2px;">1</div>
+    <div class="mark" style="left:405px; top:162px;">2</div>
+    <div class="mark" style="left:807px; top:322px;">3</div>
+  </div>
+  <div class="folio">FAMILIES: T1-A · T1-B · T1-C</div>
+</section>
+
+<!-- ============================ 07 · NOTES ON 03 ============================ -->
+<section class="slide">
+  <div class="running"><span>TEXT LED · NOTES ON 03</span><span class="fig">03 / 16</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>T1-A · single measure</b>One short piece, or one compact cluster read as a single run. The measure sits inside generous margins rather than spanning the sheet — a full-width line on a landscape sheet is not a measure, it is a stretch.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>T1-B · two measures</b>For one piece with enough writing to want a second measure, or two short pieces sitting near each other. The second measure is the smallest newspaper-like way to keep the line readable on one sheet — not a gesture toward a broadsheet.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>T1-C · three measures</b>Several short entries that belong together. Each entry keeps its own boundary; the sheet never welds independent pieces into one article. When entries grow long enough to thread, the set leaves Tier 01.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>The tier is the capacity, the family is the page</b>Tier 01 says how much material there is. Which of the three families runs is decided inside the tier, by how many pieces there are and how they sit together.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Promote inside the tier first</b>If another family on the same sheet can hold the complete piece at a readable measure, use it. Only when no family on one sheet can, does the set move up.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>All three end on the sheet</b>Front and back, or one leaf, and then it is over. None of the three carries a thread; that is the boundary between a bulletin and everything above it.</span></div>
+  </div>
+  <div class="folio">FIG 03 · THREE FAMILIES INSIDE ONE TIER</div>
+</section>
+
+<!-- ============================ 08 · PLATE · TIER 02 BERLINER / COMPACT ============================ -->
+<section class="slide">
+  <div class="running"><span>TEXT LED · TIER 02 · BERLINER / COMPACT</span><span class="fig">04 / 16</span></div>
+
+  <div class="stage bleed">
+    <div class="sheet" style="position:absolute; left:0; top:0; width:1184px; height:596px; font-size:9.5px;">
+      <div class="leaf">
+        <div class="toprule"></div>
+        <div class="flow c2">
+          <div class="src">
+            <div class="srchead">
+              <div class="hl">Harbor archive — first pass</div>
+              <div class="prov">Field notes · 2 placements</div>
+            </div>
+            <div class="bd">
+              <p>The harbor office kept two sets of books. One recorded arrivals, the other recorded repairs, and after 1931 the two stop agreeing with each other.</p>
+              <p>The disagreement is the useful part. It dates the year the second pier was rebuilt, which none of the surviving photographs establish on their own.</p>
+              <p>Everything before that year reads as one continuous account. Everything after has to be assembled from the repair book, the county ledger, and whatever the pilot station chose to write down that week.</p>
+              <p>The second pier appears in the repair book eleven times before it appears in the arrivals book once. Whatever it was used for in those years, it was not receiving traffic.</p>
+              <p>Two hands wrote the arrivals book. The first is careful and abbreviates nothing. The second writes fast and drops the vessel class entirely after 1936.</p>
+              <p>There is a third hand in the margins of both books, later, in pencil. It corrects dates and nothing else, and it is almost certainly an archivist rather than a clerk.</p>
+              <p>What is missing is consistent: anything that would have shown fault. No source here explains the 1938 gap, and the silence is the same silence in every hand.</p>
+            </div>
+          </div>
+          <div class="src">
+            <div class="srchead"><div class="prov">Field notes · 1 placement</div></div>
+            <div class="bd">
+              <p>Four months of 1938 are missing from both books, and the gap sits exactly where the storm damage should be.</p>
+              <p>A lost volume is the likeliest explanation. The archivist thinks the binder was never returned after the county borrowed it, and that it may still be in a box in the annex.</p>
+              <p>Weather is recorded only when it stopped work. A quiet year in these books is not a quiet year on the water.</p>
+            </div>
+          </div>
+          <div class="src">
+            <div class="srchead">
+              <div class="hl">Tide tables, 1912–1948</div>
+              <div class="prov">Archive · 1 placement</div>
+            </div>
+            <div class="bd">
+              <p>Tide tables were printed locally until 1948, when the county took the work over.</p>
+              <p>The local printings carry marginal notes in at least three hands, two of them dated. The third appears only beside the spring tides and is probably the harbormaster's own.</p>
+              <p>This is the only run in the set that is complete from start to finish, and that completeness is what makes the gaps elsewhere legible.</p>
+              <p>The marginal notes are also the most fragile part of the set, written in pencil on paper that has already been handled for a century.</p>
+            </div>
+          </div>
+          <div class="src">
+            <div class="srchead">
+              <div class="hl">Letters from the pilot station</div>
+              <div class="prov">Archive · 3 placements</div>
+            </div>
+            <div class="bd">
+              <p>The pilot station letters are the only place where the crews are named. Sixty-one names across nine years, most of them appearing once.</p>
+              <p>Where a name repeats it usually belongs to a family rather than to a person. Three generations of Ellises appear between 1912 and 1940 without a single first name written the same way twice.</p>
+              <p>The letters use a house style that changes twice. Salutations are formal until 1921, plain until 1934, and formal again after the station changed hands.</p>
+              <p>That change is the clearest dating tool in the whole set, and it is worth checking against the repair book before trusting it.</p>
+            </div>
+            <div class="cont tail">Continues on 2</div>
+          </div>
+        </div>
+        <div class="foot"><span>Field notes · Archive</span><span>1 / 2</span></div>
+      </div>
+
+      <div class="gut" style="width:44px;"></div>
+
+      <div class="leaf">
+        <div class="toprule"></div>
+        <div class="flow c2">
+          <div class="src">
+            <div class="cont lead">Letters from the pilot station · continued from 1</div>
+            <div class="bd">
+              <p>Three letters mention a fire. None of them say where, and the repair book for that year is one of the volumes missing.</p>
+              <p>The letters that survive are all outgoing. Whatever was written to the station was kept somewhere else, and nobody has found it.</p>
+              <p>Read as a run they are mostly weather and staffing. Read against the repair book they are the closest thing in the set to a witness.</p>
+            </div>
+          </div>
+          <div class="src">
+            <div class="srchead">
+              <div class="hl">County ledger, 1908–1952</div>
+              <div class="prov">Archive · 1 placement</div>
+            </div>
+            <div class="bd">
+              <p>The county ledger is the only source in the set that gives money. It is also the only one that survives complete, which is a warning about what survives and why.</p>
+              <p>It records a payment for timber in the quarter the letters describe a fire, larger than any other timber entry in the decade.</p>
+              <p>That is not proof. It is the kind of agreement between two indifferent sources that is worth writing down and returning to.</p>
+              <p>The ledger's hand does not change once in forty years, which is either one very long career or a fair copy made later.</p>
+            </div>
+          </div>
+          <div class="src">
+            <div class="srchead">
+              <div class="hl">Repair book, 1931–1949</div>
+              <div class="prov">Archive · 2 placements</div>
+            </div>
+            <div class="bd">
+              <p>The repair book is the only volume that was ever indexed, and the index is wrong after 1940 in a way that looks deliberate.</p>
+              <p>Entries are grouped by trade rather than by date, so a single job can appear four times without ever being described in full.</p>
+              <p>The pier drawings are held elsewhere and were not consulted. Their existence is noted here twice, both times as a reference number.</p>
+              <p>Those numbers are worth carrying to the county office. They are the only thread out of this set into another one.</p>
+            </div>
+          </div>
+          <div class="src">
+            <div class="srchead"><div class="prov">Drafts · 1 placement</div></div>
+            <div class="bd">
+              <p>Ask about the missing quarter before ordering copies. If the volume turns up it changes the order of everything after it, and there is no point paying for pages twice.</p>
+              <p>Copy order: the repair book first, then the tide tables, then the letters. The letters are fragile and the reading room will only bring out one box a day.</p>
+              <p>The reading room closes at four and the light is gone by three in the winter. Any photography has to happen in the first hour.</p>
+              <p>Next: request the annex boxes, check the letters against the repair dates, and photograph the marginal notes before the tables go back.</p>
+              <p>Keep the order of reading as it stands. Reading the letters first makes the books look like confirmation, which they are not.</p>
+              <p>Nothing here needs to be transcribed in full. The books are useful as runs, and only the marginal notes reward word-for-word copying.</p>
+              <p>End of the first pass. Everything above is what the material says; what it means can wait until the annex boxes have been opened.</p>
+            </div>
+          </div>
+        </div>
+        <div class="foot"><span>Archive · Drafts</span><span>2 / 2</span></div>
+      </div>
+    </div>
+
+    <div class="mark" style="left:582px; top:470px;">1</div>
+    <div class="mark" style="left:889px; top:290px;">2</div>
+    <div class="mark" style="left:505px; top:512px;">3</div>
+    <div class="mark" style="left:618px; top:32px;">4</div>
+    <div class="mark" style="left:1126px; top:552px;">5</div>
+    <div class="mark" style="left:26px; top:552px;">6</div>
+  </div>
+  <div class="folio">STATE: AT-02 · 1.75 ≤ D &lt; 3.0 · FACING SPREAD</div>
+</section>
+
+<!-- ============================ 09 · NOTES ON 04 ============================ -->
+<section class="slide">
+  <div class="running"><span>TEXT LED · NOTES ON 04</span><span class="fig">04 / 16</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>The seam is quiet on purpose</b>Nothing is set across the fold. A real compact newspaper is sold folded, and text that crosses a fold is text that gets damaged — so the live area stops short and the middle stays empty.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Same rhythm on both leaves</b>Two measures a leaf, four across the open spread, one baseline. The reading order is left leaf top to bottom, then right leaf — never a guess.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Where a piece keeps going</b>The cue names the destination and nothing else. It does not summarise the missing part, and it never becomes permission to stop printing the rest.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Where it picks up</b>The continued piece names itself again at the top of the next page, so a person who joined the reading here knows whose writing they are in.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Two pages open at once</b>The folio numbers each leaf. The spread is the reading unit; the leaves are how it folds.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Provenance travels with the page</b>Each leaf names the Layers it drew from, so a piece can be traced without leaving the reading.</span></div>
+    <div class="ann"><span class="n">07</span><span><b>What moved this set up</b>The material outgrew one sheet: it needs a spread, or one piece needs a short continuation. That is the whole boundary between Tier 01 and Tier 02 — not a preference for a bigger page.</span></div>
+    <div class="ann"><span class="n">08</span><span><b>Still text, still not a card</b>Enough room is given for writing to stay writing, rather than collapsing into a summary block or being reduced to a label with a link.</span></div>
+    <div class="ann"><span class="n">09</span><span><b>Berliner is a grammar, not 470mm</b>The name marks the middle: newspaper composition on a smaller page. The grid tightens; the reading does not become a book block.</span></div>
+  </div>
+  <div class="folio">FIG 04 · EIGHT PIECES · D = 2.31</div>
+</section>
+
+<!-- ============================ 10 · PLATE · TIER 02 LAYOUT FAMILIES ============================ -->
+<section class="slide">
+  <div class="running"><span>TEXT LED · TIER 02 · LAYOUT FAMILIES</span><span class="fig">05 / 16</span></div>
+
+  <div class="stage bleed">
+    <!-- T2-A · compact single page -->
+    <div class="sheet" style="position:absolute; left:0; top:20px; width:400px; height:250px; font-size:7px;">
+      <div class="leaf">
+        <div class="toprule"></div>
+        <div class="flow c2">
+          <div class="src">
+            <div class="srchead">
+              <div class="hl">Harbor archive — first pass</div>
+              <div class="prov">Field notes · 2 placements</div>
+            </div>
+            <div class="bd">
+              <p>The harbor office kept two sets of books. One recorded arrivals, the other recorded repairs, and after 1931 the two stop agreeing with each other.</p>
+              <p>The disagreement is the useful part. It dates the year the second pier was rebuilt, which none of the surviving photographs establish on their own.</p>
+              <p>Everything before that year reads as one continuous account. Everything after has to be assembled from the repair book, the county ledger, and whatever the pilot station chose to write down that week.</p>
+              <p>Two hands wrote the arrivals book. The first is careful and abbreviates nothing. The second writes fast and drops the vessel class entirely after 1936.</p>
+            </div>
+          </div>
+          <div class="src">
+            <div class="srchead"><div class="prov">Field notes · 1 placement</div></div>
+            <div class="bd">
+              <p>Four months of 1938 are missing from both books, and the gap sits exactly where the storm damage should be.</p>
+              <p>A lost volume is the likeliest explanation. The archivist thinks the binder was never returned after the county borrowed it.</p>
+            </div>
+          </div>
+        </div>
+        <div class="foot"><span>Field notes</span><span>1 / 1</span></div>
+      </div>
+    </div>
+
+    <!-- T2-B · facing compact spread -->
+    <div class="sheet" style="position:absolute; left:420px; top:137px; width:640px; height:322px; font-size:7px;">
+      <div class="leaf">
+        <div class="toprule"></div>
+        <div class="flow c2">
+          <div class="src">
+            <div class="srchead">
+              <div class="hl">Tide tables, 1912–1948</div>
+              <div class="prov">Archive · 1 placement</div>
+            </div>
+            <div class="bd">
+              <p>Tide tables were printed locally until 1948, when the county took the work over.</p>
+              <p>The local printings carry marginal notes in at least three hands, two of them dated. The third appears only beside the spring tides and is probably the harbormaster's own.</p>
+              <p>This is the only run in the set that is complete from start to finish, and that completeness is what makes the gaps elsewhere legible.</p>
+              <p>The marginal notes are also the most fragile part of the set, written in pencil on paper that has already been handled for a century.</p>
+            </div>
+          </div>
+          <div class="src">
+            <div class="srchead">
+              <div class="hl">Letters from the pilot station</div>
+              <div class="prov">Archive · 3 placements</div>
+            </div>
+            <div class="bd">
+              <p>The pilot station letters are the only place where the crews are named. Sixty-one names across nine years, most of them appearing once.</p>
+              <p>Where a name repeats it usually belongs to a family rather than to a person. Three generations of Ellises appear between 1912 and 1940 without a single first name written the same way twice.</p>
+              <p>The letters use a house style that changes twice. Salutations are formal until 1921, plain until 1934, and formal again after the station changed hands.</p>
+            </div>
+            <div class="cont tail">Continues on 2</div>
+          </div>
+        </div>
+        <div class="foot"><span>Archive</span><span>1 / 2</span></div>
+      </div>
+
+      <div class="gut" style="width:26px;"></div>
+
+      <div class="leaf">
+        <div class="toprule"></div>
+        <div class="flow c2">
+          <div class="src">
+            <div class="cont lead">Letters from the pilot station · continued from 1</div>
+            <div class="bd">
+              <p>That change is the clearest dating tool in the whole set, and it is worth checking against the repair book before trusting it.</p>
+              <p>Three letters mention a fire. None of them say where, and the repair book for that year is one of the volumes missing.</p>
+              <p>The letters that survive are all outgoing. Whatever was written to the station was kept somewhere else, and nobody has found it.</p>
+            </div>
+          </div>
+          <div class="src">
+            <div class="srchead">
+              <div class="hl">County ledger, 1908–1952</div>
+              <div class="prov">Archive · 1 placement</div>
+            </div>
+            <div class="bd">
+              <p>The county ledger is the only source in the set that gives money. It is also the only one that survives complete, which is a warning about what survives and why.</p>
+              <p>It records a payment for timber in the quarter the letters describe a fire, larger than any other timber entry in the decade.</p>
+              <p>That is not proof. It is the kind of agreement between two indifferent sources that is worth writing down and returning to.</p>
+            </div>
+          </div>
+        </div>
+        <div class="foot"><span>Archive</span><span>2 / 2</span></div>
+      </div>
+    </div>
+
+    <!-- T2-C · compact modular page -->
+    <div class="sheet" style="position:absolute; left:0; top:320px; width:400px; height:250px; font-size:7px;">
+      <div class="leaf">
+        <div class="toprule"></div>
+        <div style="display:flex; gap:1.7em; flex:1 1 auto; min-height:0;">
+          <div class="flow c2" style="flex:2 1 0;">
+            <div class="src">
+              <div class="srchead">
+                <div class="hl">Repair book, 1931–1949</div>
+                <div class="prov">Archive · 2 placements</div>
+              </div>
+              <div class="bd">
+                <p>The repair book is the only volume that was ever indexed, and the index is wrong after 1940 in a way that looks deliberate.</p>
+                <p>Entries are grouped by trade rather than by date, so a single job can appear four times without ever being described in full.</p>
+                <p>The pier drawings are held elsewhere and were not consulted. Their existence is noted here twice, both times as a reference number.</p>
+                <p>Those numbers are worth carrying to the county office. They are the only thread out of this set into another one.</p>
+              </div>
+            </div>
+          </div>
+          <div class="flow c1" style="flex:1 1 0; border-left:1px solid rgba(26,26,26,0.16); padding-left:1.7em;">
+            <div class="figure">
+              <div class="fr plate cool" style="height:66px;"></div>
+              <div class="cap">Second pier, undated</div>
+            </div>
+            <div class="src">
+              <div class="srchead"><div class="prov">Drafts · 1 placement</div></div>
+              <div class="bd">
+                <p>Photographs are dated by the pier, not by the caption. Captions were added in the 1970s by someone working from memory.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="foot"><span>Archive · Drafts</span><span>1 / 1</span></div>
+      </div>
+    </div>
+
+    <div class="mark" style="left:4px; top:0;">1</div>
+    <div class="mark" style="left:424px; top:113px;">2</div>
+    <div class="mark" style="left:4px; top:294px;">3</div>
+  </div>
+  <div class="folio">FAMILIES: T2-A · T2-B · T2-C</div>
+</section>
+
+<!-- ============================ 11 · NOTES ON 05 ============================ -->
+<section class="slide">
+  <div class="running"><span>TEXT LED · NOTES ON 05</span><span class="fig">05 / 16</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>T2-A · compact single page</b>A moderate set that still fits one page. Two or three stable measures give newspaper structure without asking for the scale of a broadsheet.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>T2-B · facing compact spread</b>Used when a piece runs past one page, or when several pieces sitting near each other belong in one reading field. Both leaves keep the same measure and the same baseline.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>T2-C · compact modular page</b>One piece takes the dominant region, another takes a smaller one beside it. The modules stay text-first. A picture may sit in the small region because a picture is genuinely there — never because the page has a hole to fill.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>The seam is a boundary, not a spine</b>The centre of a spread marks where the reading continues. It is not decoration, and no rule, ornament, or shadow is drawn to make it look like a bound book.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Complete frame, or nothing</b>A picture in a text page keeps its own proportions and its whole edge, with a quiet caption beneath. If it cannot be complete at this size, the text keeps the page and the picture waits for its own.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Choosing between the three</b>One page while one page holds it. A spread when the material crosses the page or the pieces belong side by side. Modules when one piece clearly leads and another supports.</span></div>
+  </div>
+  <div class="folio">FIG 05 · THE PAGE IS CHOSEN INSIDE THE TIER</div>
+</section>
+
+<!-- ============================ 12 · PLATE · TIER 03 BROADSHEET ============================ -->
+<section class="slide">
+  <div class="running"><span>TEXT LED · TIER 03 · BROADSHEET</span><span class="fig">06 / 16</span></div>
+
+  <div class="stage bleed">
+    <div class="sheet" style="position:absolute; left:0; top:0; width:1184px; height:596px; font-size:8.5px;">
+      <div class="leaf">
+        <div class="toprule"></div>
+        <div class="flow c3">
+          <div class="src">
+            <div class="srchead">
+              <div class="hl">Harbor archive — full pass</div>
+              <div class="prov">Field notes · 4 placements</div>
+            </div>
+            <div class="bd">
+              <p>The harbor office kept two sets of books. One recorded arrivals, the other recorded repairs, and after 1931 the two stop agreeing with each other.</p>
+              <p>The disagreement is the useful part. It dates the year the second pier was rebuilt, which none of the surviving photographs establish on their own.</p>
+              <p>Everything before that year reads as one continuous account. Everything after has to be assembled from the repair book, the county ledger, and whatever the pilot station chose to write down that week.</p>
+              <div class="sub">The books</div>
+              <p>The second pier appears in the repair book eleven times before it appears in the arrivals book once. Whatever it was used for in those years, it was not receiving traffic.</p>
+              <p>Two hands wrote the arrivals book. The first is careful and abbreviates nothing. The second writes fast and drops the vessel class entirely after 1936.</p>
+              <p>There is a third hand in the margins of both books, later, in pencil. It corrects dates and nothing else, and it is almost certainly an archivist rather than a clerk.</p>
+              <p>The arrivals book uses a house shorthand for cargo that nobody has written down anywhere. Six of the abbreviations are obvious, four are not, and two appear only once.</p>
+              <p>Where the two books can be matched, they agree on dates to within a day. The disagreements are all about what happened, never about when.</p>
+              <p>Four months of 1938 are missing from both books, and the gap sits exactly where the storm damage should be.</p>
+              <p>A lost volume is the likeliest explanation. The archivist thinks the binder was never returned after the county borrowed it, and that it may still be in a box in the annex.</p>
+              <div class="sub">The annex</div>
+              <p>The annex is not catalogued. She offered to open it, with the caution that nothing in it has been listed since the move.</p>
+              <p>Boxes there are labelled by department rather than by year, which means the repair material is likely split across at least four of them.</p>
+              <p>The annex smells of damp, which is worth recording. If the boxes have been wet the paper will not survive handling and the visit becomes a photography job.</p>
+              <p>Assume two visits. One to find the boxes, one to read them, and no photography until the second.</p>
+              <p>Weather is recorded only when it stopped work. A quiet year in these books is not a quiet year on the water.</p>
+              <p>The winter of 1934 has one line for January and nothing else until March, which either means an easy season or a clerk who had given up.</p>
+              <div class="sub">The tables</div>
+              <p>Tide tables were printed locally until 1948, when the county took the work over.</p>
+              <p>The local printings carry marginal notes in at least three hands, two of them dated. The third appears only beside the spring tides and is probably the harbormaster's own.</p>
+              <p>This is the only run in the set that is complete from start to finish, and that completeness is what makes the gaps elsewhere legible.</p>
+              <p>The 1921 volume is the best preserved and the least useful. It covers a year in which almost nothing happened, and it survives because nobody ever opened it.</p>
+              <p>Three of the tables have prices printed on the cover. They rise by a third across the run, which is the only inflation figure available anywhere in the set.</p>
+              <p>The tables also carry the only drawing in the whole set: a sketch of the mooring at the foot of the 1921 volume, unsigned.</p>
+              <p>It is drawn to no scale and is probably a reminder rather than a record, but it shows a bollard that appears in no photograph.</p>
+              <div class="sub">The letters</div>
+              <p>The pilot station letters are the only place where the crews are named. Sixty-one names across nine years, most of them appearing once.</p>
+              <p>Where a name repeats it usually belongs to a family rather than to a person. Three generations of Ellises appear between 1912 and 1940 without a single first name written the same way twice.</p>
+            </div>
+          </div>
+        </div>
+        <div class="foot"><span>Field notes</span><span>1 / 4</span></div>
+      </div>
+
+      <div class="gut" style="width:52px;"></div>
+
+      <div class="leaf">
+        <div class="toprule"></div>
+        <div class="flow c3">
+          <div class="src">
+            <div class="cont lead">Harbor archive — full pass · continued from 1</div>
+            <div class="bd">
+              <p>The letters use a house style that changes twice. Salutations are formal until 1921, plain until 1934, and formal again after the station changed hands.</p>
+              <p>That change is the clearest dating tool in the whole set, and it is worth checking against the repair book before trusting it.</p>
+              <p>Three letters mention a fire. None of them say where, and the repair book for that year is one of the volumes missing.</p>
+              <p>The letters that survive are all outgoing. Whatever was written to the station was kept somewhere else, and nobody has found it.</p>
+              <p>Read as a run they are mostly weather and staffing. Read against the repair book they are the closest thing in the set to a witness.</p>
+              <p>Two of the letters are drafts, crossed through and rewritten on the same sheet. The crossed-out version is the more informative one in both cases.</p>
+              <p>Nothing in the letters is dated by the writer. The dates are all stamps added on receipt, which means the gap between writing and arrival is unknown.</p>
+              <div class="sub">The ledger</div>
+              <p>The county ledger is the only source in the set that gives money. It is also the only one that survives complete, which is a warning about what survives and why.</p>
+              <p>It records a payment for timber in the quarter the letters describe a fire, larger than any other timber entry in the decade.</p>
+              <p>That is not proof. It is the kind of agreement between two indifferent sources that is worth writing down and returning to.</p>
+              <p>The ledger's hand does not change once in forty years, which is either one very long career or a fair copy made later.</p>
+              <p>If it is a fair copy, everything it agrees with becomes weaker rather than stronger, and that is worth settling before anything is built on it.</p>
+              <p>The ledger's entries for the harbour stop for eighteen months in 1943 and resume without comment. The war is never mentioned in any source here.</p>
+              <p>Sums are recorded to the penny throughout, including a payment of one shilling for a lost key, which suggests the ledger was audited rather than kept for use.</p>
+              <div class="sub">The repair book</div>
+              <p>The repair book is the only volume that was ever indexed, and the index is wrong after 1940 in a way that looks deliberate.</p>
+              <p>Entries are grouped by trade rather than by date, so a single job can appear four times without ever being described in full.</p>
+              <p>The index was written in a different ink from the entries and probably added later, which would explain why it stops being reliable exactly where the entries get inconvenient.</p>
+              <p>Carpentry is always listed first, which flatters the carpenters and makes any job involving stone almost impossible to date.</p>
+              <p>Stone work is described by the yard, timber by the foot, and labour by the day. Converting any of it into a comparison takes longer than reading it.</p>
+              <p>One entry in 1939 reads only “as agreed”. It is the single most frustrating line in the whole set.</p>
+              <p>The pier drawings are held elsewhere and were not consulted. Their existence is noted here twice, both times as a reference number.</p>
+              <p>Those numbers are worth carrying to the county office. They are the only thread out of this set into another one.</p>
+              <div class="sub">What is missing</div>
+              <p>What is missing is consistent: anything that would have shown fault. No source here explains the 1938 gap, and the silence is the same silence in every hand.</p>
+              <p>Nothing in the set is a copy of anything else. Every hand is writing from its own position, and the disagreements are the evidence rather than the noise.</p>
+              <p>Every source here was kept for a purpose that was not history. That is the reason they disagree, and the reason they can be trusted about the small things.</p>
+              <p>The marginal notes are the most fragile part of the set, written in pencil on paper that has already been handled for</p>
+            </div>
+            <div class="cont tail">Continues on 3</div>
+          </div>
+        </div>
+        <div class="foot"><span>Field notes</span><span>2 / 4</span></div>
+      </div>
+    </div>
+
+    <div class="mark" style="left:365px; top:300px;">1</div>
+    <div class="mark" style="left:582px; top:300px;">2</div>
+    <div class="mark" style="left:6px; top:24px;">3</div>
+    <div class="mark" style="left:618px; top:26px;">4</div>
+    <div class="mark" style="left:1042px; top:508px;">5</div>
+    <div class="mark" style="left:1128px; top:552px;">6</div>
+  </div>
+  <div class="folio">STATE: AT-03 · D ≥ 3.0 · THREADED, FOUR PAGES</div>
+</section>
+
+<!-- ============================ 13 · NOTES ON 06 ============================ -->
+<section class="slide">
+  <div class="running"><span>TEXT LED · NOTES ON 06</span><span class="fig">06 / 16</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>Six measures, one baseline</b>Four to six narrow measures across the open spread. Narrow is the point — a long piece is easier to hold at thirty-odd characters a line than at eighty. Additional measures stop the moment the line stops reading.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>A wide quiet gutter</b>The largest sheet folds through the middle, so the middle is where text is most at risk. The live area is pulled back further here than on any other form.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Named once, then structured by its own headings</b>One piece runs the whole spread. Its name appears once; the smaller headings inside are the writer's own. Nothing between them was composed by the page.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>The thread is continuous</b>Column one to column six, left leaf then right, page to page. Reading the columns in order reproduces the piece exactly — same words, same order, nothing added between them.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Density adds pages</b>Two of four pages are open here. When there is more material there are more pages — never smaller type, a narrower line, or a cut at the fold.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Sequence, not a title</b>The folio says which page this is and how many there are. A page number identifies position; it never stands in for the part a person has not read yet.</span></div>
+    <div class="ann"><span class="n">07</span><span><b>Earned, not default</b>The broadsheet is the highest-capacity form, not the house style. A short piece is never promoted into one to make it look editorial.</span></div>
+    <div class="ann"><span class="n">08</span><span><b>Broadsheet is a grammar, not 380 × 578mm</b>Many narrow measures, threaded text, real continuation, protected gutter. The open spread stays landscape whatever the room actually measures.</span></div>
+  </div>
+  <div class="folio">FIG 06 · ONE LONG PIECE · D = 4.60</div>
+</section>
+
+<!-- ============================ 14 · PLATE · TIER 03 LAYOUT FAMILIES ============================ -->
+<section class="slide">
+  <div class="running"><span>TEXT LED · TIER 03 · LAYOUT FAMILIES</span><span class="fig">07 / 16</span></div>
+
+  <div class="stage bleed">
+    <!-- T3-A · broadsheet field -->
+    <div class="sheet" style="position:absolute; left:0; top:40px; width:340px; height:213px; font-size:5.5px;">
+      <div class="leaf">
+        <div class="toprule"></div>
+        <div class="flow c3">
+          <div class="src">
+            <div class="srchead">
+              <div class="hl">Harbor archive</div>
+              <div class="prov">Field notes · 2 placements</div>
+            </div>
+            <div class="bd">
+              <p>The harbor office kept two sets of books. One recorded arrivals, the other recorded repairs, and after 1931 the two stop agreeing with each other.</p>
+              <p>The disagreement is the useful part. It dates the year the second pier was rebuilt, which none of the surviving photographs establish on their own.</p>
+            </div>
+          </div>
+          <div class="src">
+            <div class="srchead"><div class="prov">Field notes · 1 placement</div></div>
+            <div class="bd">
+              <p>Four months of 1938 are missing from both books, and the gap sits exactly where the storm damage should be.</p>
+              <p>A lost volume is the likeliest explanation. The archivist thinks the binder was never returned after the county borrowed it.</p>
+            </div>
+          </div>
+          <div class="src">
+            <div class="srchead">
+              <div class="hl">Tide tables, 1912–1948</div>
+              <div class="prov">Archive · 1 placement</div>
+            </div>
+            <div class="bd">
+              <p>Tide tables were printed locally until 1948, when the county took the work over.</p>
+              <p>The local printings carry marginal notes in at least three hands, two of them dated. The third appears only beside the spring tides.</p>
+            </div>
+          </div>
+          <div class="src">
+            <div class="srchead">
+              <div class="hl">County ledger</div>
+              <div class="prov">Archive · 1 placement</div>
+            </div>
+            <div class="bd">
+              <p>The county ledger is the only source in the set that gives money. It is also the only one that survives complete, which is a warning about what survives and why.</p>
+              <p>It records a payment for timber in the quarter the letters describe a fire, larger than any other timber entry in the decade.</p>
+            </div>
+          </div>
+          <div class="src">
+            <div class="srchead"><div class="prov">Drafts · 1 placement</div></div>
+            <div class="bd">
+              <p>Copy order: the repair book first, then the tide tables, then the letters. The reading room will only bring out one box a day.</p>
+              <p>It closes at four and the light is gone by three in the winter, so any photography has to happen in the first hour.</p>
+            </div>
+          </div>
+        </div>
+        <div class="foot"><span>Field notes · Archive · Drafts</span><span>1 / 4</span></div>
+      </div>
+    </div>
+
+    <!-- T3-B · threaded broadsheet spread -->
+    <div class="sheet" style="position:absolute; left:420px; top:191px; width:340px; height:213px; font-size:5.5px;">
+      <div class="leaf">
+        <div class="toprule"></div>
+        <div class="flow c3">
+          <div class="src">
+            <div class="srchead">
+              <div class="hl">Harbor archive — full pass</div>
+              <div class="prov">Field notes · 4 placements</div>
+            </div>
+            <div class="bd">
+              <p>The harbor office kept two sets of books. One recorded arrivals, the other recorded repairs, and after 1931 the two stop agreeing with each other.</p>
+              <p>The disagreement is the useful part. It dates the year the second pier was rebuilt, which none of the surviving photographs establish on their own.</p>
+              <p>Everything before that year reads as one continuous account. Everything after has to be assembled from the repair book, the county ledger, and whatever the pilot station chose to write down that week.</p>
+              <div class="sub">The books</div>
+              <p>The second pier appears in the repair book eleven times before it appears in the arrivals book once. Whatever it was used for in those years, it was not receiving traffic.</p>
+              <p>Two hands wrote the arrivals book. The first is careful and abbreviates nothing. The second writes fast and drops the vessel class entirely after 1936.</p>
+              <p>There is a third hand in the margins of both books, later, in pencil. It corrects dates and nothing else, and it is almost certainly an archivist rather than a clerk.</p>
+              <p>The arrivals book uses a house shorthand for cargo that nobody has written down anywhere. Six of the abbreviations are obvious, four are not, and two appear only once.</p>
+              <p>Where the two books can be matched, they agree on dates to within a day. The disagreements are all about what happened, never about when.</p>
+              <p>Four months of 1938 are missing from both books, and the gap sits exactly where the storm damage should be.</p>
+              <p>A lost volume is the likeliest explanation. The archivist thinks the binder was never returned after the county borrowed it, and that it may still be in a box in the annex.</p>
+              <div class="sub">The annex</div>
+              <p>The annex is not catalogued. She offered to open it, with the caution that nothing in it has been listed since the move.</p>
+              <p>Boxes there are labelled by department rather than by year, which means the repair material is likely split across at least four of</p>
+            </div>
+            <div class="cont tail">Continues on 2</div>
+          </div>
+        </div>
+        <div class="foot"><span>Field notes</span><span>1 / 4</span></div>
+      </div>
+    </div>
+
+    <!-- T3-C · modular broadsheet page -->
+    <div class="sheet" style="position:absolute; left:844px; top:342px; width:340px; height:213px; font-size:5.5px;">
+      <div class="leaf">
+        <div class="toprule"></div>
+        <div style="flex:1 1 auto; min-height:0; overflow:hidden; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:auto 1fr; column-gap:1.7em; row-gap:0.9em;">
+          <div class="src" style="grid-column:1 / span 2; margin:0;">
+            <div class="srchead">
+              <div class="hl">Harbor archive</div>
+              <div class="prov">Field notes · 2 placements</div>
+            </div>
+            <div class="bd" style="column-count:2; column-gap:1.7em; column-rule:1px solid rgba(26,26,26,0.16);">
+              <p>The harbor office kept two sets of books. One recorded arrivals, the other recorded repairs, and after 1931 the two stop agreeing with each other.</p>
+              <p>The disagreement is the useful part. It dates the year the second pier was rebuilt, which none of the surviving photographs establish on their own.</p>
+            </div>
+          </div>
+          <div class="src" style="grid-column:3; grid-row:1 / span 2; margin:0; border-left:1px solid rgba(26,26,26,0.16); padding-left:1.7em;">
+            <div class="srchead">
+              <div class="hl">Tide tables</div>
+              <div class="prov">Archive · 1 placement</div>
+            </div>
+            <div class="bd">
+              <p>Tide tables were printed locally until 1948, when the county took the work over.</p>
+              <p>The local printings carry marginal notes in at least three hands, two of them dated. The third appears only beside the spring tides and is probably the harbormaster's own.</p>
+              <p>This is the only run in the set that is complete from start to finish, and that completeness is what makes the gaps elsewhere legible.</p>
+              <p>The marginal notes are the most fragile part of the set, written in pencil on paper handled for a century.</p>
+            </div>
+          </div>
+          <div class="src" style="grid-column:1; margin:0; border-top:1px solid rgba(26,26,26,0.16); padding-top:0.7em;">
+            <div class="srchead"><div class="prov">Field notes · 1 placement</div></div>
+            <div class="bd">
+              <p>Four months of 1938 are missing from both books, and the gap sits exactly where the storm damage should be.</p>
+              <p>A lost volume is the likeliest explanation. The binder may still be in a box in the annex.</p>
+              <p>Weather is recorded only when it stopped work. A quiet year in these books is not a quiet year on the water.</p>
+            </div>
+          </div>
+          <div class="src" style="grid-column:2; margin:0; border-top:1px solid rgba(26,26,26,0.16); padding-top:0.7em;">
+            <div class="srchead">
+              <div class="hl">County ledger</div>
+              <div class="prov">Archive · 1 placement</div>
+            </div>
+            <div class="bd">
+              <p>The only source in the set that gives money, and the only one that survives complete. It records a payment for timber in the quarter the letters describe a fire.</p>
+              <p>That is not proof. It is the kind of agreement between two indifferent sources that is worth writing down.</p>
+            </div>
+          </div>
+        </div>
+        <div class="foot"><span>Field notes · Archive</span><span>3 / 4</span></div>
+      </div>
+    </div>
+
+    <div class="mark" style="left:4px; top:16px;">1</div>
+    <div class="mark" style="left:424px; top:167px;">2</div>
+    <div class="mark" style="left:848px; top:318px;">3</div>
+  </div>
+  <div class="folio">FAMILIES: T3-A · T3-B · T3-C · ONE LEAF OF EACH</div>
+</section>
+
+<!-- ============================ 15 · NOTES ON 07 ============================ -->
+<section class="slide">
+  <div class="running"><span>TEXT LED · NOTES ON 07</span><span class="fig">07 / 16</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>T3-A · the field</b>A dense set that needs several narrow measures across one large spread. Every measure shares one baseline and the reading order stays explicit, so a page holding six pieces never becomes a puzzle.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>T3-B · threaded</b>One long piece, or a connected set, flowing frame to frame and page to page. When it runs out of room the page count rises. Nothing about the type or the line changes.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>T3-C · modular</b>Many independent pieces that each need their own block on one large page. Blocks are ruled apart so no two pieces read as one, and the grid orders them without inventing a single headline for the group.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>One leaf of each shown</b>T3-A and T3-B are spreads; T3-C is a page. Each specimen here is one leaf, reproduced small — the second leaf follows the same measure, baseline, and reading order.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Boundaries survive density</b>The more pieces a page carries, the harder its boundaries work. Every block keeps its own start, its own name if it has one, and its own footer note.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Choosing between the three</b>Several pieces at once: the field. One piece that will not fit: threaded. Many pieces that must not touch: modular.</span></div>
+  </div>
+  <div class="folio">FIG 07 · NINE FAMILIES ACROSS THREE TIERS</div>
+</section>
+
+<!-- ============================ 16 · PLATE · CONTINUATION, AT SCALE ============================ -->
+<section class="slide">
+  <div class="running"><span>TEXT LED · CONTINUATION</span><span class="fig">08 / 16</span></div>
+
+  <div class="stage bleed">
+    <!-- foot of page 2 -->
+    <div class="sheet" style="position:absolute; left:0; top:48px; width:566px; height:500px; font-size:15px;">
+      <div class="leaf" style="padding:24px 30px 16px;">
+        <div style="flex:1 1 auto; min-height:0; overflow:hidden;">
+          <div style="width:289px;">
+            <div class="bd">
+              <p>What is missing is consistent: anything that would have shown fault. No source here explains the 1938 gap, and the silence is the same silence in every hand.</p>
+              <p>Nothing in the set is a copy of anything else. Every hand is writing from its own position, and the disagreements are the evidence rather than the noise.</p>
+              <p>Every source here was kept for a purpose that was not history. That is the reason they disagree, and the reason they can be trusted about the small things.</p>
+              <p>The marginal notes are the most fragile part of the set, written in pencil on paper that has already been handled for</p>
+            </div>
+            <div class="cont tail">Continues on 3</div>
+          </div>
+        </div>
+        <div class="foot"><span>Field notes</span><span>2 / 4</span></div>
+      </div>
+    </div>
+
+    <!-- head of page 3 -->
+    <div class="sheet" style="position:absolute; left:618px; top:48px; width:566px; height:500px; font-size:15px;">
+      <div class="leaf" style="padding:24px 30px 16px;">
+        <div class="toprule"></div>
+        <div style="flex:1 1 auto; min-height:0; overflow:hidden;">
+          <div style="width:289px;">
+            <div class="cont lead">Harbor archive — full pass · continued from 2</div>
+            <div class="bd">
+              <p>a century.</p>
+              <p>Copy order: the repair book first, then the tide tables, then the letters. The letters are fragile and the reading room will only bring out one box a day.</p>
+              <p>The reading room closes at four and the light is gone by three in the winter. Any photography has to happen in the first hour.</p>
+              <p>Keep the order of reading as it stands. Reading the letters first makes the books look like confirmation, which they are not.</p>
+              <p>Next: request the annex boxes, check the letters against the repair dates, and photograph the marginal</p>
+            </div>
+          </div>
+        </div>
+        <div class="foot"><span>Field notes</span><span>3 / 4</span></div>
+      </div>
+    </div>
+
+    <div class="mark" style="left:330px; top:396px;">1</div>
+    <div class="mark" style="left:330px; top:446px;">2</div>
+    <div class="mark" style="left:500px; top:508px;">3</div>
+    <div class="mark" style="left:948px; top:92px;">4</div>
+    <div class="mark" style="left:948px; top:140px;">5</div>
+    <div class="mark" style="left:1118px; top:508px;">6</div>
+  </div>
+  <div class="folio">DETAIL · FOOT OF 2 · HEAD OF 3</div>
+</section>
+
+<!-- ============================ 17 · NOTES ON 08 ============================ -->
+<section class="slide">
+  <div class="running"><span>TEXT LED · NOTES ON 08</span><span class="fig">08 / 16</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>The break lands wherever the line lands</b>A page ends where the column runs out, mid-sentence and mid-word if that is where it falls. Nothing is padded to reach a tidy stop and nothing is dropped to make one.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>The cue points, and only points</b>Four words naming where the rest is. It does not summarise what was left behind, does not say "read more", and is never the end of the piece — it is a promise that the rest was printed.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Position, in quiet type</b>The folio is the smallest ink on the page. It answers where am I and how much is left, and it answers nothing else.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>The next page says whose writing this is</b>A person can join the reading at any page. The continued piece names itself again at the top — the same name it already had, never a fresh one written for the second half.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>The words resume exactly</b>"handled for" · "a century." Set the columns of every page end to end and the result is the source, character for character. Nothing is repeated across the break and nothing is bridged.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Same grammar at every tier</b>A bulletin has no continuation because it has no second leaf. A compact spread continues across a seam. A broadsheet continues across seams and pages. The cue does not change shape between them.</span></div>
+    <div class="ann"><span class="n">07</span><span><b>Continuation is physical, not decorative</b>Page numbers and continuation cues exist because the material exceeded one frame. They never supply a title, never stand in for missing text, and never authorise a cut.</span></div>
+  </div>
+  <div class="folio">FIG 08 · SHOWN AT ABOUT TWICE PAGE SCALE</div>
+</section>
+
+<!-- ============================ 18 · PLATE · THE PICTURE THAT IS NOT A SLOT ============================ -->
+<section class="slide">
+  <div class="running"><span>TEXT LED · SUPPORTING FRAME</span><span class="fig">09 / 16</span></div>
+
+  <div class="stage bleed">
+    <div class="sheet" style="position:absolute; left:115px; top:0; width:954px; height:596px; font-size:10.5px;">
+      <div class="leaf">
+        <div class="toprule"></div>
+        <div style="display:flex; gap:1.7em; flex:1 1 auto; min-height:0;">
+          <div class="flow c2" style="flex:2 1 0;">
+            <div class="src">
+              <div class="srchead">
+                <div class="hl">Harbor archive — first pass</div>
+                <div class="prov">Field notes · 2 placements</div>
+              </div>
+              <div class="bd">
+                <p>The harbor office kept two sets of books. One recorded arrivals, the other recorded repairs, and after 1931 the two stop agreeing with each other.</p>
+                <p>The disagreement is the useful part. It dates the year the second pier was rebuilt, which none of the surviving photographs establish on their own.</p>
+                <p>Everything before that year reads as one continuous account. Everything after has to be assembled from the repair book, the county ledger, and whatever the pilot station chose to write down that week.</p>
+                <p>The second pier appears in the repair book eleven times before it appears in the arrivals book once. Whatever it was used for in those years, it was not receiving traffic.</p>
+                <p>Two hands wrote the arrivals book. The first is careful and abbreviates nothing. The second writes fast and drops the vessel class entirely after 1936.</p>
+                <p>There is a third hand in the margins of both books, later, in pencil. It corrects dates and nothing else, and it is almost certainly an archivist rather than a clerk.</p>
+                <p>The arrivals book uses a house shorthand for cargo that nobody has written down anywhere. Six of the abbreviations are obvious, four are not, and two appear only once.</p>
+                <p>Where the two books can be matched, they agree on dates to within a day. The disagreements are all about what happened, never about when.</p>
+              </div>
+            </div>
+            <div class="src">
+              <div class="srchead"><div class="prov">Field notes · 1 placement</div></div>
+              <div class="bd">
+                <p>Four months of 1938 are missing from both books, and the gap sits exactly where the storm damage should be.</p>
+                <p>A lost volume is the likeliest explanation. The archivist thinks the binder was never returned after the county borrowed it, and that it may still be in a box in the annex.</p>
+                <p>Weather is recorded only when it stopped work. A quiet year in these books is not a quiet year on the water.</p>
+              </div>
+            </div>
+            <div class="src">
+              <div class="srchead">
+                <div class="hl">Repair book, 1931–1949</div>
+                <div class="prov">Archive · 2 placements</div>
+              </div>
+              <div class="bd">
+                <p>The repair book is the only volume that was ever indexed, and the index is wrong after 1940 in a way that looks deliberate.</p>
+                <p>Entries are grouped by trade rather than by date, so a single job can appear four times without ever being described in full.</p>
+                <p>Carpentry is always listed first, which flatters the carpenters and makes any job involving stone almost impossible to date.</p>
+                <p>Stone work is described by the yard, timber by the foot, and labour by the day. Converting any of it into a comparison takes longer than reading it.</p>
+                <p>The pier drawings are held elsewhere and were not consulted. Their existence is noted here twice, both times as a reference number.</p>
+                <p>Those numbers are worth carrying to the county office. They are the only thread out of this set into another one.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flow c1" style="flex:1 1 0; border-left:1px solid rgba(26,26,26,0.16); padding-left:1.7em;">
+            <div class="figure">
+              <div class="fr plate cool" style="height:208px;"></div>
+              <div class="cap">Second pier · JPG · 3024 × 4032</div>
+            </div>
+            <div class="src">
+              <div class="srchead">
+                <div class="hl">Tide tables, 1912–1948</div>
+                <div class="prov">Archive · 1 placement</div>
+              </div>
+              <div class="bd">
+                <p>Photographs are dated by the pier, not by the caption. Captions were added in the 1970s by someone working from memory.</p>
+                <p>They are wrong often enough that they cannot stand as evidence on their own, though they are rarely wrong by more than a few years.</p>
+                <p>Tide tables were printed locally until 1948, when the county took the work over. The local printings carry marginal notes in at least three hands, two of them dated.</p>
+                <p>This is the only run in the set that is complete from start to finish, and that completeness is what makes the gaps elsewhere legible.</p>
+                <p>The tables also carry the only drawing in the set: a sketch of the mooring at the foot of the 1921 volume, unsigned.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="foot"><span>Field notes · Archive</span><span>1 / 2</span></div>
+      </div>
+    </div>
+
+    <div class="mark" style="left:1000px; top:60px;">1</div>
+    <div class="mark" style="left:1000px; top:242px;">2</div>
+    <div class="mark" style="left:424px; top:300px;">3</div>
+    <div class="mark" style="left:738px; top:420px;">4</div>
+    <div class="mark" style="left:1012px; top:566px;">5</div>
+  </div>
+  <div class="folio">STATE: AN11-A4 · ONE PICTURE, TEXT-LED SET</div>
+</section>
+
+<!-- ============================ 19 · NOTES ON 09 ============================ -->
+<section class="slide">
+  <div class="running"><span>TEXT LED · NOTES ON 09</span><span class="fig">09 / 16</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>The whole picture, or none of it</b>A picture that belongs to this material keeps its own proportions and its complete edge. It is never cropped to a shape the page would prefer, and never enlarged past what the file can carry.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Its own quiet line</b>Kind and pixel dimensions in monospace beneath the frame — the same line the picture carries anywhere else in Grove. Never printed over the image.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Writing still leads</b>Two thirds of the page stays text at full measure. A single picture does not turn a set of writing into a set of pictures — the page composition may adapt, the reading itself does not change.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Supporting, in its own region</b>The picture sits in the smaller region with the piece it belongs to, ruled off from the dominant one. Text does not run around it and no channel is cut through a column to make room.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>No slot is ever reserved</b>When a set has no picture, nothing is left empty and nothing is invented to fill the space. There is no frame waiting on any of the nine pages in this family.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>When the picture cannot be complete</b>If the frame cannot be whole at a readable size on this page, it gets a page of its own rather than a crop. The writing yields room; the picture never yields its edges.</span></div>
+  </div>
+  <div class="folio">FIG 09 · PICTURE DEMAND STAYS AT OR UNDER A QUARTER OF THE SET</div>
+</section>
+
+<!-- ============================ 20 · PLATE · A NARROWER SURFACE ============================ -->
+<section class="slide">
+  <div class="running"><span>TEXT LED · NARROW WIDTH</span><span class="fig">10 / 16</span></div>
+
+  <div class="stage bleed">
+    <!-- wide: three measures, two pages -->
+    <div class="sheet" style="position:absolute; left:40px; top:105px; width:617px; height:386px; font-size:8.5px;">
+      <div class="leaf">
+        <div class="toprule"></div>
+        <div class="flow c3">
+          <div class="src">
+            <div class="srchead">
+              <div class="hl">Harbor archive — first pass</div>
+              <div class="prov">Field notes · 2 placements</div>
+            </div>
+            <div class="bd">
+              <p>The harbor office kept two sets of books. One recorded arrivals, the other recorded repairs, and after 1931 the two stop agreeing with each other.</p>
+              <p>The disagreement is the useful part. It dates the year the second pier was rebuilt, which none of the surviving photographs establish on their own.</p>
+              <p>Everything before that year reads as one continuous account. Everything after has to be assembled from the repair book, the county ledger, and whatever the pilot station chose to write down that week.</p>
+              <p>The second pier appears in the repair book eleven times before it appears in the arrivals book once. Whatever it was used for in those years, it was not receiving traffic.</p>
+              <p>Two hands wrote the arrivals book. The first is careful and abbreviates nothing. The second writes fast and drops the vessel class entirely after 1936.</p>
+              <p>There is a third hand in the margins of both books, later, in pencil. It corrects dates and nothing else, and it is almost certainly an archivist rather than a clerk.</p>
+              <p>The arrivals book uses a house shorthand for cargo that nobody has written down anywhere. Six of the abbreviations are obvious, four are not, and two appear only once.</p>
+              <p>Where the two books can be matched, they agree on dates to within a day. The disagreements are all about what happened, never about when.</p>
+              <p>Four months of 1938 are missing from both books, and the gap sits exactly where the storm damage should be.</p>
+              <p>A lost volume is the likeliest explanation. The archivist thinks the binder was never returned after the county borrowed it, and that it may still be in a box in the annex.</p>
+              <p>Weather is recorded only when it stopped work. A quiet year in these books is not a quiet year on the water.</p>
+              <p>The winter of 1934 has one line for January and nothing else until March, which either means an easy season or a clerk who had given up.</p>
+              <p>The annex is not catalogued. She offered to open it, with the caution that nothing in it has been listed since the move.</p>
+              <p>Boxes there are labelled by department rather than by year, which means the repair material is likely split across at least four of</p>
+            </div>
+            <div class="cont tail">Continues on 2</div>
+          </div>
+        </div>
+        <div class="foot"><span>Field notes</span><span>1 / 2</span></div>
+      </div>
+    </div>
+
+    <!-- narrow: same measure, two measures, four pages -->
+    <div class="sheet" style="position:absolute; left:760px; top:166px; width:423px; height:264px; font-size:8.5px;">
+      <div class="leaf">
+        <div class="toprule"></div>
+        <div class="flow c2">
+          <div class="src">
+            <div class="srchead">
+              <div class="hl">Harbor archive — first pass</div>
+              <div class="prov">Field notes · 2 placements</div>
+            </div>
+            <div class="bd">
+              <p>The harbor office kept two sets of books. One recorded arrivals, the other recorded repairs, and after 1931 the two stop agreeing with each other.</p>
+              <p>The disagreement is the useful part. It dates the year the second pier was rebuilt, which none of the surviving photographs establish on their own.</p>
+              <p>Everything before that year reads as one continuous account. Everything after has to be assembled from the repair book, the county ledger, and whatever the pilot station chose to write down that week.</p>
+              <p>The second pier appears in the repair book eleven times before it appears in the arrivals book once. Whatever it was used for in those years, it was not receiving traffic.</p>
+              <p>Two hands wrote the arrivals book. The first is careful and abbreviates nothing. The second writes fast and drops the vessel class entirely after 1936.</p>
+              <p>There is a third hand in the margins of both books, later, in pencil. It corrects dates and nothing else, and it is almost certainly an archivist rather than a</p>
+            </div>
+            <div class="cont tail">Continues on 2</div>
+          </div>
+        </div>
+        <div class="foot"><span>Field notes</span><span>1 / 4</span></div>
+      </div>
+    </div>
+
+    <div class="mark" style="left:262px; top:300px;">1</div>
+    <div class="mark" style="left:962px; top:290px;">2</div>
+    <div class="mark" style="left:1150px; top:434px;">3</div>
+    <div class="mark" style="left:620px; top:496px;">4</div>
+  </div>
+  <div class="folio">STATE: AT-04 · SAME MEASURE · MORE PAGES</div>
+</section>
+
+<!-- ============================ 21 · NOTES ON 10 ============================ -->
+<section class="slide">
+  <div class="running"><span>TEXT LED · NOTES ON 10</span><span class="fig">10 / 16</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>The measure is the constant</b>Both pages set the same line at the same size. The line a person reads is the one thing a narrower window is never allowed to change.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Columns are what give way</b>Three measures become two. The column count is a function of how much room there is, and it is the first thing to move when there is less.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Then the page count rises</b>Two pages become four. Less room per page means more pages — the reading gets longer, never smaller.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Still landscape, still the same form</b>The narrow page is a smaller wide page, not a tall one. A narrow window never swaps the reading for a portrait book block; that would change the grammar instead of reflowing it.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>The order in which room is given up</b>Columns first, then pages, and nothing after that. Type size, line length, and completeness are not on the list.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Where a person was, they stay</b>Reflowing to more pages keeps the piece they were reading in view. The page number under it changes; their place does not.</span></div>
+  </div>
+  <div class="folio">FIG 10 · THE SAME READING, TWO WINDOWS</div>
+</section>
+
+<!-- ============================ 22 · HOW MUCH TEXT IS THERE ============================ -->
+<section class="slide">
+  <div class="running"><span>TEXT LED · MEASURING THE MATERIAL</span><span class="fig">11 / 16</span></div>
+
+  <div class="band">
+    <div class="grid2" style="height:100%;">
+      <div>
+        <div class="lbl on" style="margin-bottom:14px;">Measured at a readable measure</div>
+        <div class="eq" style="margin-bottom:26px;">
+          charsPerLine&nbsp;&nbsp;= <em>max</em>(8, <em>floor</em>(measure / <em>max</em>(6, 0.52 × size)))<br>
+          lineCount&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= wrapped body + heading lines + blank units<br>
+          paragraphCost = 0.65 × paragraph breaks<br>
+          T&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <em>max</em>(0.25, (lineCount + paragraphCost) / linesPerPage)
+        </div>
+        <div class="lbl on" style="margin-bottom:14px;">And recorded as rendered area</div>
+        <div class="eq" style="margin-bottom:26px;">
+          height&nbsp;&nbsp;= (lineCount + paragraphCost) × size × lineHeight<br>
+          area&nbsp;&nbsp;&nbsp;&nbsp;= height × measure<br>
+          <em>D_text</em>&nbsp;&nbsp;= area of the writing / usable area of the candidate
+        </div>
+        <div class="why" style="max-width:500px;">
+          THE SAME PIECE HAS DIFFERENT DEMAND AT DIFFERENT MEASURES, AND THAT IS
+          CORRECT: DEMAND IS HOW MUCH ROOM THE WRITING NEEDS TO STAY READABLE
+          HERE, NOT HOW LARGE THE FILE IS.
+        </div>
+      </div>
+
+      <div>
+        <div class="lbl on" style="margin-bottom:14px;">The set, then the route</div>
+        <div class="eq" style="margin-bottom:26px;">
+          D&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= ΣT + ΣI&nbsp;&nbsp;&nbsp;&nbsp;(other media = 0 this release)<br>
+          imageShare = ΣI / D<br>
+          <em>text-led</em>&nbsp;&nbsp;&nbsp;⇔ imageShare ≤ 0.25 and otherShare = 0<br>
+          0.25 belongs to text-led · 0.70 belongs to image-led
+        </div>
+        <div class="lbl on" style="margin-bottom:14px;">Never measured</div>
+        <div class="why" style="margin-bottom:26px;">
+          RAW CHARACTER COUNT · FILE BYTES · COMPRESSION · NUMBER OF PIECES ON
+          ITS OWN · THE SIZE A THUMBNAIL HAPPENS TO BE ON SCREEN. FIVE SHORT
+          NOTICES CAN FIT ONE SHEET WHILE ONE LONG PIECE NEEDS FOUR PAGES.
+        </div>
+        <div class="lbl on" style="margin-bottom:14px;">Starting fixtures, not constants</div>
+        <div class="eq" style="margin-bottom:18px;">
+          measure 340px · size 16px · lineHeight 1.55 · linesPerPage 18
+        </div>
+        <div class="why" style="max-width:500px;">
+          THE NUMBERS ABOVE ARE THE VALUES THE CALCULATION RUNS ON TODAY. THE
+          PHYSICAL FORMS SUPPORT THE DIRECTION OF THE PROGRESSION; THEY DO NOT
+          PROVE ONE VALUE FOR EVERY WINDOW, TYPEFACE, OR LANGUAGE. RENDERED
+          EVIDENCE OWNS THEM.
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="folio">FIG 11 · ONE CALCULATION PATH · NO SECOND MEASUREMENT</div>
+</section>
+
+<!-- ============================ 23 · THE LADDER ============================ -->
+<section class="slide">
+  <div class="running"><span>TEXT LED · WHAT MOVES A SET UP</span><span class="fig">12 / 16</span></div>
+
+  <div class="band">
+    <div style="display:flex; gap:56px; height:100%;">
+      <div style="flex:1.35;">
+        <div class="lbl on" style="margin-bottom:20px;">Amount decides the tier</div>
+
+        <div style="display:flex; align-items:center; gap:16px; margin-bottom:18px;">
+          <div class="eq" style="width:132px; color:var(--invalid);">D &lt; 1.0</div>
+          <div style="width:96px; height:26px; border:1px solid var(--invalid); border-radius:var(--r);"></div>
+          <div class="why" style="color:var(--invalid);">NOT ENOUGH MATERIAL TO BE WORTH A READING</div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:16px; margin-bottom:18px;">
+          <div class="eq" style="width:132px;">1.0 – 1.75</div>
+          <div style="width:172px; height:34px; background:rgba(150,182,248,0.16); border:1px solid var(--ann-line); border-radius:var(--r); display:flex; align-items:center; padding:0 12px; font-family:var(--f-display); font-size:15px; letter-spacing:0.04em; color:var(--text);">Bulletin</div>
+          <div class="why">ONE SHEET · ONE TO THREE MEASURES · NO THREAD</div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:16px; margin-bottom:18px;">
+          <div class="eq" style="width:132px;">1.75 – 3.0</div>
+          <div style="width:286px; height:34px; background:rgba(150,182,248,0.16); border:1px solid var(--ann-line); border-radius:var(--r); display:flex; align-items:center; padding:0 12px; font-family:var(--f-display); font-size:15px; letter-spacing:0.04em; color:var(--text);">Berliner / compact</div>
+          <div class="why">PAGE OR SPREAD · STABLE MEASURES · SHORT CONTINUATION</div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:16px; margin-bottom:26px;">
+          <div class="eq" style="width:132px;">3.0 and up</div>
+          <div style="width:412px; height:34px; background:rgba(150,182,248,0.16); border:1px solid var(--ann-line); border-radius:var(--r); display:flex; align-items:center; padding:0 12px; font-family:var(--f-display); font-size:15px; letter-spacing:0.04em; color:var(--text);">Broadsheet</div>
+          <div class="why">SPREAD AND PAGES · FOUR TO SIX MEASURES · THREADED</div>
+        </div>
+
+        <div style="height:1px; background:var(--hairline); margin-bottom:22px;"></div>
+
+        <div class="lbl on" style="margin-bottom:12px;">Balance decides the family of forms</div>
+        <div class="eq">
+          imageShare ≤ 0.25&nbsp;&nbsp;→ <em>bulletin · berliner · broadsheet</em><br>
+          0.25 &lt; share &lt; 0.70 → brochure · pamphlet · magazine<br>
+          imageShare ≥ 0.70&nbsp;&nbsp;→ gallery · contact sheet · image edition
+        </div>
+      </div>
+
+      <div style="flex:1;">
+        <div class="lbl on" style="margin-bottom:16px;">In this order, always</div>
+        <div class="ann" style="margin-bottom:20px;"><span class="n">01</span><span><b>Another family, same tier</b>If a different page inside the tier can hold the complete piece at a readable measure, use it. Nothing moves up until nothing inside the tier fits.</span></div>
+        <div class="ann" style="margin-bottom:20px;"><span class="n">02</span><span><b>Bulletin to Berliner</b>When the material needs a spread, or one piece needs a short continuation. That is the boundary — not a taste for a larger page.</span></div>
+        <div class="ann" style="margin-bottom:20px;"><span class="n">03</span><span><b>Berliner to broadsheet</b>When the set needs a large field, many measures, or sustained pagination.</span></div>
+        <div class="ann" style="margin-bottom:20px;"><span class="n">04</span><span><b>Add pages before anything else</b>Never reduce type, never narrow the line past reading, never cut. Pagination is the only answer to too much material.</span></div>
+        <div class="ann" style="margin-bottom:20px;"><span class="n">05</span><span><b>Count is a separate input</b>Amount routes the tier; how many pieces there are and whether they can share a page routes the family. Five short notices and one long piece are different problems.</span></div>
+        <div class="ann"><span class="n">06</span><span><b>Sitting on a boundary</b>A set hovering at 1.75 or 3.0 holds its form until it is clearly past. A reading does not flicker between two pages while someone is reading it.</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="folio">FIG 12 · BANDS ARE RESOLVER-OWNED · NEVER A CONTROL A PERSON TUNES</div>
+</section>
+
+<!--END-->
+</body>
+</html>

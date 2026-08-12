@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Note</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/catalogue.css">
+<style>
+  /* ---------- deck-local annotation helpers ---------- */
+  .sectionlbl {
+    font-family: var(--f-mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.24em; text-transform: uppercase; color: var(--ann);
+  }
+  .note-under {
+    font-family: var(--f-mono); font-size: 10px; line-height: 1.8;
+    color: var(--ann); letter-spacing: 0.02em;
+  }
+
+  /* ---------- Grid context patch ----------
+     Product line system: cell 220 · minor pitch 44 ink #161618 ·
+     major pitch 220 ink #242428 · supercell pitch 1100, major ink. */
+  .gpanel {
+    position: absolute; overflow: hidden;
+    background-color: var(--canvas); border: 1px solid var(--hairline);
+    --cell: 220px;
+    --minor-ink: rgba(22,22,24,1);
+    --major-ink: rgba(36,36,40,1);
+    background-image:
+      linear-gradient(to right,  var(--major-ink) 0 1px, transparent 1px),
+      linear-gradient(to bottom, var(--major-ink) 0 1px, transparent 1px),
+      linear-gradient(to right,  var(--minor-ink) 0 1px, transparent 1px),
+      linear-gradient(to bottom, var(--minor-ink) 0 1px, transparent 1px);
+    background-size:
+      var(--cell) var(--cell), var(--cell) var(--cell),
+      calc(var(--cell) / 5) calc(var(--cell) / 5), calc(var(--cell) / 5) calc(var(--cell) / 5);
+  }
+
+  /* presence: one whole cell per value, hard edges, the note's own hue */
+  .fc { position: absolute; width: 220px; height: 220px; }
+
+  /* ---------- placed Note (css/materials.css .obj / .sticky) ---------- */
+  .g-obj { position: absolute; }
+  .g-sticky {
+    position: absolute; inset: 0;
+    display: flex; align-items: flex-start;
+    padding: 16px 15px; color: #F4F4F2;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
+  }
+  .g-sticky.stepped { box-shadow: none; }
+  .g-note { font-family: var(--f-ui); font-size: 15px; font-weight: 500; line-height: 1.42; width: 100%; }
+  .g-handle { position: absolute; right: -2px; bottom: -2px; width: 18px; height: 18px; color: rgba(255,255,255,0.7); z-index: 2; }
+  .g-handle::after {
+    content: ''; position: absolute; right: 3px; bottom: 3px; width: 10px; height: 10px;
+    border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
+  }
+  .g-edit {
+    position: absolute; right: 8px; top: 8px; z-index: 2;
+    padding: 4px 6px; border: 1px solid rgba(255,255,255,0.42); border-radius: 2px;
+    color: #fff; background: rgba(20,20,24,0.38);
+    font-family: var(--f-mono); font-size: 8px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .g-obj.sel { outline: 2px solid rgb(150 182 248 / 0.9); outline-offset: 0;
+               box-shadow: 0 0 24px 6px rgb(150 182 248 / 0.45); }
+  /* the field answers selection with a perimeter in the interaction hue */
+  .fc.selfield { box-shadow: inset 0 0 0 1.5px rgb(150 182 248 / 0.30); }
+  /* anchored: ribbon structure at the edge, anchor-indigo confirms */
+  .g-ribbon {
+    position: absolute; top: -5px; left: 16px; width: 12px; height: 22px; z-index: 3;
+    background: var(--anchor-indigo);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
+  }
+
+  /* ---------- refusal counter-example chrome (deliberately wrong) ---------- */
+  .x-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 7px 10px; background: rgba(0,0,0,0.22);
+    font-family: var(--f-mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.75);
+  }
+  .x-btnrow { display: flex; gap: 6px; position: absolute; left: 12px; right: 12px; bottom: 10px; }
+  .x-btn {
+    flex: 1; height: 22px; border: 1px solid rgba(255,255,255,0.4); border-radius: 2px;
+    background: rgba(20,20,24,0.4); color: #fff;
+    font-family: var(--f-mono); font-size: 8px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; display: flex; align-items: center; justify-content: center;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================ 01 · COVER ============================ -->
+<section class="slide cover">
+  <div class="running"><span>GROVE · DESIGN CATALOGUE</span><span class="fig">02</span></div>
+  <div class="plane">GRID PLANE · CONTENT FORM</div>
+  <h1>Note</h1>
+  <div class="rule"></div>
+  <div class="scope">
+    Placed form · Footprints · States · Distance · Refusals
+  </div>
+  <div class="folio">SOURCE: GROVE NOTES (CANON) · DESIGN.MD</div>
+</section>
+
+<!-- ============================ 02 · PLACED FORM ============================ -->
+<section class="slide">
+  <div class="running"><span>NOTE · PLACED FORM</span><span class="fig">01 / 05</span></div>
+
+  <div class="gpanel" style="left:48px; top:88px; width:836px; height:576px;
+       background-position:198px 68px;">
+
+    <!-- presence cast into the surrounding cells, in the note's own hue -->
+    <div class="fc" style="left:-22px; top:-152px; background:rgb(158 140 234 / 0.030);"></div>
+    <div class="fc" style="left:198px; top:-152px; background:rgb(158 140 234 / 0.070);"></div>
+    <div class="fc" style="left:418px; top:-152px; background:rgb(158 140 234 / 0.060);"></div>
+    <div class="fc" style="left:638px; top:-152px; background:rgb(158 140 234 / 0.030);"></div>
+    <div class="fc" style="left:-22px; top:68px;   background:rgb(158 140 234 / 0.075);"></div>
+    <div class="fc" style="left:638px; top:68px;   background:rgb(158 140 234 / 0.100);"></div>
+    <div class="fc" style="left:-22px; top:288px;  background:rgb(158 140 234 / 0.055);"></div>
+    <div class="fc" style="left:638px; top:288px;  background:rgb(158 140 234 / 0.085);"></div>
+    <div class="fc" style="left:-22px; top:508px;  background:rgb(158 140 234 / 0.030);"></div>
+    <div class="fc" style="left:198px; top:508px;  background:rgb(158 140 234 / 0.070);"></div>
+    <div class="fc" style="left:418px; top:508px;  background:rgb(158 140 234 / 0.055);"></div>
+    <div class="fc" style="left:638px; top:508px;  background:rgb(158 140 234 / 0.035);"></div>
+
+    <div class="g-obj" style="left:198px; top:68px; width:440px; height:440px;">
+      <div class="g-sticky" style="background:#6E62A6;">
+        <div class="g-note">Call the framer about the two prints — matte, thin black
+          edge, no glass on the larger one. Ask whether both can be ready before
+          Thursday's studio visit, and get a quote for the third piece while you're
+          there. If the linen mat is back in stock, swap it in on the small print;
+          the warm grey is fine otherwise. Pick everything up in one trip and settle
+          the balance then, so nothing is outstanding before the show. Mention the
+          loose corner on the frame we collected in March — he offered to redo it
+          and never sent a date. Take the tape measure: the alcove wall is narrower
+          than it looks and the larger print may have to hang lower than planned.</div>
+      </div>
+    </div>
+
+    <div class="mark" style="left:189px; top:499px;">03</div>
+    <div class="mark" style="left:629px; top:59px;">04</div>
+    <div class="mark" style="left:560px; top:404px;">01</div>
+    <div class="mark" style="left:660px; top:180px;">02</div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>One glance, whole thought</b>The note is its text: UI type set directly on the authored surface. No title bar restates it, no summary stands in for it, and it never truncates.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Authored colour</b>The fill is one of three Note colours — #6E62A6 here. The same hue is what the note casts into the cells around it: identity, not decoration.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Complete cells</b>The footprint is 2×2 whole cells and every edge lands on a major line. When the text outgrows the footprint the footprint grows; the text never shrinks.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Quiet at rest</b>No icon row, no frame, no persistent controls. The resize corner and the edit affordance exist only while the pointer is near.</span></div>
+  </div>
+  <div class="folio">FORM: NOTE · CELL 220 · ZOOM 100%</div>
+</section>
+
+<!-- ============================ 03 · FOOTPRINTS ============================ -->
+<section class="slide">
+  <div class="running"><span>NOTE · FOOTPRINTS</span><span class="fig">02 / 05</span></div>
+
+  <div class="gpanel" style="left:48px; top:88px; width:1184px; height:470px;
+       background-position:42px 15px;">
+
+    <!-- presence -->
+    <div class="fc" style="left:262px; top:15px;  background:rgb(226 98 92 / 0.075);"></div>
+    <div class="fc" style="left:42px;  top:235px; background:rgb(226 98 92 / 0.055);"></div>
+    <div class="fc" style="left:262px; top:235px; background:rgb(110 160 226 / 0.080);"></div>
+    <div class="fc" style="left:482px; top:235px; background:rgb(110 160 226 / 0.070);"></div>
+    <div class="fc" style="left:482px; top:15px;  background:rgb(158 140 234 / 0.060);"></div>
+    <div class="fc" style="left:482px; top:455px; background:rgb(110 160 226 / 0.040);"></div>
+
+    <!-- A · 1×1, a short thought -->
+    <div class="g-obj" style="left:42px; top:15px; width:220px; height:220px;">
+      <div class="g-sticky" style="background:#B0524E;">
+        <div class="g-note">Water the fig on Friday — a full can, then drain the saucer.</div>
+      </div>
+    </div>
+
+    <!-- B · 1×1, filled to capacity -->
+    <div class="g-obj" style="left:262px; top:235px; width:220px; height:220px;">
+      <div class="g-sticky" style="background:#4E6E9C;">
+        <div class="g-note">Bring the blue folder, the spare key and Mum's birthday
+          card to Sunday lunch. Leave by four so the drive home isn't in the dark,
+          and call ahead if the train runs late. Take the loft key.</div>
+      </div>
+    </div>
+
+    <!-- C · the same note, one paragraph longer -->
+    <div class="g-obj" style="left:702px; top:15px; width:440px; height:440px;">
+      <div class="g-sticky" style="background:#4E6E9C;">
+        <div class="g-note">Bring the blue folder, the spare key and Mum's birthday
+          card to Sunday lunch. Leave by four so the drive home isn't in the dark,
+          and call ahead if the train runs late. Take the loft key. Ask about the
+          loft boxes while everyone is in one room — the photographs from the lake
+          house are in the second one, and nobody has looked since the move. Offer
+          to take a box home and sort it properly rather than promising to come back
+          for it. Bring the small torch; the loft light has been out since spring,
+          and the ladder catch still sticks on the left. Photograph anything you
+          leave behind so the next trip isn't another search. And ask whether the
+          green chair is still going spare — it would suit the front room far better
+          than what is in there now. If the weather holds, suggest walking to the
+          bridge afterwards instead of a second pot of tea.</div>
+      </div>
+    </div>
+
+    <div class="mark" style="left:233px; top:206px;">01</div>
+    <div class="mark" style="left:453px; top:426px;">02</div>
+    <div class="mark" style="left:1113px; top:426px;">03</div>
+  </div>
+
+  <div style="position:absolute; left:48px; right:48px; top:578px;
+              display:grid; grid-template-columns:repeat(3,1fr); column-gap:32px;">
+    <div class="ann"><span class="n">01</span><span><b>1×1 · 220px · smallest that fits</b>Placed size is solved from the text: the smallest whole-cell square that holds every word at reading size, and no larger.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>1×1 at capacity</b>Type size is identical at every footprint. This note has filled its cell — the next sentence cannot be set here without shrinking it.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>2×2 · the same note, grown</b>One paragraph more and the square steps up. The footprint answers the text; the text is never disciplined by the footprint.</span></div>
+  </div>
+  <div class="folio">FOOTPRINTS ARE WHOLE CELLS, AND SQUARE</div>
+</section>
+
+<!-- ============================ 04 · STATES ============================ -->
+<section class="slide">
+  <div class="running"><span>NOTE · STATES</span><span class="fig">03 / 05</span></div>
+
+  <!-- Hover -->
+  <div class="sectionlbl" style="position:absolute; left:48px; top:100px;">Hover</div>
+  <div class="gpanel" style="left:48px; top:124px; width:376px; height:340px;
+       background-position:78px 60px;">
+    <div class="fc" style="left:-142px; top:60px;  background:rgb(110 160 226 / 0.055);"></div>
+    <div class="fc" style="left:298px;  top:60px;  background:rgb(110 160 226 / 0.075);"></div>
+    <div class="fc" style="left:78px;   top:-160px; background:rgb(110 160 226 / 0.050);"></div>
+    <div class="fc" style="left:78px;   top:280px; background:rgb(110 160 226 / 0.065);"></div>
+    <div class="g-obj" style="left:78px; top:60px; width:220px; height:220px;">
+      <div class="g-sticky" style="background:#4E6E9C;">
+        <div class="g-note">Ask Priya about the vendor list before Tuesday.</div>
+      </div>
+      <div class="g-edit">Edit</div>
+      <div class="g-handle"></div>
+    </div>
+  </div>
+  <div class="note-under" style="position:absolute; left:48px; top:478px; width:376px;">RESIZE CORNER AND EDIT AFFORDANCE FADE IN. THE SURFACE ITSELF IS UNCHANGED.</div>
+
+  <!-- Selected -->
+  <div class="sectionlbl" style="position:absolute; left:452px; top:100px;">Selected</div>
+  <div class="gpanel" style="left:452px; top:124px; width:376px; height:340px;
+       background-position:78px 60px;">
+    <div class="fc selfield" style="left:-142px; top:60px;  background:rgb(110 160 226 / 0.090);"></div>
+    <div class="fc selfield" style="left:298px;  top:60px;  background:rgb(110 160 226 / 0.110);"></div>
+    <div class="fc selfield" style="left:78px;   top:-160px; background:rgb(110 160 226 / 0.085);"></div>
+    <div class="fc selfield" style="left:78px;   top:280px; background:rgb(110 160 226 / 0.100);"></div>
+    <div class="g-obj sel" style="left:78px; top:60px; width:220px; height:220px;">
+      <div class="g-sticky" style="background:#4E6E9C;">
+        <div class="g-note">Return the books — the blue one is already overdue.</div>
+      </div>
+      <div class="g-edit">Edit</div>
+      <div class="g-handle"></div>
+    </div>
+  </div>
+  <div class="note-under" style="position:absolute; left:452px; top:478px; width:376px;">2PX INTERACTION OUTLINE OUTSIDE THE EDGE, A SOFT GLOW, AND THE FIELD ANSWERS.</div>
+
+  <!-- Anchored -->
+  <div class="sectionlbl" style="position:absolute; left:856px; top:100px;">Anchored</div>
+  <div class="gpanel" style="left:856px; top:124px; width:376px; height:340px;
+       background-position:78px 60px;">
+    <div class="fc" style="left:-142px; top:60px;  background:rgb(158 140 234 / 0.060);"></div>
+    <div class="fc" style="left:298px;  top:60px;  background:rgb(158 140 234 / 0.080);"></div>
+    <div class="fc" style="left:78px;   top:-160px; background:rgb(158 140 234 / 0.055);"></div>
+    <div class="fc" style="left:78px;   top:280px; background:rgb(158 140 234 / 0.070);"></div>
+    <div class="g-obj" style="left:78px; top:60px; width:220px; height:220px;">
+      <div class="g-sticky" style="background:#4E6E9C;">
+        <div class="g-note">Measure the hallway before ordering the runner.</div>
+      </div>
+      <div class="g-ribbon"></div>
+    </div>
+  </div>
+  <div class="note-under" style="position:absolute; left:856px; top:478px; width:376px;">A RIBBON AT THE EDGE MARKS AUTHORED CONTEXT, AND THE AURA TAKES THE ANCHOR HUE.</div>
+
+  <div style="position:absolute; left:48px; right:48px; top:544px;
+              display:grid; grid-template-columns:repeat(3,1fr); column-gap:32px;">
+    <div class="ann"><span class="n">01</span><span><b>Response, not residence</b>Chrome appears when the pointer is near and leaves with it. At rest the note is only its text on its colour.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Selection is interaction state</b>Outline #96B6F8 plus a brighter field around the footprint — read by structure, not hue alone. It is never stored on the note.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Anchored is identity</b>The ribbon is geometry first, so a colour-blind read still lands. Anchor indigo #9E8CEA is fixed wherever authored context appears, including in the aura.</span></div>
+  </div>
+  <div class="folio">STATES: HOVER · SELECTED · ANCHORED</div>
+</section>
+
+<!-- ============================ 05 · DISTANCE ============================ -->
+<section class="slide">
+  <div class="running"><span>NOTE · DISTANCE</span><span class="fig">04 / 05</span></div>
+
+  <!-- WORKING · 100% -->
+  <div class="sectionlbl" style="position:absolute; left:48px; top:100px;">Working · 100%</div>
+  <div class="gpanel" style="left:48px; top:124px; width:262px; height:470px;
+       background-position:21px 125px;">
+    <div class="fc" style="left:-199px; top:125px;  background:rgb(158 140 234 / 0.060);"></div>
+    <div class="fc" style="left:241px;  top:125px;  background:rgb(158 140 234 / 0.085);"></div>
+    <div class="fc" style="left:21px;   top:345px;  background:rgb(158 140 234 / 0.070);"></div>
+    <div class="fc" style="left:21px;   top:-95px;  background:rgb(158 140 234 / 0.055);"></div>
+    <div class="g-obj" style="left:21px; top:125px; width:220px; height:220px;">
+      <div class="g-sticky" style="background:#6E62A6;">
+        <div class="g-note">Ask the landlord about the leak under the kitchen sink.</div>
+      </div>
+    </div>
+    <div class="mark" style="left:212px; top:316px;">01</div>
+  </div>
+  <div class="note-under" style="position:absolute; left:48px; top:606px; width:262px;">CELL 220 · MINOR 44<br>FULL FORM, TRUE TYPE</div>
+
+  <!-- STEPPED BACK · 24% -->
+  <div class="sectionlbl" style="position:absolute; left:335px; top:100px;">Stepped back · 24%</div>
+  <div class="gpanel" style="left:335px; top:124px; width:262px; height:470px;
+       background-position:104.6px 208.6px; --cell:52.8px;
+       --minor-ink:rgba(22,22,24,0.57);">
+    <div class="fc" style="left:51.8px;  top:208.6px; width:52.8px; height:52.8px; background:rgb(158 140 234 / 0.060);"></div>
+    <div class="fc" style="left:157.4px; top:208.6px; width:52.8px; height:52.8px; background:rgb(158 140 234 / 0.085);"></div>
+    <div class="fc" style="left:104.6px; top:261.4px; width:52.8px; height:52.8px; background:rgb(158 140 234 / 0.070);"></div>
+    <div class="fc" style="left:104.6px; top:155.8px; width:52.8px; height:52.8px; background:rgb(158 140 234 / 0.055);"></div>
+    <div style="position:absolute; left:104.6px; top:208.6px; width:52.8px; height:52.8px;">
+      <div style="position:absolute; width:220px; height:220px; transform:scale(0.24); transform-origin:0 0;">
+        <div class="g-sticky stepped" style="background:#6E62A6;">
+          <div class="g-note">Ask the landlord about the leak under the kitchen sink.</div>
+        </div>
+      </div>
+    </div>
+    <div class="mark" style="left:148px; top:252px;">02</div>
+  </div>
+  <div class="note-under" style="position:absolute; left:335px; top:606px; width:262px;">CELL 52.8 · MINOR 10.6 AT 57%<br>NO CHROME, NO INSET RING</div>
+
+  <!-- FAR · 6% -->
+  <div class="sectionlbl" style="position:absolute; left:622px; top:100px;">Far · 6%</div>
+  <div class="gpanel" style="left:622px; top:124px; width:262px; height:470px;
+       background-position:124.4px 228.4px; --cell:13.2px;
+       --minor-ink:transparent; --major-ink:rgba(36,36,40,1);">
+    <!-- presence: lit cells, hard cell edges -->
+    <div class="fc" style="left:111.2px; top:215.2px; width:13.2px; height:13.2px; background:rgb(158 140 234 / 0.10);"></div>
+    <div class="fc" style="left:124.4px; top:215.2px; width:13.2px; height:13.2px; background:rgb(158 140 234 / 0.14);"></div>
+    <div class="fc" style="left:137.6px; top:215.2px; width:13.2px; height:13.2px; background:rgb(158 140 234 / 0.10);"></div>
+    <div class="fc" style="left:111.2px; top:228.4px; width:13.2px; height:13.2px; background:rgb(158 140 234 / 0.14);"></div>
+    <div class="fc" style="left:137.6px; top:228.4px; width:13.2px; height:13.2px; background:rgb(158 140 234 / 0.14);"></div>
+    <div class="fc" style="left:111.2px; top:241.6px; width:13.2px; height:13.2px; background:rgb(158 140 234 / 0.10);"></div>
+    <div class="fc" style="left:124.4px; top:241.6px; width:13.2px; height:13.2px; background:rgb(158 140 234 / 0.14);"></div>
+    <div class="fc" style="left:137.6px; top:241.6px; width:13.2px; height:13.2px; background:rgb(158 140 234 / 0.10);"></div>
+    <div class="fc" style="left:124.4px; top:202px;   width:13.2px; height:13.2px; background:rgb(158 140 234 / 0.05);"></div>
+    <div class="fc" style="left:98px;    top:228.4px; width:13.2px; height:13.2px; background:rgb(158 140 234 / 0.05);"></div>
+    <div class="fc" style="left:150.8px; top:228.4px; width:13.2px; height:13.2px; background:rgb(158 140 234 / 0.05);"></div>
+    <div class="fc" style="left:124.4px; top:254.8px; width:13.2px; height:13.2px; background:rgb(158 140 234 / 0.05);"></div>
+    <!-- kind-coded stand-in on the exact footprint -->
+    <div style="position:absolute; left:124.4px; top:228.4px; width:13.2px; height:13.2px; background:#6E62A6;"></div>
+    <div class="mark" style="left:145px; top:211px;">03</div>
+  </div>
+  <div class="note-under" style="position:absolute; left:622px; top:606px; width:262px;">CELL 13.2 · MINOR GONE<br>STAND-IN ON THE EXACT FOOTPRINT</div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Working</b>The full form: authored colour, true type, response chrome available on approach, presence in the cells around it.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Stepped back</b>Chrome leaves first, then surface treatment: no resize corner, no edit affordance, the inset ring dropped. The text is the true text, merely small — never a summary.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Far</b>A kind-coded stand-in on the exact 1×1 footprint: the authored colour at the true position, presence still cast with hard cell edges. Still selectable, still hit-testable.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Shedding order</b>Chrome, then surface, then detail — never presence, position or extent. Coming back, the stand-in is replaced where it already sits: never blanked, never moved to arrive.</span></div>
+  </div>
+  <div class="folio">WORKING / STEPPED / STAND-IN</div>
+</section>
+
+<!-- ============================ 06 · REFUSALS ============================ -->
+<section class="slide">
+  <div class="running"><span>NOTE · REFUSALS</span><span class="fig">05 / 05</span></div>
+
+  <!-- refused: title bar + truncation -->
+  <div class="verdict refuse" style="left:48px; top:104px;">REFUSED · TITLE BAR + TRUNCATION</div>
+  <div class="gpanel" style="left:48px; top:130px; width:368px; height:440px;
+       background-position:74px 88px;">
+    <div style="position:absolute; left:74px; top:88px; width:220px; height:220px; background:#6E62A6; box-shadow:inset 0 0 0 1px rgba(255,255,255,0.12);">
+      <div class="x-bar"><span>Note</span><span>MAY 12</span></div>
+      <div class="g-note" style="padding:12px 15px; color:#F4F4F2;">Call the framer about the two prints — matte, thin black edge, no glass on the lar…</div>
+    </div>
+  </div>
+  <div class="note-under" style="position:absolute; left:48px; top:588px; width:368px;">THE TEXT IS THE NOTE. A HEADER RESTATES IT; AN ELLIPSIS WITHHOLDS IT. NOTHING STANDS BETWEEN ONE GLANCE AND THE WHOLE THOUGHT.</div>
+
+  <!-- refused: persistent chrome -->
+  <div class="verdict refuse" style="left:456px; top:104px;">REFUSED · PERSISTENT CHROME</div>
+  <div class="gpanel" style="left:456px; top:130px; width:368px; height:440px;
+       background-position:74px 88px;">
+    <div style="position:absolute; left:74px; top:88px; width:220px; height:220px; background:#B0524E; box-shadow:inset 0 0 0 1px rgba(255,255,255,0.12);">
+      <div class="g-note" style="padding:16px 15px; color:#F4F4F2;">Water the fig on Friday — a full can, then drain the saucer.</div>
+      <div class="x-btnrow">
+        <div class="x-btn">Edit</div>
+        <div class="x-btn">Colour</div>
+        <div class="x-btn">Delete</div>
+      </div>
+    </div>
+  </div>
+  <div class="note-under" style="position:absolute; left:456px; top:588px; width:368px;">AFFORDANCES ANSWER APPROACH AND LEAVE WITH THE POINTER. BUTTONS THAT NEVER LEAVE TURN A THOUGHT INTO A CARD.</div>
+
+  <!-- refused: interior scroll -->
+  <div class="verdict refuse" style="left:864px; top:104px;">REFUSED · INTERIOR SCROLL</div>
+  <div class="gpanel" style="left:864px; top:130px; width:368px; height:440px;
+       background-position:74px 88px;">
+    <div style="position:absolute; left:74px; top:88px; width:220px; height:220px; background:#4E6E9C; box-shadow:inset 0 0 0 1px rgba(255,255,255,0.12); overflow:hidden;">
+      <div class="g-note" style="padding:16px 26px 16px 15px; color:#F4F4F2;">Bring the blue folder, the spare key and Mum's birthday card to Sunday lunch. Leave by four so the drive home isn't in the dark, and call</div>
+      <div style="position:absolute; top:0; right:0; bottom:0; width:8px; background:rgba(0,0,0,0.25);"></div>
+      <div style="position:absolute; top:14px; right:1px; width:6px; height:64px; background:rgba(255,255,255,0.35); border-radius:2px;"></div>
+    </div>
+  </div>
+  <div class="note-under" style="position:absolute; left:864px; top:588px; width:368px;">A SCROLLBAR HIDES PART OF THE THOUGHT INSIDE ITS OWN FOOTPRINT. WHEN THE TEXT GROWS, THE FOOTPRINT GROWS.</div>
+
+  <div class="folio">END · NOTE</div>
+</section>
+
+</body>
+</html>

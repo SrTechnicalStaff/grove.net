@@ -1,0 +1,14 @@
+08.05 13:52
+Grove - controlling content
+In grove, the cursor has an armed state. That armed state allows users to quickly identify what they can and can't do visually.
+The armed state does not have any words attached. We use markers, accents and color to identify state. 
+The cursor only has a few armed states for content. 
+Trace, Resize, Copy, Cut, Duplicate. 
+Copy/Cut/Duplicate share the same parent color, different hue.
+Resize has a unique color.
+Trace has a unique color.
+In terms of accents and markers, we borrow from Microsoft cell. If we map the behavior of how cells are accented and marked based off actions; that's exactly how the cursor and cell dynamic will work in Grove. This is the strongest product model in the world that we can lean on to mirror behavior. 
+All marker and accent behavior extends to the aura fields involved. 
+When you have an aura field that consists of two or more auras, the behavior should once again reflect how it would work in Excel. The auras related to the selected content would be accented and marked, while the broader aura itself would remain intact. The passive systems at play will handle all changes to hue, aura borders, etc, without needing any special interference from the cursor's behavior. Just like how highlight, and cutting cells in a spreadsheet doesn't directly change any of the broader systems the spreadsheet may actively have in use.
+Selection is always content focused, you can use classic shit + alt techniques to handle bulk selections from clicking, but when using marquee, select works through selecting content. In order to select a specific piece of content, all cells occupied by said content must be covered by the marquee, otherwise it doesn't count as a selection.
+

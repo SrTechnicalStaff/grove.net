@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Grid</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/catalogue.css">
+<style>
+  /* ---------- deck-local annotation helpers ---------- */
+  .sectionlbl {
+    font-family: var(--f-mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.24em; text-transform: uppercase; color: var(--ann);
+    margin-bottom: 12px;
+  }
+  .note-under {
+    font-family: var(--f-mono); font-size: 10px; line-height: 1.8;
+    color: var(--ann); letter-spacing: 0.02em;
+  }
+
+  /* ---------- the one line system ----------
+     Product values (css/tokens.css, js/features/grid.js, grid-renderer.js):
+       cell 220px · subdivisions 5 · supercell multiple 5
+       minor pitch cell/5 · ink --c-grid-min #161618 = rgb(22,22,24)
+       major pitch cell   · ink --c-grid-maj #242428 = rgb(36,36,40)
+       supercell pitch 5 cells · same major ink
+     Per-tier alpha is the fade curve: clamp((screen spacing - 6) / 8). */
+  .patch {
+    position: relative;
+    overflow: hidden;
+    background-color: var(--canvas);
+    --cell: 220px;
+    --minor-ink: rgba(22,22,24,1);
+    --major-ink: rgba(36,36,40,1);
+    --super-ink: rgba(36,36,40,1);
+    background-image:
+      linear-gradient(to right,  var(--super-ink) 0 1px, transparent 1px),
+      linear-gradient(to bottom, var(--super-ink) 0 1px, transparent 1px),
+      linear-gradient(to right,  var(--major-ink) 0 1px, transparent 1px),
+      linear-gradient(to bottom, var(--major-ink) 0 1px, transparent 1px),
+      linear-gradient(to right,  var(--minor-ink) 0 1px, transparent 1px),
+      linear-gradient(to bottom, var(--minor-ink) 0 1px, transparent 1px);
+    background-size:
+      calc(var(--cell) * 5) calc(var(--cell) * 5), calc(var(--cell) * 5) calc(var(--cell) * 5),
+      var(--cell) var(--cell), var(--cell) var(--cell),
+      calc(var(--cell) / 5) calc(var(--cell) / 5), calc(var(--cell) / 5) calc(var(--cell) / 5);
+  }
+  .patch.off { background-image: none; }
+
+  /* world layer: content authored at cell 220, projected by one transform */
+  .world { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+
+  /* ---------- presence field (js/mechanics/presence-field.js) ----------
+     One full cell per value, hard edges, hue from the content, alpha .025–.30 */
+  .fcell { position: absolute; width: 220px; height: 220px; }
+
+  /* ---------- grid cursor (css/Grid context.css #trail) ----------
+     Whole cell, neutral 234 234 234, 2px inset ring at .88, fill energy × .22 */
+  .cur   { position: absolute; width: 220px; height: 220px;
+           background: rgb(234 234 234 / 0.132);
+           box-shadow: inset 0 0 0 2px rgb(234 234 234 / 0.88); }
+  .trail { position: absolute; width: 220px; height: 220px; }
+
+  /* ---------- placed content (css/materials.css) ---------- */
+  .obj { position: absolute; }
+  .obj.sel { outline: 2px solid rgb(150 182 248 / 0.9); outline-offset: 0;
+             box-shadow: 0 0 24px 6px rgb(150 182 248 / 0.45); }
+
+  .sticky { position: absolute; inset: 0; display: flex; align-items: flex-start;
+            padding: 16px 15px; color: #F4F4F2;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12); }
+  .sticky .note { font-family: var(--f-ui); font-size: 15px; font-weight: 500;
+                  line-height: 1.42; width: 100%; }
+
+  .sheet { position: absolute; inset: 0; background: var(--paper); color: var(--paper-ink);
+           padding: 26px 28px; display: flex; flex-direction: column;
+           box-shadow: inset 0 0 0 1px rgba(26,26,26,0.10); }
+  .sheet::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(26,26,26,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(26,26,26,0.05) 1px, transparent 1px),
+      linear-gradient(rgba(26,26,26,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(26,26,26,0.08) 1px, transparent 1px);
+    background-size: 44px 44px, 44px 44px, 220px 220px, 220px 220px;
+  }
+  .sheet > * { position: relative; }
+  .sheet .lbl { font-family: var(--f-mono); font-size: 11px; font-weight: 600;
+                letter-spacing: 0.2em; text-transform: uppercase; color: rgba(26,26,26,0.48); }
+  .sheet .ttl { font-family: var(--f-display); font-weight: 500; font-size: 38px;
+                line-height: 0.98; letter-spacing: 0.03em; text-transform: uppercase; margin-top: 10px; }
+  .sheet .rl  { height: 1px; background: rgba(26,26,26,0.16); margin: 18px 0; }
+  .sheet .bdy { font-family: var(--f-ui); font-size: 15px; line-height: 1.65;
+                color: rgba(26,26,26,0.62); max-width: 34ch; }
+  .sheet .sp  { flex: 1; min-height: 16px; }
+  .sheet .tb  { align-self: flex-end; display: flex; border: 1px solid rgba(26,26,26,0.28); }
+  .sheet .tb div { padding: 7px 13px; font-family: var(--f-mono); font-size: 11px;
+                   letter-spacing: 0.12em; text-transform: uppercase; color: rgba(26,26,26,0.68); }
+  .sheet .tb div + div { border-left: 1px solid rgba(26,26,26,0.28); color: rgba(26,26,26,0.5); }
+
+  .figure { position: absolute; inset: 0; background: var(--paper); padding: 12px;
+            display: flex; flex-direction: column; gap: 10px;
+            box-shadow: inset 0 0 0 1px rgba(26,26,26,0.10); }
+  .figure .area { position: relative; flex: 1; background: #E6E6E2;
+                  box-shadow: inset 0 0 0 1px rgba(26,26,26,0.12); overflow: hidden; }
+  .figure .cap { display: flex; justify-content: space-between; align-items: baseline;
+                 font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.12em;
+                 text-transform: uppercase; color: rgba(26,26,26,0.55); }
+  .figure .cap .dim { color: rgba(26,26,26,0.34); }
+
+  /* annotation-layer leaders */
+  .lead { position: absolute; background: var(--ann-line); }
+  .lead.h { height: 1px; }
+  .lead.v { width: 1px; }
+</style>
+</head>
+<body>
+
+<!-- ============================ 01 · COVER ============================ -->
+<section class="slide cover">
+  <div class="running"><span>GROVE · DESIGN CATALOGUE</span><span class="fig">01</span></div>
+  <div class="plane">GRID PLANE · ORIENTATION</div>
+  <h1>The grid</h1>
+  <div class="rule"></div>
+  <div class="scope">
+    Line hierarchy · Legibility fade · Lines hidden ·
+    Grid cursor · Refusals
+  </div>
+  <div class="folio">SOURCE: DESIGN.MD · GL-00..GL-04</div>
+</section>
+
+<!-- ============================ 02 · LINE HIERARCHY ============================ -->
+<section class="slide">
+  <div class="running"><span>THE GRID · LINE HIERARCHY</span><span class="fig">01 / 05</span></div>
+
+  <!-- one full supercell module across, at 100% projection -->
+  <div class="patch" style="position:absolute; left:48px; top:88px; width:1184px; height:452px;
+       background-position:42px 12px;">
+
+    <!-- presence: whole cells, hue from the content that casts them -->
+    <div class="fcell" style="left:702px; top:12px;  background:rgb(110 160 226 / 0.080);"></div>
+    <div class="fcell" style="left:702px; top:232px; background:rgb(110 160 226 / 0.045);"></div>
+    <div class="fcell" style="left:922px; top:12px;  background:rgb(226 98 92 / 0.070);"></div>
+
+    <!-- Document · 2×2 -->
+    <div class="obj" style="left:42px; top:12px; width:440px; height:440px;">
+      <div class="sheet">
+        <div class="lbl">Document</div>
+        <div class="ttl">Attention<br>recovery</div>
+        <div class="rl"></div>
+        <div class="bdy">After an interruption attention returns in stages: first the
+          place, then the object, then the intent. Where the place is preserved the
+          first and costliest stage nearly disappears.</div>
+        <div class="sp"></div>
+        <div class="tb"><div>N° 07</div><div>Doc</div></div>
+      </div>
+    </div>
+
+    <!-- Note · 1×1 -->
+    <div class="obj" style="left:482px; top:12px; width:220px; height:220px;">
+      <div class="sticky" style="background:#4E6E9C;">
+        <div class="note">Ask Priya for the updated vendor list before Tuesday.</div>
+      </div>
+    </div>
+
+    <!-- Image · 1×1 -->
+    <div class="obj" style="left:482px; top:232px; width:220px; height:220px;">
+      <div class="figure">
+        <div class="area"><div class="plate cool" style="position:absolute; inset:0;"></div></div>
+        <div class="cap"><span>Image</span><span class="dim">1×1</span></div>
+      </div>
+    </div>
+
+    <!-- Note · 1×1 -->
+    <div class="obj" style="left:922px; top:232px; width:220px; height:220px;">
+      <div class="sticky" style="background:#B0524E;">
+        <div class="note">Water the fig on Friday — a full can, then drain the saucer.</div>
+      </div>
+    </div>
+
+    <!-- marks sit on the line each annotation names -->
+    <div class="mark" style="left:737px; top:93px;">01</div>
+    <div class="mark" style="left:803px; top:223px;">02</div>
+    <div class="mark" style="left:1133px; top:113px;">03</div>
+  </div>
+
+  <!-- annotation row -->
+  <div style="position:absolute; left:48px; right:48px; top:566px;
+              display:grid; grid-template-columns:repeat(4,1fr); column-gap:26px;">
+    <div class="ann"><span class="n">01</span><span><b>Minors · #161618</b>1px every 44 — one fifth of a cell. The quietest ink in the Grid, one step off canvas #0E0E10, so content is always brighter than the field beneath it.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Majors · #242428</b>1px every 220 — the cell itself, and the working rhythm. Firm enough to count by, quiet enough to ignore. Every footprint edge lands on one.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Supercells · every 5th major</b>1px every 1100, in the major ink. Not a firmer line — the tier whose spacing survives longest, so it still carries structure after the others fade.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>One system, no words</b>Three pitches, two inks, one line system. The grid carries no copy: orientation lives in geometry and ink alone.</span></div>
+  </div>
+  <div class="folio">GL-00 · CELL 220 · SUBDIVISIONS 5</div>
+</section>
+
+<!-- ============================ 03 · LEGIBILITY FADE ============================ -->
+<section class="slide">
+  <div class="running"><span>THE GRID · LEGIBILITY FADE</span><span class="fig">02 / 05</span></div>
+
+  <div style="position:absolute; left:60px; top:104px; display:flex; gap:24px;">
+    <!-- 100% : minor 44 (1.00) · major 220 (1.00) · supercell 1100 (1.00) -->
+    <div style="width:272px;">
+      <div class="sectionlbl">Zoom 100%</div>
+      <div class="patch" style="height:400px; border:1px solid var(--hairline);
+           --cell:220px; background-position:6px 6px;"></div>
+      <div class="note-under" style="margin-top:10px;">MINOR 44 · MAJOR 220 · SUPERCELL 1100.<br>ALL THREE AT FULL INK.</div>
+    </div>
+    <!-- 40% : minor 17.6 (1.00) · major 88 (1.00) · supercell 440 (1.00) -->
+    <div style="width:272px;">
+      <div class="sectionlbl">Zoom 40%</div>
+      <div class="patch" style="height:400px; border:1px solid var(--hairline);
+           --cell:88px; background-position:6px 6px;"></div>
+      <div class="note-under" style="margin-top:10px;">EVERYTHING TIGHTENS TOGETHER — MINOR 17.6 ·<br>MAJOR 88 · SUPERCELL 440. STILL ALL THREE.</div>
+    </div>
+    <!-- 20% : minor 8.8 (0.35) · major 44 (1.00) · supercell 220 (1.00) -->
+    <div style="width:272px;">
+      <div class="sectionlbl">Zoom 20%</div>
+      <div class="patch" style="height:400px; border:1px solid var(--hairline);
+           --cell:44px; background-position:6px 6px;
+           --minor-ink:rgba(22,22,24,0.35);"></div>
+      <div class="note-under" style="margin-top:10px;">MINOR 8.8, DOWN TO 35% AND ABOUT TO GO.<br>MAJOR 44 · SUPERCELL 220 CARRY ON.</div>
+    </div>
+    <!-- 4% : minor 1.76 (0) · major 8.8 (0.35) · supercell 44 (1.00) -->
+    <div style="width:272px;">
+      <div class="sectionlbl">Zoom 4%</div>
+      <div class="patch" style="height:400px; border:1px solid var(--hairline);
+           --cell:8.8px; background-position:6px 6px;
+           --minor-ink:transparent; --major-ink:rgba(36,36,40,0.35);"></div>
+      <div class="note-under" style="margin-top:10px;">MINOR GONE, MAJOR 8.8 AT 35%.<br>SUPERCELL 44 — PANEL ONE'S MINOR RHYTHM.</div>
+    </div>
+  </div>
+
+  <div class="note-under" style="position:absolute; left:60px; top:608px; width:1160px;">
+    ONE RULE SETS ALL THREE: A TIER'S INK IS (SCREEN SPACING − 6PX) ÷ 8PX, CLAMPED TO 0–1, SO A LEVEL DIMS AND LEAVES
+    BEFORE ITS SPACING CAN CROWD. BECAUSE THE TIERS SIT FIVE APART, ONE IS ALWAYS ARRIVING AT THE SPACING ANOTHER IS
+    LEAVING — COMPARE THE FIRST AND LAST PANELS: THE SAME RHYTHM, WITH TWENTY-FIVE TIMES MORE GRID CONTEXT IN VIEW.
+    FADE AND THE VISIBILITY TOGGLE ACT ON THIS ONE SYSTEM; THERE IS NO SECOND GRID.
+  </div>
+  <div class="folio">GL-03 · CALM AT EVERY ZOOM · RANGE 1%–1000%</div>
+</section>
+
+<!-- ============================ 04 · LINES HIDDEN ============================ -->
+<section class="slide">
+  <div class="running"><span>THE GRID · LINES HIDDEN</span><span class="fig">03 / 05</span></div>
+
+  <div style="position:absolute; left:48px; top:100px;">
+    <div class="sectionlbl">Lines shown</div>
+    <div class="patch" style="width:544px; height:408px; border:1px solid var(--hairline);
+         --cell:132px; background-position:2px 12px;">
+      <div class="world" style="left:2px; top:12px; transform:scale(0.6);">
+        <div class="fcell" style="left:440px; top:0px;   background:rgb(234 234 234 / 0.055);"></div>
+        <div class="fcell" style="left:660px; top:220px; background:rgb(226 98 92 / 0.075);"></div>
+        <div class="fcell" style="left:440px; top:440px; background:rgb(226 98 92 / 0.045);"></div>
+        <div class="obj" style="left:0; top:0; width:440px; height:440px;">
+          <div class="sheet">
+            <div class="lbl">Document</div>
+            <div class="ttl">Attention<br>recovery</div>
+            <div class="rl"></div>
+            <div class="bdy">After an interruption attention returns in stages: first the
+              place, then the object, then the intent.</div>
+            <div class="sp"></div>
+            <div class="tb"><div>N° 07</div><div>Doc</div></div>
+          </div>
+        </div>
+        <div class="obj" style="left:440px; top:220px; width:220px; height:220px;">
+          <div class="sticky" style="background:#B0524E;">
+            <div class="note">Water the fig on Friday — a full can, then drain the saucer.</div>
+          </div>
+        </div>
+        <div class="obj" style="left:660px; top:0; width:220px; height:220px;">
+          <div class="figure">
+            <div class="area"><div class="plate cool" style="position:absolute; inset:0;"></div></div>
+            <div class="cap"><span>Image</span><span class="dim">1×1</span></div>
+          </div>
+        </div>
+        <div class="cur" style="left:220px; top:440px;"></div>
+      </div>
+    </div>
+    <div class="note-under" style="margin-top:12px; width:544px;">VISIBILITY IS A VIEW PREFERENCE · KEY G · PERSISTED PER PERSON, NOT PER PLACE.</div>
+  </div>
+
+  <div style="position:absolute; left:640px; top:100px;">
+    <div class="sectionlbl">Lines hidden · nothing else moves</div>
+    <div class="patch off" style="width:544px; height:408px; border:1px solid var(--hairline);
+         --cell:132px; background-position:2px 12px;">
+      <div class="world" style="left:2px; top:12px; transform:scale(0.6);">
+        <div class="fcell" style="left:440px; top:0px;   background:rgb(234 234 234 / 0.055);"></div>
+        <div class="fcell" style="left:660px; top:220px; background:rgb(226 98 92 / 0.075);"></div>
+        <div class="fcell" style="left:440px; top:440px; background:rgb(226 98 92 / 0.045);"></div>
+        <div class="obj" style="left:0; top:0; width:440px; height:440px;">
+          <div class="sheet">
+            <div class="lbl">Document</div>
+            <div class="ttl">Attention<br>recovery</div>
+            <div class="rl"></div>
+            <div class="bdy">After an interruption attention returns in stages: first the
+              place, then the object, then the intent.</div>
+            <div class="sp"></div>
+            <div class="tb"><div>N° 07</div><div>Doc</div></div>
+          </div>
+        </div>
+        <div class="obj" style="left:440px; top:220px; width:220px; height:220px;">
+          <div class="sticky" style="background:#B0524E;">
+            <div class="note">Water the fig on Friday — a full can, then drain the saucer.</div>
+          </div>
+        </div>
+        <div class="obj" style="left:660px; top:0; width:220px; height:220px;">
+          <div class="figure">
+            <div class="area"><div class="plate cool" style="position:absolute; inset:0;"></div></div>
+            <div class="cap"><span>Image</span><span class="dim">1×1</span></div>
+          </div>
+        </div>
+        <div class="cur" style="left:220px; top:440px;"></div>
+      </div>
+    </div>
+    <div class="note-under" style="margin-top:12px; width:544px;">THE GRID STAYS FUNCTIONALLY ON — SNAPPING, PREVIEWS, SELECTION, CURSOR AND PRESENCE ARE PIXEL-IDENTICAL WITH LINES OFF.</div>
+  </div>
+
+  <div style="position:absolute; left:48px; right:48px; top:590px;
+              display:grid; grid-template-columns:repeat(3,1fr); column-gap:32px;">
+    <div class="ann"><span class="n">01</span><span><b>The lines are the only thing that leaves</b>Content, presence, cursor and footprints are drawn from the same geometry either way. Nothing shifts by a pixel.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>The cursor still addresses cells</b>With lines hidden the cursor keeps its whole-cell edges, so a person can still see exactly which cell they are on.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>A preference, not a mode</b>Hiding lines removes no behaviour and unlocks none. It is remembered for the person and applies wherever they are.</span></div>
+  </div>
+  <div class="folio">GL-01 · VISIBILITY IS A VIEW PREFERENCE</div>
+</section>
+
+<!-- ============================ 05 · GRID CURSOR ============================ -->
+<section class="slide">
+  <div class="running"><span>THE GRID · GRID CURSOR</span><span class="fig">04 / 05</span></div>
+
+  <div class="patch" style="position:absolute; left:48px; top:92px; width:836px; height:384px;
+       --cell:165px; background-position:11px 9px;">
+    <div class="world" style="left:11px; top:9px; transform:scale(0.75);">
+      <!-- presence cast by the selected Note -->
+      <div class="fcell" style="left:220px; top:0;    background:rgb(158 140 234 / 0.100);"></div>
+      <div class="fcell" style="left:0;     top:220px; background:rgb(158 140 234 / 0.070);"></div>
+      <div class="fcell" style="left:220px; top:220px; background:rgb(158 140 234 / 0.045);"></div>
+
+      <!-- selected Note, for contrast with the cursor -->
+      <div class="obj sel" style="left:0; top:0; width:220px; height:220px;">
+        <div class="sticky" style="background:#6E62A6;">
+          <div class="note">Ask the landlord about the leak under the kitchen sink.</div>
+        </div>
+      </div>
+
+      <!-- motion trail, then the head -->
+      <div class="trail" style="left:880px; top:220px; background:rgb(234 234 234 / 0.093);"></div>
+      <div class="trail" style="left:880px; top:0;     background:rgb(234 234 234 / 0.111);"></div>
+      <div class="cur"   style="left:660px; top:0;"></div>
+    </div>
+
+    <div class="mark" style="left:514px; top:17px;">01</div>
+    <div class="mark" style="left:141px; top:141px;">02</div>
+  </div>
+
+  <div style="position:absolute; left:48px; top:504px; display:flex; gap:16px;">
+    <div style="width:268px;">
+      <div class="patch" style="height:116px; border:1px solid var(--hairline);
+           --cell:110px; background-position:8px 3px;">
+        <div class="cur" style="left:78px; top:3px; width:110px; height:110px;
+             box-shadow:inset 0 0 0 2px rgb(234 234 234 / 0.88);"></div>
+      </div>
+      <div class="note-under" style="margin-top:8px;">50% · CELL 110</div>
+    </div>
+    <div style="width:268px;">
+      <div class="patch" style="height:116px; border:1px solid var(--hairline);
+           --cell:44px; background-position:8px 4px; --minor-ink:rgba(22,22,24,0.35);">
+        <div class="cur" style="left:96px; top:36px; width:44px; height:44px;
+             box-shadow:inset 0 0 0 2px rgb(234 234 234 / 0.88);"></div>
+      </div>
+      <div class="note-under" style="margin-top:8px;">20% · CELL 44</div>
+    </div>
+    <div style="width:268px;">
+      <div class="patch" style="height:116px; border:1px solid var(--hairline);
+           --cell:13.2px; background-position:8px 1.6px; --minor-ink:transparent;">
+        <div class="cur" style="left:100.4px; top:41.2px; width:13.2px; height:13.2px;
+             box-shadow:inset 0 0 0 2px rgb(234 234 234 / 0.88);"></div>
+        <div class="mark" style="left:122px; top:32px;">03</div>
+      </div>
+      <div class="note-under" style="margin-top:8px;">6% · CELL 13.2</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Whole-cell addressing</b>The cursor is exactly one cell, edges on the grid's own lines: a 2px inset ring at 88% neutral over a 13% fill. Behind it, spent cells of its path decay to nothing.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Selection, for contrast</b>A selected placement carries the interaction outline #96B6F8 outside its frame, a soft glow, and presence in the cells around it. The cursor carries none of those — it points, it does not hold.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>It scales with the cells</b>The cursor is measured in cells, never in screen pixels, so it shrinks with the field and stays on major boundaries at every zoom — including where lines are faded or hidden.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Neutral until asked</b>At rest the cursor is 234 234 234. Placing, moving, resizing and tracing each recolour it; nothing else does.</span></div>
+  </div>
+  <div class="folio">GRID CURSOR · ORIENTATION CHROME</div>
+</section>
+
+<!-- ============================ 06 · REFUSALS ============================ -->
+<section class="slide">
+  <div class="running"><span>THE GRID · REFUSALS</span><span class="fig">05 / 05</span></div>
+
+  <div style="position:absolute; left:48px; top:100px; display:flex; gap:32px;">
+    <!-- uniform lines -->
+    <div style="width:373px;">
+      <div class="verdict refuse" style="position:static; display:block; margin-bottom:12px;">Refused · one uniform tier</div>
+      <div style="height:466px; border:1px solid var(--hairline); background-color:var(--canvas);
+           background-image:
+             linear-gradient(to right, rgba(255,255,255,0.10) 0 1px, transparent 1px),
+             linear-gradient(to bottom, rgba(255,255,255,0.10) 0 1px, transparent 1px);
+           background-size:8.8px 8.8px;"></div>
+      <div class="note-under" style="margin-top:12px;">THE SPACING THE 4% VIEW REACHES, BUT WITH ONE FIXED INK AT WHITE 10% AND NO FADE — AND DISTANCE TURNS INTO A MOIRÉ TEXTURE. THE TIERS AND THE FADE EXIST SO STEPPING BACK STAYS CALM SPACE.</div>
+    </div>
+    <!-- card containers -->
+    <div style="width:373px;">
+      <div class="verdict refuse" style="position:static; display:block; margin-bottom:12px;">Refused · a container per item</div>
+      <div class="patch" style="height:466px; border:1px solid var(--hairline);
+           --cell:88px; background-position:14px 10px;">
+        <div style="position:absolute; left:26px; top:22px; width:150px; height:132px; background:var(--surface); border:1px solid rgba(234,234,234,0.22); border-radius:var(--r); box-shadow:0 8px 24px rgba(0,0,0,0.45); padding:12px;">
+          <div class="plate cool" style="height:64px; border-radius:var(--r);"></div>
+          <div style="height:8px; margin-top:10px; background:#26262A;"></div>
+          <div style="height:8px; margin-top:6px; width:70%; background:#26262A;"></div>
+        </div>
+        <div style="position:absolute; left:196px; top:96px; width:150px; height:132px; background:var(--surface); border:1px solid rgba(234,234,234,0.22); border-radius:var(--r); box-shadow:0 8px 24px rgba(0,0,0,0.45); padding:12px;">
+          <div class="plate warm" style="height:64px; border-radius:var(--r);"></div>
+          <div style="height:8px; margin-top:10px; background:#26262A;"></div>
+          <div style="height:8px; margin-top:6px; width:60%; background:#26262A;"></div>
+        </div>
+        <div style="position:absolute; left:80px; top:232px; width:150px; height:120px; background:var(--surface); border:1px solid rgba(234,234,234,0.22); border-radius:var(--r); box-shadow:0 8px 24px rgba(0,0,0,0.45); padding:12px;">
+          <div style="height:8px; background:#26262A;"></div>
+          <div style="height:8px; margin-top:6px; background:#26262A;"></div>
+          <div style="height:8px; margin-top:6px; width:80%; background:#26262A;"></div>
+        </div>
+      </div>
+      <div class="note-under" style="margin-top:12px;">A FRAME, A BORDER AND A SHADOW DRAWN AROUND EVERY PIECE OF CONTENT — AND THE FIELD BECOMES A CARD LAYOUT. LINES ORIENT; THEY DO NOT PACKAGE.</div>
+    </div>
+    <!-- parked chrome -->
+    <div style="width:373px;">
+      <div class="verdict refuse" style="position:static; display:block; margin-bottom:12px;">Refused · chrome parked on the field</div>
+      <div class="patch" style="height:466px; border:1px solid var(--hairline);
+           --cell:88px; background-position:14px 10px;">
+        <div style="position:absolute; left:24px; top:22px; width:236px; height:40px; background:var(--surface); border:1px solid rgba(234,234,234,0.22); border-radius:var(--r); box-shadow:0 8px 24px rgba(0,0,0,0.45); display:flex; align-items:center; gap:14px; padding:0 14px;">
+          <div style="width:16px; height:16px; border:1px solid rgba(234,234,234,0.5); border-radius:var(--r);"></div>
+          <div style="width:16px; height:16px; background:rgba(234,234,234,0.5); border-radius:var(--r);"></div>
+          <div style="width:16px; height:16px; border:1px solid rgba(234,234,234,0.5); border-radius:50%;"></div>
+          <div style="width:16px; height:2px; background:rgba(234,234,234,0.5);"></div>
+          <div style="width:0; height:0; border-left:8px solid transparent; border-right:8px solid transparent; border-bottom:14px solid rgba(234,234,234,0.5);"></div>
+        </div>
+        <div style="position:absolute; left:102px; top:186px; width:176px; height:176px;">
+          <div class="sticky" style="background:#6E62A6;">
+            <div class="note" style="font-size:12px;">Call the framer about the two prints before Thursday.</div>
+          </div>
+        </div>
+      </div>
+      <div class="note-under" style="margin-top:12px;">A TOOLBAR THAT NEVER LEAVES, SITTING PERMANENTLY OVER THE GRID CONTEXT. TOOLS ARRIVE WHEN THEY ARE CALLED AND GO WHEN THE WORK IS DONE.</div>
+    </div>
+  </div>
+  <div class="folio">END · THE GRID</div>
+</section>
+
+</body>
+</html>

@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Image led</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/catalogue.css">
+<style>
+  /* ---------- deck-local: the reading page ---------- */
+  .pg {
+    position: absolute;
+    background: var(--paper);
+    color: var(--paper-ink);
+    border-radius: var(--r);
+  }
+  .fr { position: absolute; background-color: #12141A; background-size: cover; background-position: center; }
+  .sel { outline: 1px solid var(--interaction); outline-offset: 5px; }
+  .phair { position: absolute; height: 1px; background: rgba(26,26,26,0.13); }
+  .pvrule { position: absolute; width: 1px; background: rgba(26,26,26,0.12); }
+  .prail {
+    position: absolute;
+    display: flex; justify-content: space-between;
+    font-family: var(--f-mono); font-size: 9px; font-weight: 500;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: rgba(26,26,26,0.46);
+  }
+  .pmeta {
+    position: absolute;
+    font-family: var(--f-mono); font-size: 9px; font-weight: 500;
+    letter-spacing: 0.11em; text-transform: uppercase;
+    color: rgba(26,26,26,0.55);
+    white-space: nowrap;
+  }
+  .ptitle { position: absolute; font-family: var(--f-ui); font-size: 15px; line-height: 1.3; color: var(--paper-ink); }
+  .pbody { position: absolute; font-family: var(--f-ui); font-size: 11px; line-height: 1.68; color: rgba(26,26,26,0.80); }
+  .paction {
+    position: absolute;
+    font-family: var(--f-ui); font-size: 10.5px;
+    color: #31496F;
+    border-bottom: 1px solid rgba(49,73,111,0.4);
+    padding-bottom: 1px;
+  }
+
+  /* ---------- deck-local: annotation layer helpers ---------- */
+  .lbl {
+    position: absolute;
+    font-family: var(--f-mono); font-size: 9.5px; font-weight: 500;
+    letter-spacing: 0.2em; text-transform: uppercase; color: var(--ann-strong);
+  }
+  .lbl.quiet { color: var(--ann); letter-spacing: 0.16em; }
+  .lbl.bad { color: var(--invalid); }
+  .rule2 {
+    position: absolute;
+    font-family: var(--f-mono); font-size: 10px; line-height: 1.7;
+    letter-spacing: 0.02em; color: var(--ann);
+  }
+  .eq {
+    font-family: var(--f-mono); font-size: 10.5px; line-height: 2.0;
+    letter-spacing: 0.02em; color: var(--ann);
+  }
+  .eq b { color: var(--ann-strong); font-weight: 500; }
+  .eq i { font-style: normal; color: var(--interaction); }
+  .tbl { font-family: var(--f-mono); font-size: 10px; line-height: 2.0; letter-spacing: 0.04em; color: var(--ann); }
+  .tbl .k { color: var(--ann-strong); }
+  .arrow { position: absolute; font-family: var(--f-mono); font-size: 13px; color: var(--ann-line); }
+
+  /* ---------- deck-local: family schematics ---------- */
+  .sch { position: absolute; background: var(--paper); border-radius: var(--r); overflow: hidden; }
+  .sb { position: absolute; background-color: #2A2F38; background-size: cover; background-position: center; }
+  .stx { position: absolute; background: repeating-linear-gradient(180deg, rgba(26,26,26,0.30) 0 1.5px, transparent 1.5px 6px); }
+  .gut { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(26,26,26,0.12); }
+  .subpg { position: absolute; border: 1px solid rgba(26,26,26,0.20); border-radius: 1px; }
+
+  /* ---------- photographic stand-ins ----------
+     Token-derived gradients standing in for real photographs. Features scale
+     with the element, so the same picture reads at plate and contact scale. */
+  .ph-harbor { background-image:
+    radial-gradient(ellipse 6% 8% at 70% 30%, rgba(246,236,206,0.92), transparent 70%),
+    radial-gradient(ellipse 30% 6% at 70% 45%, rgba(226,220,206,0.20), transparent 70%),
+    linear-gradient(180deg, transparent 52%, rgba(198,214,236,0.22) 54%, rgba(198,214,236,0.05) 66%, transparent 82%),
+    linear-gradient(90deg, rgba(9,11,15,0.62) 0 5%, transparent 11%),
+    radial-gradient(120% 90% at 20% 12%, rgba(234,234,234,0.14), transparent 55%),
+    linear-gradient(160deg, #3C4A62, #10141C); }
+  .ph-ridge { background-image:
+    radial-gradient(ellipse 58% 22% at 14% 96%, #10160F 52%, rgba(16,22,15,0) 82%),
+    radial-gradient(ellipse 52% 18% at 58% 100%, #1A231A 52%, rgba(26,35,26,0) 82%),
+    radial-gradient(ellipse 40% 14% at 96% 102%, #263022 52%, rgba(38,48,34,0) 82%),
+    linear-gradient(180deg, #74838B 0%, #4A5760 42%, #2C363B 68%, #121816 100%); }
+  .ph-market { background-image:
+    radial-gradient(ellipse 4% 7% at 24% 30%, rgba(255,226,170,0.95), transparent 72%),
+    radial-gradient(ellipse 3% 5% at 46% 23%, rgba(255,220,160,0.85), transparent 72%),
+    radial-gradient(ellipse 3.5% 6% at 71% 34%, rgba(255,214,150,0.80), transparent 72%),
+    radial-gradient(ellipse 72% 40% at 50% 104%, rgba(124,76,40,0.55), transparent 70%),
+    linear-gradient(165deg, #6B5540, #1A1410); }
+  .ph-tower { background-image:
+    linear-gradient(90deg, transparent 43%, rgba(21,15,27,0.88) 44%, rgba(21,15,27,0.88) 56%, transparent 57%),
+    radial-gradient(ellipse 7% 5% at 50% 17%, rgba(240,212,236,0.38), transparent 72%),
+    linear-gradient(180deg, #6E5B7A 0%, #3E3149 55%, #151018 100%); }
+  .ph-shore { background-image:
+    radial-gradient(ellipse 5% 9% at 78% 39%, rgba(255,244,220,0.92), transparent 72%),
+    linear-gradient(180deg, transparent 48%, rgba(255,244,220,0.20) 50%, transparent 60%),
+    linear-gradient(180deg, #A6BACB 0%, #869BB0 45%, #4E6274 53%, #1E2932 100%); }
+  .ph-atrium { background-image:
+    repeating-linear-gradient(90deg, rgba(234,234,234,0.10) 0 2px, transparent 2px 26px),
+    repeating-linear-gradient(180deg, rgba(234,234,234,0.07) 0 2px, transparent 2px 30px),
+    radial-gradient(120% 80% at 30% 0%, rgba(234,234,234,0.22), transparent 62%),
+    linear-gradient(160deg, #3E4650, #14161A); }
+  .ph-meadow { background-image:
+    radial-gradient(ellipse 84% 30% at 50% 104%, rgba(58,74,46,0.92), transparent 72%),
+    linear-gradient(180deg, #90A4AC 0%, #6E8474 40%, #46543E 53%, #121610 100%); }
+  .ph-figure { background-image:
+    radial-gradient(ellipse 20% 30% at 50% 40%, rgba(228,192,160,0.78), transparent 72%),
+    radial-gradient(ellipse 30% 46% at 50% 74%, rgba(38,25,19,0.72), transparent 74%),
+    radial-gradient(120% 90% at 25% 10%, rgba(234,234,234,0.10), transparent 55%),
+    linear-gradient(160deg, #5A4636, #140F0C); }
+  .ph-stair { background-image:
+    repeating-linear-gradient(135deg, rgba(234,234,234,0.09) 0 10px, transparent 10px 28px),
+    radial-gradient(120% 90% at 72% 8%, rgba(234,234,234,0.20), transparent 58%),
+    linear-gradient(160deg, #3C4A62, #10141C); }
+  .ph-quay { background-image:
+    linear-gradient(180deg, transparent 62%, rgba(150,170,190,0.18) 63%, transparent 76%),
+    radial-gradient(ellipse 40% 10% at 30% 62%, rgba(20,24,30,0.7), transparent 70%),
+    radial-gradient(120% 90% at 80% 10%, rgba(234,234,234,0.16), transparent 58%),
+    linear-gradient(160deg, #55465C, #151018); }
+  .ph-soft { filter: blur(2.6px); }
+</style>
+</head>
+<body>
+
+<!-- ======================= 01 · COVER (fig 00) ======================= -->
+<section class="slide cover">
+  <div class="running"><span>GROVE · DESIGN CATALOGUE</span><span class="fig">07</span></div>
+  <div class="plane">INFORMATION PLANE · READING VERTICAL</div>
+  <h1>Image<br>led</h1>
+  <div class="rule"></div>
+  <div class="scope">
+    Gallery · Contact sheet · Image edition · Layout families ·
+    Demand and fidelity · Aspect families · Motion · Sequence · Refusals
+  </div>
+  <div class="folio">SOURCE: IMAGE-LED PHYSICAL FORMS · D-ANNOTATION-03 · T-AN12</div>
+</section>
+
+<!-- ======================= 02 · TIER 01 GALLERY PLATE (fig 01) ======================= -->
+<section class="slide">
+  <div class="running"><span>IMAGE LED · TIER 01 · GALLERY</span><span class="fig">01 / 20</span></div>
+
+  <div class="stage bleed">
+    <div class="pg" style="left:132px; top:10px; width:920px; height:575px;">
+      <div class="fr ph-harbor" style="left:175px; top:48px; width:570px; height:380px;"></div>
+      <div class="ptitle" style="left:175px; top:450px; width:570px;">Low tide at the Rannoch quay</div>
+      <div class="pmeta" style="left:175px; top:476px;">JPG · 5472 × 3648 · 3:2 · 12 MAY</div>
+      <div class="phair" style="left:44px; top:508px; width:832px;"></div>
+      <div class="prail" style="left:44px; top:518px; width:832px;"><span>MOORLAND · LAYER 2</span><span>1 / 1</span></div>
+    </div>
+
+    <div class="mark" style="left:278px; top:56px;">1</div>
+    <div class="mark" style="left:889px; top:228px;">2</div>
+    <div class="mark" style="left:277px; top:452px;">3</div>
+    <div class="mark" style="left:575px; top:472px;">4</div>
+    <div class="mark" style="left:202px; top:258px;">5</div>
+    <div class="mark" style="left:145px; top:516px;">6</div>
+  </div>
+
+  <div class="folio">1.0 ≤ D &lt; 1.75 · ONE COMPLETE FRAME · LANDSCAPE SHEET</div>
+</section>
+
+<!-- ======================= 03 · NOTES ON 01 (fig 02) ======================= -->
+<section class="slide">
+  <div class="running"><span>IMAGE LED · NOTES ON 01</span><span class="fig">02 / 20</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>One picture, whole</b>The largest complete frame the source can carry. Nothing is trimmed to fill the sheet: if the picture will not fit, the frame gets smaller or another arrangement is chosen.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>The sheet yields</b>The frame follows the picture's own proportion and the page arranges itself around it. The reading unit stays landscape at every width.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>A label only if there is one</b>Title and date appear because the source carries them. With no title, nothing is generated and no empty heading is held open.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Facts sit outside the picture</b>Dimensions, proportion, and date read in quiet mono beneath the frame, never printed over it. File size is absent: bytes say nothing about how much room a picture needs.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Room to look</b>The field around the frame is part of the form. It is inspection space for a picture that rewards close reading, not leftover area waiting to be filled.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Where it came from</b>Layer and page run at the foot of every sheet, the way a magazine carries its folio. That line is provenance and pagination — never the picture's identity.</span></div>
+  </div>
+  <div class="folio">PLATE 01 · I1-B PLATE WITH SUPPORTING LABEL</div>
+</section>
+
+<!-- ======================= 04 · TIER 02 CONTACT SHEET PLATE (fig 03) ======================= -->
+<section class="slide">
+  <div class="running"><span>IMAGE LED · TIER 02 · CONTACT SHEET</span><span class="fig">03 / 20</span></div>
+
+  <div class="stage bleed">
+    <div class="pg" style="left:122px; top:4px; width:940px; height:587px;">
+      <div class="prail" style="left:40px; top:24px; width:860px;"><span>MOORLAND · LAYER 2</span><span>12 PICTURES</span></div>
+      <div class="phair" style="left:40px; top:44px; width:860px;"></div>
+
+      <!-- row one · common contact scale, widths follow the source -->
+      <div class="fr ph-harbor" style="left:40px;  top:58px; width:270px; height:180px;"></div>
+      <div class="fr ph-tower"  style="left:330px; top:58px; width:120px; height:180px;"></div>
+      <div class="fr ph-meadow sel" style="left:470px; top:58px; width:180px; height:180px;"></div>
+      <div class="fr ph-market" style="left:670px; top:58px; width:225px; height:180px;"></div>
+      <div class="pmeta" style="left:40px;  top:246px;">01 · 3:2</div>
+      <div class="pmeta" style="left:330px; top:246px;">02 · 2:3</div>
+      <div class="pmeta" style="left:470px; top:246px;">03 · 1:1</div>
+      <div class="pmeta" style="left:670px; top:246px;">04 · 5:4</div>
+
+      <!-- row two · a wide source takes a wide frame; the row holds fewer -->
+      <div class="fr ph-shore"  style="left:40px;  top:282px; width:400px; height:180px;"></div>
+      <div class="fr ph-figure" style="left:460px; top:282px; width:144px; height:180px;"></div>
+      <div class="fr ph-stair"  style="left:624px; top:282px; width:270px; height:180px;"></div>
+      <div class="pmeta" style="left:40px;  top:470px;">05 · 20:9</div>
+      <div class="pmeta" style="left:460px; top:470px;">06 · 4:5</div>
+      <div class="pmeta" style="left:624px; top:470px;">07 · 3:2</div>
+
+      <div class="phair" style="left:40px; top:518px; width:860px;"></div>
+      <div class="prail" style="left:40px; top:528px; width:860px;"><span>12 – 14 MAY</span><span>1 / 2</span></div>
+    </div>
+
+    <div class="mark" style="left:138px; top:250px;">1</div>
+    <div class="mark" style="left:1072px; top:150px;">2</div>
+    <div class="mark" style="left:138px; top:350px;">3</div>
+    <div class="mark" style="left:1072px; top:470px;">4</div>
+    <div class="mark" style="left:566px; top:34px;">5</div>
+    <div class="mark" style="left:1072px; top:540px;">6</div>
+    <div class="mark" style="left:138px; top:130px;">7</div>
+  </div>
+
+  <div class="folio">1.75 ≤ D &lt; 3.0 · SEVERAL COMPLETE FRAMES · ONE COMPARISON SHEET</div>
+</section>
+
+<!-- ======================= 05 · NOTES ON 03 (fig 04) ======================= -->
+<section class="slide">
+  <div class="running"><span>IMAGE LED · NOTES ON 03</span><span class="fig">04 / 20</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>Capture order holds</b>Frames read left to right, top to bottom, in the order the material came in. A sort by filename is convenience, not order, and never replaces it.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>One contact scale</b>Frames share a common height so they can be compared; widths follow each source. Identical rectangles are not the goal — comparison is.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>A wide source takes a wide frame</b>A panorama gets the width it needs and its row simply holds fewer pictures. Alignment yields before a picture is distorted.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Marks live in the margin</b>Frame numbers and source facts sit outside the picture area, as they do on a proof sheet. Nothing is printed across an image.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Selection never touches the picture</b>An interaction-hue outline sits outside the frame. The image itself is never dimmed, tinted, or reframed to show that it is chosen.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>The sheet ends, it does not compress</b>When the next frame will not fit at the contact scale, a second sheet begins. Nothing shrinks below the size at which it can still be compared.</span></div>
+    <div class="ann"><span class="n">07</span><span><b>Sized for comparison, not for final viewing</b>A sheet is a working record. A picture that needs real inspection is opened at full size rather than enlarged in place until it goes soft.</span></div>
+  </div>
+  <div class="folio">PLATE 03 · I2-B ASPECT-PRESERVING CONTACT SHEET</div>
+</section>
+
+<!-- ======================= 06 · TIER 03 IMAGE EDITION PLATE (fig 05) ======================= -->
+<section class="slide">
+  <div class="running"><span>IMAGE LED · TIER 03 · IMAGE EDITION</span><span class="fig">05 / 20</span></div>
+
+  <div class="stage bleed">
+    <div class="pg" style="left:122px; top:4px; width:940px; height:587px;">
+      <div class="pvrule" style="left:470px; top:32px; height:523px;"></div>
+
+      <!-- left page · one picture at scale -->
+      <div class="fr ph-ridge" style="left:60px; top:40px; width:350px; height:466px;"></div>
+      <div class="phair" style="left:40px; top:518px; width:390px;"></div>
+      <div class="prail" style="left:40px; top:528px; width:390px;"><span>MOORLAND · LAYER 2</span><span>4</span></div>
+
+      <!-- right page · picture with a short supporting measure -->
+      <div class="fr ph-quay" style="left:510px; top:40px; width:390px; height:260px;"></div>
+      <div class="ptitle" style="left:510px; top:318px; width:390px;">The long way round</div>
+      <div class="pmeta" style="left:510px; top:344px;">JPG · 4032 × 2688 · 3:2 · 14 MAY</div>
+      <div class="pbody" style="left:510px; top:374px; width:390px;">
+        Second visit. The water had come up over the stones by seven, so the
+        walk out to the point took the long way round.
+        <br><br>
+        Same light as the first morning, but it held for longer.
+      </div>
+      <div class="phair" style="left:510px; top:518px; width:390px;"></div>
+      <div class="prail" style="left:510px; top:528px; width:390px;"><span>MOORLAND · LAYER 2</span><span>5</span></div>
+    </div>
+
+    <div class="mark" style="left:576px; top:16px;">1</div>
+    <div class="mark" style="left:150px; top:250px;">2</div>
+    <div class="mark" style="left:1072px; top:400px;">3</div>
+    <div class="mark" style="left:582px; top:300px;">4</div>
+    <div class="mark" style="left:1072px; top:530px;">5</div>
+    <div class="mark" style="left:1004px; top:314px;">6</div>
+    <div class="mark" style="left:132px; top:530px;">7</div>
+  </div>
+
+  <div class="folio">D ≥ 3.0 · FACING PAGES · LARGER FRAMES CONTINUE ACROSS THE TURN</div>
+</section>
+
+<!-- ======================= 07 · NOTES ON 05 (fig 06) ======================= -->
+<section class="slide">
+  <div class="running"><span>IMAGE LED · NOTES ON 05</span><span class="fig">06 / 20</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>Two pages, one composition</b>Facing pages are composed together. What sits opposite a picture is a decision about reveal, pause, and contrast — not whatever was next in the list.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>The left page pauses</b>One picture at scale. Density is not the point here; the turn before and after it is part of the reading.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Text supports and yields</b>A short measure beside the picture stays complete and gives up width before the frame does. It never becomes the reason a frame is reduced.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>The gutter is not crossed</b>No picture is split across the fold and no caption reaches over it. Each page stands as a complete unit.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Order continues through the turn</b>Page numbers and picture order run on across pages, so the sequence survives pagination instead of restarting on each sheet.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>No slot waits for missing text</b>Where a source carries no caption, the space closes up. An empty title region is never reserved on the chance that text arrives.</span></div>
+    <div class="ann"><span class="n">07</span><span><b>Layer and page at the foot</b>Each page carries where its material came from and where the reader is, in quiet mono, on both sides of the fold.</span></div>
+  </div>
+  <div class="folio">PLATE 05 · I3-A SINGLE-IMAGE PAGE FACING I3-D IMAGE-PLUS-TEXT</div>
+</section>
+
+<!-- ======================= 08 · SEQUENCE ACROSS PAGES (fig 07) ======================= -->
+<section class="slide">
+  <div class="running"><span>IMAGE LED · SEQUENCE ACROSS PAGES</span><span class="fig">07 / 20</span></div>
+
+  <div class="stage bleed">
+    <div class="lbl quiet" style="left:12px;  top:150px;">PAGES 1 – 2</div>
+    <div class="lbl quiet" style="left:308px; top:150px;">PAGES 3 – 4</div>
+    <div class="lbl quiet" style="left:604px; top:150px;">PAGES 5 – 6</div>
+    <div class="lbl quiet" style="left:900px; top:150px;">PAGES 7 – 8</div>
+
+    <!-- spread A · open with one plate -->
+    <div class="sch" style="left:12px; top:172px; width:272px; height:170px;">
+      <div class="gut" style="left:136px;"></div>
+      <div class="sb ph-harbor" style="left:10px; top:10px; width:120px; height:150px;"></div>
+      <div class="sb ph-tower" style="left:142px; top:10px; width:120px; height:70px;"></div>
+      <div class="stx" style="left:142px; top:92px; width:120px; height:56px;"></div>
+    </div>
+    <!-- spread B · facing pair -->
+    <div class="sch" style="left:308px; top:172px; width:272px; height:170px;">
+      <div class="gut" style="left:136px;"></div>
+      <div class="sb ph-ridge" style="left:10px; top:40px; width:120px; height:90px;"></div>
+      <div class="sb ph-meadow" style="left:142px; top:40px; width:120px; height:90px;"></div>
+    </div>
+    <!-- spread C · sequence spread, varied scale -->
+    <div class="sch" style="left:604px; top:172px; width:272px; height:170px;">
+      <div class="gut" style="left:136px;"></div>
+      <div class="sb ph-shore" style="left:10px; top:14px; width:120px; height:86px;"></div>
+      <div class="sb ph-market" style="left:10px; top:110px; width:54px; height:40px;"></div>
+      <div class="sb ph-stair" style="left:142px; top:14px; width:76px; height:52px;"></div>
+      <div class="sb ph-quay" style="left:142px; top:78px; width:120px; height:72px;"></div>
+    </div>
+    <!-- spread D · continuation -->
+    <div class="sch" style="left:900px; top:172px; width:272px; height:170px;">
+      <div class="gut" style="left:136px;"></div>
+      <div class="sb ph-atrium" style="left:10px; top:14px; width:120px; height:70px;"></div>
+      <div class="sb ph-figure" style="left:10px; top:94px; width:58px; height:60px;"></div>
+      <div class="sb ph-ridge" style="left:142px; top:14px; width:120px; height:140px;"></div>
+    </div>
+
+    <div class="lbl" style="left:12px;  top:358px;">OPEN · ONE PLATE</div>
+    <div class="lbl" style="left:308px; top:358px;">PAIR</div>
+    <div class="lbl" style="left:604px; top:358px;">LEAD · BRIDGE · CLOSE</div>
+    <div class="lbl" style="left:900px; top:358px;">CONTINUE</div>
+
+    <div class="phair" style="left:12px; top:408px; width:1160px; background:var(--hairline);"></div>
+    <div class="lbl quiet" style="left:12px;  top:420px;">PICTURES 01 – 02</div>
+    <div class="lbl quiet" style="left:308px; top:420px;">03 – 04</div>
+    <div class="lbl quiet" style="left:604px; top:420px;">05 – 08</div>
+    <div class="lbl quiet" style="left:900px; top:420px;">09 – 12</div>
+    <div class="lbl quiet" style="left:1104px; top:420px; color:var(--ann-line);">13 →</div>
+
+    <div class="rule2" style="left:12px; top:466px; width:1160px;">
+      SOURCE ORDER IS PRESERVED ACROSS EVERY TURN. A SECOND BODY OF MATERIAL
+      STARTS ITS OWN SPREAD RATHER THAN SHARING A PAGE.
+    </div>
+
+    <div class="mark" style="left:20px;  top:180px;">1</div>
+    <div class="mark" style="left:434px; top:180px;">2</div>
+    <div class="mark" style="left:612px; top:180px;">3</div>
+    <div class="mark" style="left:908px; top:180px;">4</div>
+    <div class="mark" style="left:150px; top:416px;">5</div>
+    <div class="mark" style="left:1148px; top:416px;">6</div>
+  </div>
+
+  <div class="folio">PAGINATED VISUAL SEQUENCE · I3-E</div>
+</section>
+
+<!-- ======================= 09 · NOTES ON 07 (fig 08) ======================= -->
+<section class="slide">
+  <div class="running"><span>IMAGE LED · NOTES ON 07</span><span class="fig">08 / 20</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>Open with one</b>The sequence starts with a single plate and a supporting page. The first turn establishes the pace the rest of the pages keep.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>A pair is a decision</b>Two pictures face each other because proximity, sequence, contrast, or shared material makes the pairing mean something. Each stays independently inspectable.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Varied scale is sequencing</b>One picture leads, one bridges, one closes. Deliberate variation is not a masonry wall: the sizes follow the order, not the packing.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>The set continues</b>More material makes more pages. Nothing is reduced to a thumbnail so that a sequence can end on the current spread.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Order carries meaning</b>Picture numbers run across the turn and source boundaries survive. A stronger picture is not promoted to the opening unless the material supports that role.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Promotion, and keeping your place</b>A plate becomes a sheet when comparison beats inspection; a sheet becomes a sequence when the pictures need readable scale and pacing. A smaller complete frame always beats a crop or an enlargement — and the picture being read stays the picture being read when pages are added.</span></div>
+  </div>
+  <div class="folio">PLATE 07 · PROMOTION AND PAGINATION</div>
+</section>
+
+<!-- ======================= 10 · LAYOUT FAMILIES · TIER 01 · TIER 02 (fig 09) ======================= -->
+<section class="slide">
+  <div class="running"><span>IMAGE LED · LAYOUT FAMILIES · TIER 01 · TIER 02</span><span class="fig">09 / 20</span></div>
+
+  <div class="stage bleed">
+    <!-- I1-A -->
+    <div class="sch" style="left:36px; top:24px; width:296px; height:185px;">
+      <div class="sb ph-harbor" style="left:48px; top:26px; width:200px; height:134px;"></div>
+    </div>
+    <div class="lbl" style="left:36px; top:221px;">I1-A · SINGLE PLATE</div>
+    <div class="rule2" style="left:36px; top:240px; width:296px;">
+      ONE PICTURE TAKES THE LARGEST COMPLETE FRAME AVAILABLE. THE FRAME FOLLOWS
+      THE SOURCE PROPORTION AND THE PAGE YIELDS AROUND IT.
+    </div>
+
+    <!-- I1-B -->
+    <div class="sch" style="left:444px; top:24px; width:296px; height:185px;">
+      <div class="sb ph-ridge" style="left:53px; top:20px; width:190px; height:127px;"></div>
+      <div class="stx" style="left:53px; top:157px; width:120px; height:14px;"></div>
+    </div>
+    <div class="lbl" style="left:444px; top:221px;">I1-B · PLATE WITH LABEL</div>
+    <div class="rule2" style="left:444px; top:240px; width:296px;">
+      THE PICTURE STAYS DOMINANT; CAPTION, DATE, OR SOURCE FACTS APPEAR OUTSIDE
+      THE FRAME ONLY WHERE THE SOURCE CARRIES THEM.
+    </div>
+
+    <!-- I1-C -->
+    <div class="sch" style="left:852px; top:24px; width:296px; height:185px;">
+      <div class="sb ph-shore" style="left:14px; top:38px; width:130px; height:110px;"></div>
+      <div class="sb ph-quay" style="left:152px; top:38px; width:130px; height:110px;"></div>
+    </div>
+    <div class="lbl" style="left:852px; top:221px;">I1-C · PAIRED PLATES</div>
+    <div class="rule2" style="left:852px; top:240px; width:296px;">
+      TWO CLOSELY RELATED PICTURES SHARE ONE UNIT, EACH KEEPING A COMPLETE
+      FRAME. UNRELATED PICTURES NEVER BECOME A TWO-UP GRID.
+    </div>
+
+    <!-- I2-A -->
+    <div class="sch" style="left:36px; top:328px; width:296px; height:185px;">
+      <div class="sb ph-harbor" style="left:16px; top:18px; width:60px; height:44px;"></div>
+      <div class="sb ph-ridge"  style="left:84px; top:18px; width:60px; height:44px;"></div>
+      <div class="sb ph-market" style="left:152px; top:18px; width:60px; height:44px;"></div>
+      <div class="sb ph-tower"  style="left:220px; top:18px; width:60px; height:44px;"></div>
+      <div class="sb ph-shore"  style="left:16px; top:70px; width:60px; height:44px;"></div>
+      <div class="sb ph-meadow" style="left:84px; top:70px; width:60px; height:44px;"></div>
+      <div class="sb ph-stair"  style="left:152px; top:70px; width:60px; height:44px;"></div>
+      <div class="sb ph-quay"   style="left:220px; top:70px; width:60px; height:44px;"></div>
+      <div class="sb ph-atrium" style="left:16px; top:122px; width:60px; height:44px;"></div>
+      <div class="sb ph-figure" style="left:84px; top:122px; width:60px; height:44px;"></div>
+      <div class="sb ph-harbor" style="left:152px; top:122px; width:60px; height:44px;"></div>
+      <div class="sb ph-ridge"  style="left:220px; top:122px; width:60px; height:44px;"></div>
+    </div>
+    <div class="lbl" style="left:36px; top:525px;">I2-A · UNIFORM CONTACT SHEET</div>
+    <div class="rule2" style="left:36px; top:544px; width:296px;">
+      ONE STABLE GRID AT A CONSISTENT INSPECTION SCALE, FOR SOURCES THAT SHARE
+      A PROPORTION. NEVER REACHED BY CROPPING TO MAKE THEM MATCH.
+    </div>
+
+    <!-- I2-B -->
+    <div class="sch" style="left:444px; top:328px; width:296px; height:185px;">
+      <div class="sb ph-harbor" style="left:18px; top:26px; width:78px; height:52px;"></div>
+      <div class="sb ph-tower"  style="left:104px; top:26px; width:35px; height:52px;"></div>
+      <div class="sb ph-meadow" style="left:147px; top:26px; width:52px; height:52px;"></div>
+      <div class="sb ph-market" style="left:207px; top:26px; width:65px; height:52px;"></div>
+      <div class="sb ph-shore"  style="left:18px; top:90px; width:104px; height:52px;"></div>
+      <div class="sb ph-figure" style="left:130px; top:90px; width:44px; height:52px;"></div>
+      <div class="sb ph-stair"  style="left:182px; top:90px; width:78px; height:52px;"></div>
+    </div>
+    <div class="lbl" style="left:444px; top:525px;">I2-B · ASPECT-PRESERVING SHEET</div>
+    <div class="rule2" style="left:444px; top:544px; width:296px;">
+      COMMON ROW HEIGHT, WIDTHS FROM THE SOURCE. UNEQUAL FRAMES ARE ALLOWED;
+      ALIGNMENT YIELDS BEFORE A PICTURE IS DISTORTED.
+    </div>
+
+    <!-- I2-C -->
+    <div class="sch" style="left:852px; top:328px; width:296px; height:185px;">
+      <div class="sb ph-shore"  style="left:16px; top:60px; width:42px; height:64px;"></div>
+      <div class="sb ph-harbor" style="left:64px; top:60px; width:50px; height:64px;"></div>
+      <div class="sb ph-ridge"  style="left:120px; top:60px; width:36px; height:64px;"></div>
+      <div class="sb ph-quay"   style="left:162px; top:60px; width:48px; height:64px;"></div>
+      <div class="pvrule" style="left:224px; top:24px; height:137px;"></div>
+      <div class="stx" style="left:238px; top:60px; width:44px; height:64px;"></div>
+    </div>
+    <div class="lbl" style="left:852px; top:525px;">I2-C · STRIP WITH FACTS RAIL</div>
+    <div class="rule2" style="left:852px; top:544px; width:296px;">
+      A SEQUENCE RUNS ALONG ONE LANDSCAPE UNIT WHILE A NARROW RAIL CARRIES
+      OPTIONAL SOURCE FACTS. THE RAIL NEVER REPLACES A FRAME.
+    </div>
+  </div>
+
+  <div class="folio">SIX FAMILIES · THE TIER IS THE CAPACITY BAND, THE FAMILY IS THE PAGE</div>
+</section>
+
+<!-- ======================= 11 · LAYOUT FAMILIES · TIER 03 (fig 10) ======================= -->
+<section class="slide">
+  <div class="running"><span>IMAGE LED · LAYOUT FAMILIES · TIER 03</span><span class="fig">10 / 20</span></div>
+
+  <div class="stage bleed">
+    <!-- I3-A -->
+    <div class="sch" style="left:36px; top:16px; width:296px; height:185px;">
+      <div class="gut" style="left:148px;"></div>
+      <div class="sb ph-ridge" style="left:16px; top:22px; width:118px; height:140px;"></div>
+    </div>
+    <div class="lbl" style="left:36px; top:213px;">I3-A · SINGLE-IMAGE PAGE</div>
+    <div class="rule2" style="left:36px; top:232px; width:296px;">
+      ONE PICTURE HOLDS A PAGE OR ONE SIDE OF A SPREAD. USED WHEN SCALE AND
+      PAUSE MATTER MORE THAN DENSITY.
+    </div>
+
+    <!-- I3-B -->
+    <div class="sch" style="left:444px; top:16px; width:296px; height:185px;">
+      <div class="gut" style="left:148px;"></div>
+      <div class="sb ph-harbor" style="left:16px; top:44px; width:118px; height:96px;"></div>
+      <div class="sb ph-quay" style="left:162px; top:44px; width:118px; height:96px;"></div>
+    </div>
+    <div class="lbl" style="left:444px; top:213px;">I3-B · FACING-PAGE PAIR</div>
+    <div class="rule2" style="left:444px; top:232px; width:296px;">
+      TWO PICTURES HOLD FACING PAGES. THE RELATIONSHIP COMES FROM PROXIMITY,
+      SEQUENCE, CONTRAST, OR SHARED MATERIAL.
+    </div>
+
+    <!-- I3-C -->
+    <div class="sch" style="left:852px; top:16px; width:296px; height:185px;">
+      <div class="gut" style="left:148px;"></div>
+      <div class="sb ph-shore" style="left:16px; top:20px; width:118px; height:86px;"></div>
+      <div class="sb ph-market" style="left:16px; top:118px; width:54px; height:40px;"></div>
+      <div class="sb ph-stair" style="left:162px; top:20px; width:76px; height:52px;"></div>
+      <div class="sb ph-meadow" style="left:162px; top:84px; width:118px; height:74px;"></div>
+    </div>
+    <div class="lbl" style="left:852px; top:213px;">I3-C · IMAGE SEQUENCE SPREAD</div>
+    <div class="rule2" style="left:852px; top:232px; width:296px;">
+      SEVERAL PICTURES SHARE A SPREAD AT DELIBERATELY VARIED SCALE: ONE LEADS,
+      ONE BRIDGES, ONE CLOSES.
+    </div>
+
+    <!-- I3-D -->
+    <div class="sch" style="left:240px; top:320px; width:296px; height:185px;">
+      <div class="gut" style="left:148px;"></div>
+      <div class="sb ph-atrium" style="left:16px; top:28px; width:118px; height:130px;"></div>
+      <div class="stx" style="left:162px; top:28px; width:110px; height:130px;"></div>
+    </div>
+    <div class="lbl" style="left:240px; top:517px;">I3-D · IMAGE PLUS TEXT SPREAD</div>
+    <div class="rule2" style="left:240px; top:536px; width:296px;">
+      THE PICTURE STAYS PRIMARY WHILE A SHORT MEASURE SITS BESIDE IT. TEXT IS
+      OPTIONAL; ITS ABSENCE CREATES NO EMPTY SLOT.
+    </div>
+
+    <!-- I3-E -->
+    <div class="sch" style="left:648px; top:320px; width:296px; height:185px;">
+      <div class="subpg" style="left:14px; top:48px; width:122px; height:90px;">
+        <div class="sb ph-harbor" style="left:8px; top:8px; width:48px; height:74px;"></div>
+        <div class="sb ph-ridge" style="left:64px; top:8px; width:50px; height:36px;"></div>
+        <div class="stx" style="left:64px; top:52px; width:50px; height:30px;"></div>
+      </div>
+      <div class="arrow" style="left:146px; top:84px; color:rgba(26,26,26,0.35);">→</div>
+      <div class="subpg" style="left:166px; top:48px; width:122px; height:90px;">
+        <div class="sb ph-shore" style="left:8px; top:8px; width:52px; height:40px;"></div>
+        <div class="sb ph-quay" style="left:8px; top:56px; width:52px; height:26px;"></div>
+        <div class="sb ph-stair" style="left:68px; top:8px; width:46px; height:74px;"></div>
+      </div>
+    </div>
+    <div class="lbl" style="left:648px; top:517px;">I3-E · PAGINATED SEQUENCE</div>
+    <div class="rule2" style="left:648px; top:536px; width:296px;">
+      THE SEQUENCE CONTINUES ACROSS SEVERAL SPREADS. MORE PICTURES MAKE MORE
+      PAGES; THEY DO NOT COLLAPSE INTO ONE SHEET.
+    </div>
+  </div>
+
+  <div class="folio">FIVE FAMILIES · ELEVEN ACROSS THE THREE TIERS</div>
+</section>
+
+<!-- ======================= 12 · HOW MUCH ROOM THE PICTURES ASK FOR (fig 11) ======================= -->
+<section class="slide">
+  <div class="running"><span>IMAGE LED · DEMAND AND ROUTING</span><span class="fig">11 / 20</span></div>
+
+  <div class="stage bleed">
+    <div class="lbl" style="left:0; top:0;">PER-PICTURE DEMAND</div>
+    <div class="eq" style="position:absolute; left:0; top:30px; width:600px;">
+      <b>F</b> &nbsp;fidelity floor &nbsp;=&nbsp; <i>96</i> thumbnail &nbsp;·&nbsp; <i>180</i> supporting &nbsp;·&nbsp; <i>320</i> leading<br>
+      <b>r</b> &nbsp;aspect &nbsp;=&nbsp; w / h &nbsp;&nbsp;&nbsp; from intrinsic pixel dimensions<br>
+      pixelReserve &nbsp;=&nbsp; clamp( 0.70, 1.50, 0.18 × √(w × h) / F )<br>
+      aspectReserve &nbsp;=&nbsp; clamp( 0.00, 0.45, 0.12 × |ln r| )<br>
+      roleReserve &nbsp;=&nbsp; +0.35 leading &nbsp;·&nbsp; 0 supporting &nbsp;·&nbsp; −0.18 thumbnail<br>
+      <b>Iᵢ</b> &nbsp;=&nbsp; max( 0.45, pixelReserve + aspectReserve + roleReserve )
+    </div>
+
+    <div class="lbl" style="left:0; top:232px;">SET TOTAL</div>
+    <div class="eq" style="position:absolute; left:0; top:262px; width:600px;">
+      <b>D</b> = T + I + O &nbsp;&nbsp; O = 0 &nbsp;(NOTES · DOCUMENTS · IMAGES · GIFS)<br>
+      imageShare = I / D &nbsp;&nbsp; textShare = T / D<br>
+      <b>D_image</b> = A_image / A_unit &nbsp;&nbsp; placed area over usable page area<br>
+      <b>PPI_eff</b> = min( px_w / placed_w_in , px_h / placed_h_in )
+    </div>
+
+    <div class="lbl" style="left:0; top:404px;">GATE</div>
+    <div class="eq" style="position:absolute; left:0; top:434px; width:600px;">
+      D &lt; 1.0 &nbsp;→&nbsp; no reading is made<br>
+      24 of 32 field-supported cells &nbsp;(1920 × 1080 · 220px cells)<br>
+      one long source may qualify on its own measured demand
+    </div>
+
+    <div class="pvrule" style="left:640px; top:0; height:500px; background:var(--hairline);"></div>
+
+    <div class="lbl" style="left:696px; top:0;">SHARE CHOOSES THE GRAMMAR</div>
+    <div class="tbl" style="position:absolute; left:696px; top:30px; width:490px;">
+      <span class="k">imageShare ≤ 0.25</span> &nbsp;&nbsp;→&nbsp;&nbsp; TEXT-LED<br>
+      <span class="k">0.25 &lt; imageShare &lt; 0.70</span> &nbsp;&nbsp;→&nbsp;&nbsp; MIXED-MEDIA<br>
+      <span class="k" style="color:var(--interaction);">imageShare ≥ 0.70</span> &nbsp;&nbsp;→&nbsp;&nbsp; <span style="color:var(--interaction);">IMAGE-LED</span><br>
+      BOUNDARIES ARE OWNED: 0.25 GOES TO TEXT-LED, 0.70 TO IMAGE-LED.
+    </div>
+
+    <div class="lbl" style="left:696px; top:172px;">TOTAL CHOOSES THE FORM</div>
+    <div class="tbl" style="position:absolute; left:696px; top:202px; width:490px;">
+      <span class="k">1.00 ≤ D &lt; 1.75</span> &nbsp;&nbsp;TIER 01 &nbsp;&nbsp;→&nbsp;&nbsp; GALLERY · 1 FRAME / PAGE<br>
+      <span class="k">1.75 ≤ D &lt; 3.00</span> &nbsp;&nbsp;TIER 02 &nbsp;&nbsp;→&nbsp;&nbsp; CONTACT SHEET · 4 / PAGE<br>
+      <span class="k">D ≥ 3.00</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TIER 03 &nbsp;&nbsp;→&nbsp;&nbsp; IMAGE EDITION · 2 / PAGE<br>
+      EVERY UNIT IS LANDSCAPE 8:5. A NARROW WIDTH CHANGES COLUMNS AND PAGE
+      COUNT — IT NEVER SUBSTITUTES A PORTRAIT PAGE.
+    </div>
+
+    <div class="lbl" style="left:696px; top:352px;">ORDER OF SELECTION</div>
+    <div class="tbl" style="position:absolute; left:696px; top:382px; width:490px;">
+      SOURCES → PER-SOURCE DEMAND → D AND SHARES → GATE → GRAMMAR →
+      TIER → LAYOUT FAMILY → PAGE
+    </div>
+
+    <div class="phair" style="left:0; top:520px; width:1184px; background:rgba(226,98,92,0.28);"></div>
+    <div class="lbl bad" style="left:0; top:538px;">NEVER AN INPUT</div>
+    <div class="rule2" style="left:0; top:558px; width:1184px; color:rgba(226,98,92,0.72);">
+      FILE BYTES · COMPRESSION · THE SIZE OF A THUMBNAIL ON SCREEN · NUMBER OF
+      ITEMS ON ITS OWN · FILENAME ORDER · THE SHAPE OF THE BROWSER RECTANGLE
+      BEFORE MARGINS AND FIDELITY FLOORS ARE TAKEN OFF IT
+    </div>
+  </div>
+
+  <div class="folio">ONE CALCULATION PATH · THE PAGE NEVER RECOMPUTES THE ROUTE</div>
+</section>
+
+<!-- ======================= 13 · FIDELITY BANDS PLATE (fig 12) ======================= -->
+<section class="slide">
+  <div class="running"><span>IMAGE LED · FIDELITY BANDS</span><span class="fig">12 / 20</span></div>
+
+  <div class="stage bleed">
+    <!-- band A -->
+    <div class="lbl" style="left:0; top:70px; width:104px; text-align:right;">≥ 300</div>
+    <div class="lbl quiet" style="left:0; top:88px; width:104px; text-align:right;">PPI PLACED</div>
+    <div class="pg" style="left:118px; top:10px; width:1066px; height:172px;">
+      <div class="fr ph-harbor" style="left:20px; top:20px; width:198px; height:132px;"></div>
+      <div class="ptitle" style="left:246px; top:52px; width:420px;">Low tide at the Rannoch quay</div>
+      <div class="pmeta" style="left:246px; top:80px;">JPG · 5472 × 3648 · 3:2 · 12 MAY</div>
+      <div class="pmeta" style="left:246px; top:100px; color:rgba(26,26,26,0.38);">MAY LEAD THE SHEET AT FULL WIDTH</div>
+    </div>
+
+    <!-- band B -->
+    <div class="lbl" style="left:0; top:274px; width:104px; text-align:right;">150 – 299</div>
+    <div class="lbl quiet" style="left:0; top:292px; width:104px; text-align:right;">PPI PLACED</div>
+    <div class="pg" style="left:118px; top:214px; width:1066px; height:172px;">
+      <div class="fr ph-meadow" style="left:20px; top:42px; width:132px; height:88px;"></div>
+      <div class="ptitle" style="left:180px; top:60px; width:420px;">Track above the water</div>
+      <div class="pmeta" style="left:180px; top:88px;">JPG · 1800 × 1200 · 3:2 · 13 MAY</div>
+      <div class="pmeta" style="left:180px; top:108px; color:rgba(26,26,26,0.38);">BOUNDED FRAME · NOT TAKEN TO THE LARGEST SIZE</div>
+    </div>
+
+    <!-- band C -->
+    <div class="lbl" style="left:0; top:478px; width:104px; text-align:right;">&lt; 150</div>
+    <div class="lbl quiet" style="left:0; top:496px; width:104px; text-align:right;">PPI PLACED</div>
+    <div class="pg" style="left:118px; top:418px; width:1066px; height:172px;">
+      <div class="fr ph-figure" style="left:20px; top:60px; width:78px; height:52px;"></div>
+      <div class="ptitle" style="left:126px; top:60px; width:420px; font-size:13px;">At the head of the path</div>
+      <div class="pmeta" style="left:126px; top:86px;">JPG · 640 × 427 · 3:2 · 13 MAY</div>
+      <div class="paction" style="left:126px; top:110px;">Open</div>
+    </div>
+
+    <div class="mark" style="left:230px; top:16px;">1</div>
+    <div class="mark" style="left:164px; top:246px;">2</div>
+    <div class="mark" style="left:146px; top:446px;">3</div>
+    <div class="mark" style="left:600px; top:298px;">4</div>
+    <div class="mark" style="left:300px; top:524px;">5</div>
+    <div class="mark" style="left:46px; top:232px;">6</div>
+  </div>
+
+  <div class="folio">EFFECTIVE PLACED RESOLUTION SETS THE CEILING ON DISPLAY AREA</div>
+</section>
+
+<!-- ======================= 14 · NOTES ON 12 (fig 13) ======================= -->
+<section class="slide">
+  <div class="running"><span>IMAGE LED · NOTES ON 12</span><span class="fig">13 / 20</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>At or above the print reference</b>A clean source placed at 300 PPI or better can carry the display area it is given, including the leading frame on the sheet or a full-width moment in a sequence.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Between 150 and 299</b>A bounded frame. The picture is placed well inside what it can hold rather than pushed to the largest frame the page could offer.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Below 150</b>Small and supporting, or sent to full-size inspection on its own. A soft leading frame is never offered as a substitute for the source.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>The measure is placed resolution</b>Effective resolution is the source's pixels divided by the size it is actually placed at, taken on the tighter of the two dimensions. It falls as the frame grows, which is what makes it a ceiling.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Inspection is a route, not a rescue</b>When a source cannot carry a large frame, the reading offers the way to open it rather than enlarging it in place. The frame that stays on the page remains complete.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Three bands route; they do not promise</b>Source dimensions, viewing distance, and the final medium remain the authority. The bands choose a frame — they are not a print-production guarantee, and each role also carries its own floor: 96, 180, 320.</span></div>
+  </div>
+  <div class="folio">PLATE 12 · PPI_EFF = MIN(PX_W / PLACED_W_IN, PX_H / PLACED_H_IN)</div>
+</section>
+
+<!-- ======================= 15 · ASPECT FAMILIES PLATE (fig 14) ======================= -->
+<section class="slide">
+  <div class="running"><span>IMAGE LED · ASPECT FAMILIES</span><span class="fig">14 / 20</span></div>
+
+  <div class="stage bleed">
+    <!-- column headers -->
+    <div class="lbl" style="left:0;   top:44px;">LANDSCAPE · 3:2</div>
+    <div class="lbl" style="left:303px; top:44px;">PORTRAIT · 2:3</div>
+    <div class="lbl" style="left:606px; top:44px;">SQUARE · 1:1</div>
+    <div class="lbl" style="left:909px; top:44px;">PANORAMA · 20:9</div>
+
+    <!-- the source frames, drawn at their own proportion -->
+    <div class="fr ph-harbor" style="left:18px;  top:76px; width:240px; height:160px;"></div>
+    <div class="fr ph-tower"  style="left:381px; top:66px; width:120px; height:180px;"></div>
+    <div class="fr ph-meadow" style="left:654px; top:66px; width:180px; height:180px;"></div>
+    <div class="fr ph-shore"  style="left:916px; top:97px; width:260px; height:117px;"></div>
+
+    <div class="lbl quiet" style="left:0;   top:262px;">SELECTS</div>
+    <div class="lbl quiet" style="left:303px; top:262px;">SELECTS</div>
+    <div class="lbl quiet" style="left:606px; top:262px;">SELECTS</div>
+    <div class="lbl quiet" style="left:909px; top:262px;">SELECTS</div>
+
+    <!-- the landscape unit each family selects -->
+    <div class="sch" style="left:0; top:288px; width:275px; height:172px;">
+      <div class="sb ph-harbor" style="left:32px; top:33px; width:210px; height:106px;"></div>
+    </div>
+    <div class="sch" style="left:303px; top:288px; width:275px; height:172px;">
+      <div class="gut" style="left:150px;"></div>
+      <div class="sb ph-tower" style="left:36px; top:16px; width:92px; height:140px;"></div>
+      <div class="stx" style="left:166px; top:60px; width:82px; height:52px;"></div>
+    </div>
+    <div class="sch" style="left:606px; top:288px; width:275px; height:172px;">
+      <div class="sb ph-meadow" style="left:70px; top:16px; width:140px; height:140px;"></div>
+    </div>
+    <div class="sch" style="left:909px; top:288px; width:275px; height:172px;">
+      <div class="gut" style="left:150px;"></div>
+      <div class="sb ph-shore" style="left:14px; top:52px; width:247px; height:68px;"></div>
+    </div>
+
+    <div class="rule2" style="left:0;   top:474px; width:275px;">SITS IN THE UNIT WITH FIELD AROUND IT. THE DEFAULT INSPECTION FRAME.</div>
+    <div class="rule2" style="left:303px; top:474px; width:275px;">TAKES ONE SIDE OF THE UNIT AT FULL HEIGHT. THE UNIT STAYS LANDSCAPE.</div>
+    <div class="rule2" style="left:606px; top:474px; width:275px;">EQUAL MARGINS. THE PAGE DOES NOT STRETCH IT TOWARD EITHER EDGE.</div>
+    <div class="rule2" style="left:909px; top:474px; width:275px;">CLAIMS THE FULL WIDTH OF A UNIT OR A WHOLE SPREAD; THE REST MOVES ON.</div>
+
+    <div class="mark" style="left:266px; top:76px;">1</div>
+    <div class="mark" style="left:0;   top:296px;">2</div>
+    <div class="mark" style="left:303px; top:296px;">3</div>
+    <div class="mark" style="left:606px; top:296px;">4</div>
+    <div class="mark" style="left:909px; top:296px;">5</div>
+  </div>
+
+  <div class="folio">FOUR FAMILIES · CLASSIFICATION SELECTS A FRAME, IT NEVER AUTHORISES A CROP</div>
+</section>
+
+<!-- ======================= 16 · NOTES ON 14 (fig 15) ======================= -->
+<section class="slide">
+  <div class="running"><span>IMAGE LED · NOTES ON 14</span><span class="fig">15 / 20</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>Classify before composing</b>Every picture is landscape, portrait, square, or extreme panorama before any arrangement is chosen. Where a source does not match the region available, the region changes, the picture gets smaller, or another family is selected — in that order.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Landscape</b>Sits naturally inside the landscape unit with field around it. This is the default inspection frame and the reason the unit is landscape in the first place.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Portrait</b>Takes one side of the unit at full height, with support beside it. The unit is never swapped for a portrait page: a narrow width changes columns and page count instead.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Square</b>Equal margins on all four sides. The page does not stretch it toward either edge to make a row look tidy.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Extreme panorama</b>Claims the full width of a unit, or a whole spread when the detail needs it, and the rest of the set moves to the next page. Its row simply carries fewer pictures.</span></div>
+  </div>
+  <div class="folio">PLATE 14 · A SHEET MAY USE UNEQUAL WIDTHS; A SEQUENCE MAY GIVE A PANORAMA A SPREAD</div>
+</section>
+
+<!-- ======================= 17 · MOTION PLATE (fig 16) ======================= -->
+<section class="slide">
+  <div class="running"><span>IMAGE LED · MOVING SOURCES</span><span class="fig">16 / 20</span></div>
+
+  <div class="stage bleed">
+    <div class="lbl" style="left:0;   top:120px;">PLAYING</div>
+    <div class="lbl" style="left:408px; top:120px;">REDUCED MOTION</div>
+    <div class="lbl bad" style="left:816px; top:120px;">FLATTENED TO A PHOTOGRAPH</div>
+
+    <!-- playing -->
+    <div class="pg" style="left:0; top:146px; width:368px; height:290px;">
+      <div style="position:absolute; left:24px; top:24px; width:320px; height:180px; overflow:hidden;">
+        <div class="fr ph-market" style="left:0; top:0; width:320px; height:180px;"></div>
+        <div class="fr ph-market" style="left:16px; top:0; width:320px; height:180px; opacity:0.34;"></div>
+        <div class="fr ph-market" style="left:32px; top:0; width:320px; height:180px; opacity:0.18;"></div>
+      </div>
+      <div class="pmeta" style="left:24px; top:220px;">GIF · 800 × 450 · 16:9</div>
+      <div class="pmeta" style="left:24px; top:242px; color:rgba(26,26,26,0.38);">LAMPS, EAST ROW</div>
+    </div>
+
+    <!-- reduced motion -->
+    <div class="pg" style="left:408px; top:146px; width:368px; height:290px;">
+      <div class="fr ph-market" style="left:24px; top:24px; width:320px; height:180px;"></div>
+      <div class="pmeta" style="left:24px; top:220px;">GIF · 800 × 450 · 16:9</div>
+      <div class="pmeta" style="left:24px; top:242px; color:rgba(26,26,26,0.38);">LAMPS, EAST ROW</div>
+    </div>
+
+    <!-- refused -->
+    <div class="pg" style="left:816px; top:146px; width:368px; height:290px;">
+      <div class="fr ph-stair" style="left:24px; top:24px; width:320px; height:180px;"></div>
+      <div class="pmeta" style="left:24px; top:220px;">JPG · 1920 × 1080 · 16:9</div>
+      <div class="pmeta" style="left:24px; top:242px; color:rgba(26,26,26,0.38);">STAIR, NORTH SIDE</div>
+      <div style="position:absolute; left:0; top:0; right:0; bottom:0; border:1px dashed rgba(226,98,92,0.85); border-radius:var(--r);"></div>
+    </div>
+
+    <div class="rule2" style="left:0;   top:452px; width:368px;">
+      A GIF IS A PICTURE THAT MOVES. ITS FRAME IS COMPLETE AND SIZED THE SAME
+      WAY AS A STILL.
+    </div>
+    <div class="rule2" style="left:408px; top:452px; width:368px;">
+      WITH ANIMATION OFF, A COMPLETE STATIC FRAME REMAINS — SAME PLACE, SAME
+      SIZE. NOTHING IS LOST.
+    </div>
+    <div class="rule2" style="left:816px; top:452px; width:368px; color:rgba(226,98,92,0.72);">
+      A STILL PULLED FROM MOVING MATERIAL AND PRESENTED AS A PHOTOGRAPH, WITH
+      NO WAY BACK TO THE SOURCE.
+    </div>
+
+    <div class="mark" style="left:100px; top:170px;">1</div>
+    <div class="mark" style="left:200px; top:366px;">2</div>
+    <div class="mark" style="left:508px; top:170px;">3</div>
+    <div class="mark" style="left:1024px; top:366px;">4</div>
+    <div class="mark" style="left:1156px; top:136px;">5</div>
+  </div>
+
+  <div class="folio">ANIMATION CHANGES PLAYBACK, NOT THE ROOM A PICTURE NEEDS</div>
+</section>
+
+<!-- ======================= 18 · NOTES ON 16 (fig 17) ======================= -->
+<section class="slide">
+  <div class="running"><span>IMAGE LED · NOTES ON 16</span><span class="fig">17 / 20</span></div>
+  <div class="notes">
+    <div class="ann"><span class="n">01</span><span><b>A GIF is a picture that moves</b>Its frame is complete and it asks for space by the same measure as a still: intrinsic dimensions, proportion, role, and fidelity floor. Animation changes playback, not area.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Facts read the same way</b>Kind, dimensions, and proportion sit under the frame in quiet mono, exactly as they do for a still. Nothing about the page announces that it is doing something special.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Reduced motion loses nothing</b>With animation off, a complete static frame remains in the same place at the same size. Meaning never lives only in the movement.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>A still from a moving source is a derivative</b>It may stand in only when it is identified as a frame taken from that source and the source itself stays reachable and named.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Flattening is refused</b>Presenting moving material as a photograph is a lie about what the source is. Material of that kind gets playback or inspection; audio and video are not read here at all, and a source outside this material keeps its identity and its route instead of being turned into a picture.</span></div>
+  </div>
+  <div class="folio">PLATE 16 · SHARED MEDIA CONTRACT · T-AN07</div>
+</section>
+
+<!-- ======================= 19 · CAPTIONS AND SOURCE IDENTITY (fig 18) ======================= -->
+<section class="slide">
+  <div class="running"><span>IMAGE LED · CAPTIONS AND SOURCE IDENTITY</span><span class="fig">18 / 20</span></div>
+
+  <div class="stage bleed">
+    <div class="verdict keep" style="left:0; top:72px;">KEEP</div>
+    <div class="verdict refuse" style="left:612px; top:72px;">REFUSE</div>
+
+    <!-- keep -->
+    <div class="pg" style="left:0; top:100px; width:572px; height:360px;">
+      <div class="fr ph-quay" style="left:32px; top:32px; width:240px; height:160px;"></div>
+      <div class="ptitle" style="left:32px; top:206px; width:240px; font-size:13px;">The long way round</div>
+      <div class="pmeta" style="left:32px; top:232px;">JPG · 4032 × 2688 · 14 MAY</div>
+
+      <div class="fr ph-atrium" style="left:300px; top:32px; width:240px; height:160px;"></div>
+
+      <div class="phair" style="left:32px; top:300px; width:508px;"></div>
+      <div class="prail" style="left:32px; top:312px; width:508px;"><span>MOORLAND · LAYER 2</span><span>6</span></div>
+    </div>
+
+    <!-- refuse -->
+    <div class="pg" style="left:612px; top:100px; width:572px; height:360px;">
+      <div class="fr ph-figure" style="left:32px; top:32px; width:240px; height:160px;"></div>
+      <div class="ptitle" style="left:32px; top:206px; width:240px; font-size:13px;">IMG_4417.JPG</div>
+      <div class="pmeta" style="left:32px; top:232px;">8.2 MB · PICTURE 3 OF 6</div>
+
+      <div class="fr ph-atrium" style="left:300px; top:32px; width:240px; height:160px;"></div>
+      <div style="position:absolute; left:300px; top:206px; width:240px; height:22px; border:1px dashed rgba(226,98,92,0.85); border-radius:var(--r);"></div>
+      <div class="pmeta" style="left:308px; top:210px; color:rgba(226,98,92,0.85);">TITLE</div>
+      <div style="position:absolute; left:300px; top:236px; width:240px; height:38px; border:1px dashed rgba(226,98,92,0.85); border-radius:var(--r);"></div>
+      <div class="pmeta" style="left:308px; top:240px; color:rgba(226,98,92,0.85);">CAPTION</div>
+
+      <div class="phair" style="left:32px; top:300px; width:508px;"></div>
+      <div class="prail" style="left:32px; top:312px; width:508px;"><span>MOORLAND · LAYER 2</span><span>6</span></div>
+    </div>
+
+    <div class="rule2" style="left:0; top:480px; width:572px;">
+      A CAPTION EXISTS BECAUSE THE SOURCE CARRIES ONE. THE SECOND PICTURE HAS NO
+      TITLE, SO NOTHING APPEARS BENEATH IT AND THE SPACE SIMPLY CLOSES UP.
+      DIMENSIONS AND DATE ARE SOURCE FACTS; LAYER AND PAGE ARE THE FOOTER.
+    </div>
+    <div class="rule2" style="left:612px; top:480px; width:572px; color:rgba(226,98,92,0.72);">
+      A FILENAME IS NOT A TITLE. FILE SIZE IS NOT A SOURCE FACT WORTH PRINTING
+      AND NEVER DECIDES LAYOUT. A PAGE POSITION IS PAGINATION, NOT IDENTITY.
+      AN EMPTY SLOT HELD OPEN FOR TEXT THAT DOES NOT EXIST IS A DEFECT.
+    </div>
+  </div>
+
+  <div class="folio">CAPTIONS AND PROVENANCE ARE CONDITIONAL · THE FRAME IS NOT</div>
+</section>
+
+<!-- ======================= 20 · REFLOW (fig 19) ======================= -->
+<section class="slide">
+  <div class="running"><span>IMAGE LED · REFLOW</span><span class="fig">19 / 20</span></div>
+
+  <div class="stage bleed">
+    <div class="lbl" style="left:0;   top:60px;">D = 2.4 · FOUR PICTURES</div>
+    <div class="lbl" style="left:408px; top:60px;">ONE ADDED · D = 3.3</div>
+    <div class="lbl" style="left:816px; top:60px;">USABLE WIDTH NARROWS</div>
+
+    <!-- state one -->
+    <div class="pg" style="left:0; top:88px; width:368px; height:230px;">
+      <div class="fr ph-harbor" style="left:16px; top:24px; width:114px; height:76px;"></div>
+      <div class="fr ph-tower sel" style="left:142px; top:24px; width:52px; height:76px;"></div>
+      <div class="fr ph-meadow" style="left:206px; top:24px; width:76px; height:76px;"></div>
+      <div class="fr ph-market" style="left:294px; top:24px; width:58px; height:76px;"></div>
+      <div class="fr ph-shore" style="left:16px; top:116px; width:160px; height:72px;"></div>
+      <div class="fr ph-stair" style="left:188px; top:116px; width:108px; height:72px;"></div>
+      <div class="phair" style="left:16px; top:200px; width:336px;"></div>
+      <div class="prail" style="left:16px; top:208px; width:336px;"><span>MOORLAND · LAYER 2</span><span>1 / 1</span></div>
+    </div>
+
+    <div class="arrow" style="left:382px; top:190px;">→</div>
+
+    <!-- state two -->
+    <div class="pg" style="left:408px; top:88px; width:368px; height:230px;">
+      <div class="fr ph-tower sel" style="left:24px; top:24px; width:120px; height:160px;"></div>
+      <div class="fr ph-harbor" style="left:170px; top:24px; width:174px; height:116px;"></div>
+      <div class="pmeta" style="left:170px; top:150px;">JPG · 5472 × 3648</div>
+      <div class="phair" style="left:24px; top:200px; width:320px;"></div>
+      <div class="prail" style="left:24px; top:208px; width:320px;"><span>MOORLAND · LAYER 2</span><span>2 / 3</span></div>
+    </div>
+
+    <div class="arrow" style="left:790px; top:190px;">→</div>
+
+    <!-- state three -->
+    <div class="pg" style="left:816px; top:88px; width:290px; height:181px;">
+      <div class="fr ph-tower sel" style="left:20px; top:20px; width:96px; height:128px;"></div>
+      <div class="fr ph-harbor" style="left:136px; top:20px; width:134px; height:90px;"></div>
+      <div class="phair" style="left:20px; top:156px; width:250px;"></div>
+      <div class="prail" style="left:20px; top:163px; width:250px;"><span>MOORLAND · LAYER 2</span><span>2 / 4</span></div>
+    </div>
+    <div class="lbl quiet" style="left:1122px; top:150px; color:var(--ann-line);">STILL<br>8:5</div>
+
+    <div class="rule2" style="left:0;   top:344px; width:368px;">
+      A COMPARISON SHEET. THE PICTURE BEING READ CARRIES AN OUTLINE OUTSIDE
+      ITS FRAME.
+    </div>
+    <div class="rule2" style="left:408px; top:344px; width:368px;">
+      ONE MORE PICTURE CROSSES 3.0. THE SET BECOMES A SEQUENCE, PAGES GO FROM
+      ONE TO THREE, AND THE SAME PICTURE IS STILL THE ONE BEING READ — NOW ON
+      ITS OWN PAGE AT A LARGER FRAME.
+    </div>
+    <div class="rule2" style="left:816px; top:344px; width:368px;">
+      LESS ROOM ACROSS. THE UNIT STAYS LANDSCAPE 8:5 AND A FOURTH PAGE IS
+      ADDED. NO PICTURE IS CROPPED, NO PORTRAIT PAGE IS SUBSTITUTED, AND THE
+      READER KEEPS THEIR PLACE.
+    </div>
+
+    <div class="rule2" style="left:0; top:500px; width:1184px; color:var(--ann-strong);">
+      RECOMPUTED ON: ADD OR REMOVE · TEXT EDIT THAT CHANGES WRAPPING ·
+      REPLACEMENT AT DIFFERENT DIMENSIONS · ROLE CHANGE · A THRESHOLD CROSSED
+      IN EITHER DIRECTION · A CHANGE OF USABLE WIDTH.
+    </div>
+    <div class="rule2" style="left:0; top:536px; width:1184px;">
+      A BOUNDARY SET IS HELD BY HYSTERESIS SO IT CANNOT OSCILLATE. A FAILED
+      RECALCULATION KEEPS THE LAST GOOD PAGES VISIBLE AND SAYS SO; IT NEVER
+      SHOWS A HALF-CHANGED SEQUENCE.
+    </div>
+  </div>
+
+  <div class="folio">SOURCE ORDER, PROVENANCE, AND COMPLETE FRAMES SURVIVE EVERY REFLOW</div>
+</section>
+
+<!-- ======================= 21 · REFUSALS (fig 20) ======================= -->
+<section class="slide">
+  <div class="running"><span>IMAGE LED · REFUSALS</span><span class="fig">20 / 20</span></div>
+
+  <div class="stage bleed">
+    <!-- 1 · uniform tiny-crop grid -->
+    <div class="verdict refuse" style="left:0; top:0;">A WALL OF TINY CROPS</div>
+    <div class="pg" style="left:0; top:20px; width:572px; height:220px;">
+      <div class="fr ph-harbor" style="left:64px; top:13px; width:44px; height:44px;"></div>
+      <div class="fr ph-ridge"  style="left:114px; top:13px; width:44px; height:44px;"></div>
+      <div class="fr ph-market" style="left:164px; top:13px; width:44px; height:44px;"></div>
+      <div class="fr ph-tower"  style="left:214px; top:13px; width:44px; height:44px;"></div>
+      <div class="fr ph-shore"  style="left:264px; top:13px; width:44px; height:44px;"></div>
+      <div class="fr ph-meadow" style="left:314px; top:13px; width:44px; height:44px;"></div>
+      <div class="fr ph-stair"  style="left:364px; top:13px; width:44px; height:44px;"></div>
+      <div class="fr ph-quay"   style="left:414px; top:13px; width:44px; height:44px;"></div>
+      <div class="fr ph-atrium" style="left:464px; top:13px; width:44px; height:44px;"></div>
+      <div class="fr ph-figure" style="left:64px; top:63px; width:44px; height:44px;"></div>
+      <div class="fr ph-harbor" style="left:114px; top:63px; width:44px; height:44px;"></div>
+      <div class="fr ph-shore"  style="left:164px; top:63px; width:44px; height:44px;"></div>
+      <div class="fr ph-ridge"  style="left:214px; top:63px; width:44px; height:44px;"></div>
+      <div class="fr ph-quay"   style="left:264px; top:63px; width:44px; height:44px;"></div>
+      <div class="fr ph-market" style="left:314px; top:63px; width:44px; height:44px;"></div>
+      <div class="fr ph-atrium" style="left:364px; top:63px; width:44px; height:44px;"></div>
+      <div class="fr ph-tower"  style="left:414px; top:63px; width:44px; height:44px;"></div>
+      <div class="fr ph-meadow" style="left:464px; top:63px; width:44px; height:44px;"></div>
+      <div class="fr ph-stair"  style="left:64px; top:113px; width:44px; height:44px;"></div>
+      <div class="fr ph-figure" style="left:114px; top:113px; width:44px; height:44px;"></div>
+      <div class="fr ph-quay"   style="left:164px; top:113px; width:44px; height:44px;"></div>
+      <div class="fr ph-harbor" style="left:214px; top:113px; width:44px; height:44px;"></div>
+      <div class="fr ph-meadow" style="left:264px; top:113px; width:44px; height:44px;"></div>
+      <div class="fr ph-ridge"  style="left:314px; top:113px; width:44px; height:44px;"></div>
+      <div class="fr ph-shore"  style="left:364px; top:113px; width:44px; height:44px;"></div>
+      <div class="fr ph-stair"  style="left:414px; top:113px; width:44px; height:44px;"></div>
+      <div class="fr ph-market" style="left:464px; top:113px; width:44px; height:44px;"></div>
+      <div class="fr ph-tower"  style="left:64px; top:163px; width:44px; height:44px;"></div>
+      <div class="fr ph-atrium" style="left:114px; top:163px; width:44px; height:44px;"></div>
+      <div class="fr ph-figure" style="left:164px; top:163px; width:44px; height:44px;"></div>
+      <div class="fr ph-harbor" style="left:214px; top:163px; width:44px; height:44px;"></div>
+      <div class="fr ph-quay"   style="left:264px; top:163px; width:44px; height:44px;"></div>
+      <div class="fr ph-ridge"  style="left:314px; top:163px; width:44px; height:44px;"></div>
+      <div class="fr ph-shore"  style="left:364px; top:163px; width:44px; height:44px;"></div>
+      <div class="fr ph-meadow" style="left:414px; top:163px; width:44px; height:44px;"></div>
+      <div class="fr ph-stair"  style="left:464px; top:163px; width:44px; height:44px;"></div>
+    </div>
+    <div class="rule2" style="left:0; top:248px; width:572px; color:rgba(226,98,92,0.72);">
+      EVERY SOURCE SQUARED OFF TO ONE CELL SIZE. THE SET BECOMES IMPOSSIBLE TO
+      INSPECT AND THE PROPORTIONS ARE LOST. ADD A SHEET INSTEAD.
+    </div>
+
+    <!-- 2 · cropped to fit the slot -->
+    <div class="verdict refuse" style="left:612px; top:0;">FRAME CUT TO FILL A SLOT</div>
+    <div class="pg" style="left:612px; top:20px; width:572px; height:220px;">
+      <div class="fr ph-tower" style="left:216px; top:-5px; width:140px; height:230px; opacity:0.22;"></div>
+      <div class="fr ph-tower" style="left:216px; top:55px; width:140px; height:110px; background-size:140px 230px; background-position:0 -60px;"></div>
+      <div class="phair" style="left:186px; top:55px; width:200px; background:rgba(226,98,92,0.9);"></div>
+      <div class="phair" style="left:186px; top:165px; width:200px; background:rgba(226,98,92,0.9);"></div>
+      <div class="pmeta" style="left:396px; top:50px; color:rgba(226,98,92,0.85);">CUT</div>
+      <div class="pmeta" style="left:396px; top:160px; color:rgba(226,98,92,0.85);">CUT</div>
+    </div>
+    <div class="rule2" style="left:612px; top:248px; width:572px; color:rgba(226,98,92,0.72);">
+      A TALL SOURCE TRIMMED TO SIT IN A WIDE SLOT. WHEN THE SOURCE AND THE
+      REGION DISAGREE, THE REGION CHANGES OR THE PICTURE GETS SMALLER.
+    </div>
+
+    <!-- 3 · forced text slot -->
+    <div class="verdict refuse" style="left:0; top:318px;">A SLOT WAITING FOR TEXT</div>
+    <div class="pg" style="left:0; top:338px; width:572px; height:220px;">
+      <div class="fr ph-meadow" style="left:32px; top:30px; width:240px; height:160px;"></div>
+      <div style="position:absolute; left:300px; top:30px; width:240px; height:30px; border:1px dashed rgba(226,98,92,0.85); border-radius:var(--r);"></div>
+      <div class="pmeta" style="left:308px; top:38px; color:rgba(226,98,92,0.85);">TITLE</div>
+      <div style="position:absolute; left:300px; top:72px; width:240px; height:56px; border:1px dashed rgba(226,98,92,0.85); border-radius:var(--r);"></div>
+      <div class="pmeta" style="left:308px; top:80px; color:rgba(226,98,92,0.85);">CAPTION</div>
+      <div style="position:absolute; left:300px; top:140px; width:240px; height:50px; border:1px dashed rgba(226,98,92,0.85); border-radius:var(--r);"></div>
+      <div class="pmeta" style="left:308px; top:148px; color:rgba(226,98,92,0.85);">NOTES</div>
+    </div>
+    <div class="rule2" style="left:0; top:566px; width:572px; color:rgba(226,98,92,0.72);">
+      REGIONS RESERVED FOR TEXT NO SOURCE CARRIES. THE PICTURE IS PUSHED SMALL
+      TO PROTECT EMPTY BOXES. TEXT IS OPTIONAL AND DATA-DRIVEN.
+    </div>
+
+    <!-- 4 · below the fidelity floor -->
+    <div class="verdict refuse" style="left:612px; top:318px;">PUSHED BELOW ITS FLOOR</div>
+    <div class="pg" style="left:612px; top:338px; width:572px; height:220px;">
+      <div class="fr ph-figure ph-soft" style="left:136px; top:24px; width:300px; height:132px;"></div>
+      <div class="pmeta" style="left:136px; top:170px;">JPG · 480 × 211 · PLACED 300 WIDE</div>
+      <div class="pmeta" style="left:136px; top:190px; color:rgba(226,98,92,0.85);">FLOOR FOR A LEADING FRAME: 320</div>
+    </div>
+    <div class="rule2" style="left:612px; top:566px; width:572px; color:rgba(226,98,92,0.72);">
+      A SMALL SOURCE ENLARGED INTO A LEADING FRAME. USE A SMALLER COMPLETE
+      FRAME, OR OFFER INSPECTION — NEVER A SOFT HERO.
+    </div>
+  </div>
+
+  <div class="folio">END · IMAGE LED</div>
+</section>
+
+</body>
+</html>

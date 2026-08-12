@@ -1,0 +1,13 @@
+Tracing is the unique method of content placement that takes place when you want the same content across multiple layers. Normally, content exists in one layer, that is how copy/cut/duplicate and paste work. Trace / Tracing is how you move content across multiple layers.
+
+Tracing distinctly involves the information plane. All highlighted content is managed through a state of semi-permanent grouping. When moving from one layer to the next, the content keeps its fixed position on the grid in terms of cell occupancy; collision is detected however the interference, or prevention of placement, does not take place unless the user wants to "drop off" content on said layer, in which case placement collision rules apply. 
+
+Per layer, the user has the option to commit/drop off any and all content, as a "trace" of the original content. Tracing any and all content does not end the tracing activity, it is just the user stating to the app that they wish to trace the content to that location. 
+
+All traces are recorded as variants of the original memory. Meaning, the memory itself doesn't create copies as it would in copy or duplicate, but instead holds on to the fact that the same memory is used in multiple places. The memory thus gains additional contextual meaning, rather than different context altogether.
+
+While tracing; the user will be able to actually add additional content to the trace from different layers, since all content is a placed memory, all memories being traced gain that respective variance for all traces placed throughout the grid's various layers.
+
+To compare this to the physical world; tracing borrows from the animation technique of having the same drawing on multiple pages, but slightly altered per page. The entire purpose or intent behind tracing is to allow content to hold different context without needing to be reproduced. It's not saying; this is another version, it's saying; "in this context, this memory holds this meaning, and in that context, this memory holds that meaning, both contexts are relevant to the content". A direct example of this is using an illustration to depict an example of a woman, a perspective, and a composition. Each layer could be dedicated to one of those 3 concepts, and the memory is being placed as content in each of these layers, at different places, for different reasons, within the context of whatever the user wishes. 
+
+This also means that the same memory, traced across multiple layers, can be a part of or hold a different anchor, allowing one memory to have multiple contexts via multiple anchors (this applies generally as well, as proximity to other anchors can impact memory records too, allowing the natural complexity of human thought to be passively recorded by our system).

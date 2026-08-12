@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Gallery Slate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/catalogue.css">
+<style>
+  /* ---- deck-local: gallery slate rendering kit ----
+     One wall geometry across the deck: LG padding, 8px gutters, and
+     columns that balance around a comfortable minimum frame width. */
+  .slatewrap { position: relative; }
+
+  .slate-box {
+    background: var(--surface);
+    border: 1px solid rgba(205, 184, 216, 0.35);
+    border-radius: var(--r);
+    padding: var(--sp-lg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .slate-head {
+    display: flex;
+    align-items: baseline;
+    margin-bottom: 20px;
+    flex: none;
+  }
+  .slate-title {
+    font-family: var(--f-display);
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--slate);
+  }
+  .facets { display: flex; gap: 18px; margin-left: 26px; }
+  .facet {
+    font-family: var(--f-ui);
+    font-size: 11.5px;
+    color: rgba(234, 234, 234, 0.45);
+    padding-bottom: 3px;
+  }
+  .facet.on {
+    color: var(--text);
+    border-bottom: 1px solid var(--interaction);
+  }
+  .count {
+    margin-left: auto;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--ann);
+    text-transform: uppercase;
+  }
+
+  /* the wall: columns of complete frames, small-step gutters */
+  .wall { display: flex; gap: 8px; flex: 1; align-items: flex-start; min-height: 0; padding-right: 10px; }
+  .wcol { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+
+  .gframe { width: 100%; border-radius: var(--r); position: relative; }
+  .gmeta {
+    font-family: var(--f-mono);
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.07em;
+    color: rgba(234, 234, 234, 0.42);
+    text-transform: uppercase;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .kchip {
+    font-family: var(--f-mono);
+    font-size: 8px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    color: rgba(234, 234, 234, 0.55);
+    border: 1px solid rgba(234, 234, 234, 0.22);
+    border-radius: var(--r);
+    padding: 0 4px;
+    line-height: 1.55;
+  }
+
+  /* selection: interaction outline OUTSIDE the frame; image untouched */
+  .gcard.sel .gframe { outline: 2px solid var(--interaction); outline-offset: 3px; }
+  .gcard.sel .gmeta { color: rgba(234, 234, 234, 0.80); }
+
+  /* undecodable asset: keeps its footprint, identity and a way back */
+  .gframe.broken {
+    background: #1C1C20;
+    border: 1px solid var(--invalid);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .broken .bid {
+    font-family: var(--f-mono);
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: rgba(234, 234, 234, 0.6);
+    text-transform: uppercase;
+    text-align: center;
+    line-height: 1.8;
+  }
+  .retry {
+    font-family: var(--f-ui);
+    font-size: 11.5px;
+    color: var(--text);
+    border: 1px solid rgba(234, 234, 234, 0.28);
+    border-radius: var(--r);
+    padding: 5px 14px;
+    margin-top: 4px;
+  }
+
+  /* thin scroll track inside a slate */
+  .scrollcue { position: absolute; top: 66px; bottom: 24px; right: 8px; width: 3px; background: rgba(234,234,234,0.06); border-radius: var(--r); }
+  .scrollcue .thumb { position: absolute; left: 0; width: 3px; background: rgba(234,234,234,0.22); border-radius: var(--r); }
+
+  /* menu (shared grammar) */
+  .menu {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r);
+    padding: 6px 0;
+    width: 232px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+  .menu .mrow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 14px;
+    font-family: var(--f-ui);
+    font-size: 12px;
+    color: var(--text);
+  }
+  .menu .mrow .qk { font-size: 10px; }
+  .menu .mline { height: 1px; background: var(--hairline); margin: 6px 0; }
+
+  /* memory cards, for the composed pane (content-first) */
+  .mcard {
+    background: #1C1C20;
+    border: 1px solid var(--hairline);
+    border-radius: var(--r);
+    padding: 12px 14px;
+  }
+  .mcard .mtext {
+    font-family: var(--f-ui);
+    font-size: 12px;
+    line-height: 1.55;
+    color: rgba(234, 234, 234, 0.86);
+  }
+  .mcard .mmeta {
+    font-family: var(--f-mono);
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: rgba(234, 234, 234, 0.42);
+    text-transform: uppercase;
+    margin-top: 9px;
+  }
+
+  /* empty collection */
+  .empty-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .empty-title { font-family: var(--f-ui); font-size: 16px; font-weight: 500; color: var(--text); }
+  .empty-sub { font-family: var(--f-ui); font-size: 12.5px; color: rgba(234, 234, 234, 0.55); margin-top: 10px; }
+  .btn-primary {
+    font-family: var(--f-ui);
+    font-size: 12.5px;
+    font-weight: 500;
+    background: var(--interaction);
+    color: var(--paper-ink);
+    border-radius: var(--r);
+    padding: 9px 18px;
+    margin-top: 28px;
+  }
+
+  /* refusal cells */
+  .rgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; width: 100%; height: 100%; }
+  .rcell { position: relative; border: 1px solid var(--hairline); border-radius: var(--r); background: var(--surface); padding: 18px 20px; display: flex; flex-direction: column; }
+  .rcell .verdict { position: static; margin-bottom: 12px; }
+  .rstage { flex: 1; display: flex; align-items: center; justify-content: center; }
+  .rsn {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    line-height: 1.7;
+    letter-spacing: 0.02em;
+    color: var(--ann);
+    margin-top: 12px;
+  }
+  .ghostlbl {
+    position: absolute;
+    font-family: var(--f-mono); font-size: 8px; font-weight: 500;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: rgba(226, 98, 92, 0.75);
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================ 01 · COVER ============================ -->
+<section class="slide cover">
+  <div class="running"><span>GROVE · DESIGN CATALOGUE</span><span class="fig">03</span></div>
+  <div class="plane">HUD PLANE · COLLECTION</div>
+  <h1>Gallery<br>slate</h1>
+  <div class="rule"></div>
+  <div class="scope">
+    The thumbnail wall over every Image and GIF · Complete frames ·
+    Selection · Explicit routes · Composed panes · Edge states · Refusals
+  </div>
+  <div class="folio">SOURCE: DESIGN.MD · GALLERY SLATE CONTRACT GS-00..GS-05</div>
+</section>
+
+<!-- ============================ 02 · WALL ANATOMY (GS-01) ============================ -->
+<section class="slide">
+  <div class="running"><span>GALLERY SLATE · WALL ANATOMY</span><span class="fig">01 / 06</span></div>
+
+  <div class="stage" style="right: 376px;">
+    <div class="slatewrap">
+      <div class="slate-box" style="width: 856px; height: 576px;">
+        <div class="slate-head">
+          <div class="slate-title">Gallery</div>
+          <div class="facets"><span class="facet on">All</span><span class="facet">GIFs</span><span class="facet">Placed</span></div>
+          <div class="count">128 images</div>
+        </div>
+        <div class="wall">
+          <div class="wcol">
+            <div class="gcard"><div class="gframe plate cool" style="aspect-ratio: 3/4;"></div><div class="gmeta">Pier at low tide · JPG · Jun 02</div></div>
+            <div class="gcard"><div class="gframe plate warm" style="aspect-ratio: 3/1;"></div><div class="gmeta">Ridge line · PNG · May 28</div></div>
+          </div>
+          <div class="wcol">
+            <div class="gcard"><div class="gframe plate warm" style="aspect-ratio: 16/10;"></div><div class="gmeta">Studio window · JPG · Jun 01</div></div>
+            <div class="gcard"><div class="gframe plate moss" style="aspect-ratio: 1/1;"></div><div class="gmeta">Fern detail · PNG · May 30</div></div>
+          </div>
+          <div class="wcol">
+            <div class="gcard"><div class="gframe plate" style="aspect-ratio: 16/9;"></div><div class="gmeta">Harbor at dusk · JPG · Jun 01</div></div>
+            <div class="gcard"><div class="gframe plate dusk" style="aspect-ratio: 3/2;"></div><div class="gmeta">Loop study · <span class="kchip">GIF</span> · May 31</div></div>
+            <div class="gcard"><div class="gframe plate cool" style="aspect-ratio: 17/5;"></div><div class="gmeta">Coast road · JPG · May 24</div></div>
+          </div>
+        </div>
+        <div class="scrollcue"><div class="thumb" style="top: 0; height: 36%;"></div></div>
+      </div>
+      <div class="mark" style="left: 272px; top: 25px;">1</div>
+      <div class="mark" style="left: 280px; top: 180px;">2</div>
+      <div class="mark" style="left: 220px; top: 417px;">3</div>
+      <div class="mark" style="left: 790px; top: 80px;">4</div>
+      <div class="mark" style="left: 730px; top: 417px;">5</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Header</b>&ldquo;Gallery&rdquo; in display type, slate hue &mdash; the surface's identity. Facets are quiet text controls; the count is mono metadata, never a headline.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Masonry math</b>Column count comes from the width available: columns balance around a comfortable minimum frame width and never go below it. Gutters are the small step, 8px. Frames set the row rhythm &mdash; there is no row grid.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Identity beneath</b>One mono line per card &mdash; title, kind, date &mdash; at reduced ink, under the frame. Never overlaid on the image.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Newest first, complete edges</b>Insertion order, top of the wall down. Portrait, landscape, panorama and square all keep their own aspect and their whole frame.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>GIF declared quietly</b>A mono chip in the identity line. The frame animates only where the source animates; reduced motion holds one complete frame.</span></div>
+  </div>
+  <div class="folio">STATE: GS-01 · THUMBNAIL WALL</div>
+</section>
+
+<!-- ============================ 03 · SELECTION (GS-02) ============================ -->
+<section class="slide">
+  <div class="running"><span>GALLERY SLATE · SELECTION</span><span class="fig">02 / 06</span></div>
+
+  <div class="stage" style="right: 376px;">
+    <div class="slatewrap">
+      <div class="slate-box" style="width: 856px; height: 576px;">
+        <div class="slate-head">
+          <div class="slate-title">Gallery</div>
+          <div class="facets"><span class="facet on">All</span><span class="facet">GIFs</span><span class="facet">Placed</span></div>
+          <div class="count">128 images</div>
+        </div>
+        <div class="wall">
+          <div class="wcol">
+            <div class="gcard"><div class="gframe plate cool" style="aspect-ratio: 3/4;"></div><div class="gmeta">Pier at low tide · JPG · Jun 02</div></div>
+            <div class="gcard"><div class="gframe plate warm" style="aspect-ratio: 3/1;"></div><div class="gmeta">Ridge line · PNG · May 28</div></div>
+          </div>
+          <div class="wcol">
+            <div class="gcard sel"><div class="gframe plate warm" style="aspect-ratio: 16/10;"></div><div class="gmeta">Studio window · JPG · Jun 01</div></div>
+            <div class="gcard"><div class="gframe plate moss" style="aspect-ratio: 1/1;"></div><div class="gmeta">Fern detail · PNG · May 30</div></div>
+          </div>
+          <div class="wcol">
+            <div class="gcard"><div class="gframe plate" style="aspect-ratio: 16/9;"></div><div class="gmeta">Harbor at dusk · JPG · Jun 01</div></div>
+            <div class="gcard"><div class="gframe plate dusk" style="aspect-ratio: 3/2;"></div><div class="gmeta">Loop study · <span class="kchip">GIF</span> · May 31</div></div>
+            <div class="gcard"><div class="gframe plate cool" style="aspect-ratio: 17/5;"></div><div class="gmeta">Coast road · JPG · May 24</div></div>
+          </div>
+        </div>
+        <div class="scrollcue"><div class="thumb" style="top: 0; height: 36%;"></div></div>
+      </div>
+      <div class="mark" style="left: 282px; top: 57px;">1</div>
+      <div class="mark" style="left: 414px; top: 140px;">2</div>
+      <div class="mark" style="left: 140px; top: 250px;">3</div>
+      <div class="mark" style="left: 820px; top: 300px;">4</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Outline outside the frame</b>2px interaction #96B6F8, offset 3px clear of the image edge and clear of the gutter. The outline belongs to the card, not to the picture.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>The image is untouched</b>Never dimmed, tinted, scaled or re-cropped by selection. The identity line brightening is the second, structural signal &mdash; state never rides on hue alone.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Neighbours unchanged</b>No dimming of the rest of the wall. Selection marks one card; it does not restage the collection.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>A state, not an action</b>Nothing opens and nothing moves. Column layout and scroll position stay exactly where they were.</span></div>
+  </div>
+  <div class="folio">STATE: GS-02 · SELECTED CARD</div>
+</section>
+
+<!-- ============================ 04 · EXPLICIT ROUTES (GS-03) ============================ -->
+<section class="slide">
+  <div class="running"><span>GALLERY SLATE · EXPLICIT ROUTES</span><span class="fig">03 / 06</span></div>
+
+  <div class="stage" style="right: 376px;">
+    <div class="slatewrap">
+      <div class="slate-box" style="width: 856px; height: 576px;">
+        <div class="slate-head">
+          <div class="slate-title">Gallery</div>
+          <div class="facets"><span class="facet on">All</span><span class="facet">GIFs</span><span class="facet">Placed</span></div>
+          <div class="count">128 images</div>
+        </div>
+        <div class="wall">
+          <div class="wcol">
+            <div class="gcard sel"><div class="gframe plate cool" style="aspect-ratio: 3/4;"></div><div class="gmeta">Pier at low tide · JPG · Jun 02</div></div>
+            <div class="gcard"><div class="gframe plate warm" style="aspect-ratio: 3/1;"></div><div class="gmeta">Ridge line · PNG · May 28</div></div>
+          </div>
+          <div class="wcol">
+            <div class="gcard"><div class="gframe plate warm" style="aspect-ratio: 16/10;"></div><div class="gmeta">Studio window · JPG · Jun 01</div></div>
+            <div class="gcard"><div class="gframe plate moss" style="aspect-ratio: 1/1;"></div><div class="gmeta">Fern detail · PNG · May 30</div></div>
+          </div>
+          <div class="wcol">
+            <div class="gcard"><div class="gframe plate" style="aspect-ratio: 16/9;"></div><div class="gmeta">Harbor at dusk · JPG · Jun 01</div></div>
+            <div class="gcard"><div class="gframe plate dusk" style="aspect-ratio: 3/2;"></div><div class="gmeta">Loop study · <span class="kchip">GIF</span> · May 31</div></div>
+            <div class="gcard"><div class="gframe plate cool" style="aspect-ratio: 17/5;"></div><div class="gmeta">Coast road · JPG · May 24</div></div>
+          </div>
+        </div>
+        <div class="scrollcue"><div class="thumb" style="top: 0; height: 36%;"></div></div>
+      </div>
+      <div class="menu" style="position: absolute; left: 298px; top: 96px; z-index: 3;">
+        <div class="mrow"><span>Open</span><span class="qk">O</span></div>
+        <div class="mline"></div>
+        <div class="mrow"><span>Show on the Grid</span><span class="qk">G</span></div>
+        <div class="mrow"><span>Open record</span><span class="qk">R</span></div>
+      </div>
+      <div class="mark" style="left: 250px; top: 76px;">1</div>
+      <div class="mark" style="left: 542px; top: 146px;">2</div>
+      <div class="mark" style="left: 250px; top: 396px;">3</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Acting is explicit</b>Selection alone fires nothing. The menu is the only way forward: view the image, show where it is placed, or open its record.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Menu grammar</b>Label left in UI type, quick key right in mono, a hairline between groups. The primary route sits alone above the line. No destructive row lives here.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Return contract</b>Whichever route is taken, closing it returns to this wall position with this card still selected. The slate never loses the reader's place.</span></div>
+  </div>
+  <div class="folio">STATE: GS-03 · ROUTE ACTION</div>
+</section>
+
+<!-- ============================ 05 · COMPOSED PANES (GS-04) ============================ -->
+<section class="slide">
+  <div class="running"><span>GALLERY SLATE · COMPOSED PANES</span><span class="fig">04 / 06</span></div>
+
+  <div class="stage" style="right: 376px;">
+    <div class="slatewrap">
+      <div style="display: flex; gap: 16px;">
+        <!-- Memories pane -->
+        <div class="slate-box" style="width: 420px; height: 576px; position: relative;">
+          <div class="slate-head">
+            <div class="slate-title">Memories</div>
+            <div class="count">42 memories</div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; padding-right: 10px;">
+            <div class="mcard"><div class="mtext">Met with Jamie — discussed launch timing and messaging. Align on audience before the next review.</div><div class="mmeta">Note · Jun 01</div></div>
+            <div class="mcard"><div class="mtext">Field guide draft — pruning notes for the north beds, with photographs to follow once the light improves.</div><div class="mmeta">Document · May 30</div></div>
+            <div class="mcard"><div class="mtext">Reading list for the studio move.</div><div class="mmeta">Note · May 22</div></div>
+            <div class="mcard"><div class="mtext">Site survey — access from the east gate only until the path is regraded.</div><div class="mmeta">Document · May 19</div></div>
+            <div class="mcard"><div class="mtext">Greenhouse vent timings — morning cycle shortened by ten minutes.</div><div class="mmeta">Note · May 18</div></div>
+          </div>
+          <div class="scrollcue"><div class="thumb" style="top: 6%; height: 40%;"></div></div>
+        </div>
+        <!-- Gallery pane -->
+        <div class="slate-box" style="width: 420px; height: 576px; position: relative;">
+          <div class="slate-head">
+            <div class="slate-title">Gallery</div>
+            <div class="facets"><span class="facet">All</span><span class="facet on">GIFs</span><span class="facet">Placed</span></div>
+            <div class="count">24 GIFs</div>
+          </div>
+          <div class="wall">
+            <div class="wcol">
+              <div class="gcard"><div class="gframe plate dusk" style="aspect-ratio: 16/9;"></div><div class="gmeta">Loop study · <span class="kchip">GIF</span> · May 31</div></div>
+              <div class="gcard sel"><div class="gframe plate moss" style="aspect-ratio: 5/3;"></div><div class="gmeta">Sway test · <span class="kchip">GIF</span> · May 21</div></div>
+            </div>
+          </div>
+          <div class="scrollcue"><div class="thumb" style="top: 52%; height: 30%;"></div></div>
+        </div>
+      </div>
+      <div class="mark" style="left: 419px; top: 40px;">1</div>
+      <div class="mark" style="left: 820px; top: 300px;">2</div>
+      <div class="mark" style="left: 700px; top: 25px;">3</div>
+      <div class="mark" style="left: 640px; top: 330px;">4</div>
+      <div class="mark" style="left: 466px; top: 160px;">5</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Two peer panes</b>Left and Right assignment in the slate host. Peers, not primary and secondary &mdash; neither pane outranks the other.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Independent scroll</b>Each pane keeps its own position. Scrolling one never moves the other.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Independent filters</b>Gallery is faceted to GIFs; Memories is untouched. Facet state belongs to the pane, not to the host.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Independent selection</b>A selection in one pane says nothing about the other. Focus reads through structure and role, never by dimming the neighbour.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Fewer columns, same frame size</b>At half width the wall drops to one column rather than shrinking frames below the comfortable minimum. Column count changes; the reading size of a frame does not.</span></div>
+  </div>
+  <div class="folio">STATE: GS-04 · COMPOSED WITH ANOTHER SLATE</div>
+</section>
+
+<!-- ============================ 06 · EDGE STATES (GS-05 + EMPTY) ============================ -->
+<section class="slide">
+  <div class="running"><span>GALLERY SLATE · EDGE STATES</span><span class="fig">05 / 06</span></div>
+
+  <div class="stage" style="right: 376px;">
+    <div class="slatewrap">
+      <div style="display: flex; gap: 16px;">
+        <!-- Unavailable asset -->
+        <div class="slate-box" style="width: 420px; height: 576px; position: relative;">
+          <div class="slate-head">
+            <div class="slate-title">Gallery</div>
+            <div class="count">128 images</div>
+          </div>
+          <div class="wall">
+            <div class="wcol">
+              <div class="gcard"><div class="gframe plate dusk" style="aspect-ratio: 16/9;"></div><div class="gmeta">Loop study · <span class="kchip">GIF</span> · May 31</div></div>
+              <div class="gcard">
+                <div class="gframe broken" style="aspect-ratio: 16/10;">
+                  <div class="bid">Harbor at dusk<br>JPG · May 12</div>
+                  <div class="retry">Retry</div>
+                </div>
+                <div class="gmeta">Harbor at dusk · JPG · May 12</div>
+              </div>
+            </div>
+          </div>
+          <div class="scrollcue"><div class="thumb" style="top: 18%; height: 34%;"></div></div>
+        </div>
+        <!-- Empty collection -->
+        <div class="slate-box" style="width: 420px; height: 576px;">
+          <div class="slate-head">
+            <div class="slate-title">Gallery</div>
+            <div class="count">0 images</div>
+          </div>
+          <div class="empty-body">
+            <div class="empty-title">No images yet</div>
+            <div class="empty-sub">Images you bring into Grove appear here.</div>
+            <div class="btn-primary">Import images</div>
+          </div>
+        </div>
+      </div>
+      <div class="mark" style="left: 44px; top: 310px;">1</div>
+      <div class="mark" style="left: 220px; top: 527px;">2</div>
+      <div class="mark" style="left: 206px; top: 273px;">3</div>
+      <div class="mark" style="left: 730px; top: 344px;">4</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Identifiable placeholder</b>An asset that will not decode keeps its footprint: identity and a retry inside the frame, bordered in invalid #E2625C &mdash; the refusal role, nothing else's.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Never a hole</b>The card stays in the wall with its identity line intact. A decode failure hides no Memory and deletes nothing.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Motion is opt-in</b>A GIF frame animates only where the source animates. Reduced motion shows one complete still frame &mdash; the settled image carries everything.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Empty is designed</b>The empty collection says what it is and carries the one next step. Clear space around a single primary action &mdash; never a blank surface.</span></div>
+  </div>
+  <div class="folio">STATES: GS-05 · UNAVAILABLE ASSET + EMPTY COLLECTION</div>
+</section>
+
+<!-- ============================ 07 · REFUSALS ============================ -->
+<section class="slide">
+  <div class="running"><span>GALLERY SLATE · REFUSALS</span><span class="fig">06 / 06</span></div>
+
+  <div class="stage full">
+    <div class="rgrid">
+
+      <!-- uniform crop grid -->
+      <div class="rcell">
+        <div class="verdict refuse">REFUSE · UNIFORM TILE GRID</div>
+        <div class="rstage">
+          <div style="position: relative; width: 420px;">
+            <div style="display: grid; grid-template-columns: repeat(3, 76px); grid-auto-rows: 76px; gap: 6px;">
+              <div class="plate cool" style="border-radius: 2px;"></div>
+              <div class="plate warm" style="border-radius: 2px;"></div>
+              <div class="plate moss" style="border-radius: 2px;"></div>
+              <div class="plate" style="border-radius: 2px;"></div>
+              <div class="plate dusk" style="border-radius: 2px;"></div>
+              <div class="plate warm" style="border-radius: 2px;"></div>
+            </div>
+            <div class="plate moss" style="position: absolute; left: 240px; top: 0; width: 154px; height: 76px; opacity: 0.30;"></div>
+            <div style="position: absolute; left: 163px; top: -1px; width: 232px; height: 78px; border: 1px dashed rgba(226, 98, 92, 0.7); border-radius: 2px;"></div>
+            <div class="ghostlbl" style="left: 260px; top: 82px;">Frame as it was made</div>
+          </div>
+        </div>
+        <div class="rsn">EVERY FRAME CUT TO ONE TILE SHAPE. THE DASHED EDGE IS THE PANORAMA THE THIRD TILE CAME FROM. THE WALL KEEPS COMPLETE EDGES AND LETS HEIGHT VARY.</div>
+      </div>
+
+      <!-- slate-hue selection -->
+      <div class="rcell">
+        <div class="verdict refuse">REFUSE · IDENTITY-HUE SELECTION</div>
+        <div class="rstage">
+          <div class="gcard">
+            <div class="gframe plate moss" style="width: 200px; aspect-ratio: 3/2; outline: 2px solid var(--slate); outline-offset: 3px;"></div>
+            <div class="gmeta">Fern detail · PNG · May 30</div>
+          </div>
+        </div>
+        <div class="rsn">SELECTION DRAWN IN SLATE #CDB8D8 — THE SURFACE'S OWN IDENTITY HUE, NOT A SIGNAL. SELECTION IS INTERACTION #96B6F8, OUTSIDE THE FRAME.</div>
+      </div>
+
+      <!-- metadata overlaid -->
+      <div class="rcell">
+        <div class="verdict refuse">REFUSE · CAPTION ON THE FRAME</div>
+        <div class="rstage">
+          <div style="position: relative; width: 232px; aspect-ratio: 3/2; border-radius: 2px; overflow: hidden;" class="plate cool">
+            <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 58px; background: linear-gradient(180deg, transparent, rgba(0,0,0,0.75));"></div>
+            <div style="position: absolute; left: 10px; bottom: 9px; font-family: var(--f-mono); font-size: 9px; font-weight: 500; letter-spacing: 0.07em; color: rgba(255,255,255,0.9); text-transform: uppercase;">Pier at low tide · JPG · Jun 02</div>
+          </div>
+        </div>
+        <div class="rsn">A SCRIM AND A TITLE SIT ON THE IMAGE, RESTYLING IT TO HOLD TEXT. IDENTITY IS ONE QUIET MONO LINE BENEATH THE FRAME — THE IMAGE STAYS WHOLE.</div>
+      </div>
+
+      <!-- letterboxed fixed box -->
+      <div class="rcell">
+        <div class="verdict refuse">REFUSE · LETTERBOXED FIXED BOX</div>
+        <div class="rstage">
+          <div style="display: flex; gap: 14px;">
+            <div style="width: 190px; height: 128px; background: #0A0A0B; border: 1px solid var(--hairline); border-radius: 2px; display: flex; align-items: center; justify-content: center;">
+              <div class="plate warm" style="width: 190px; height: 62px;"></div>
+            </div>
+            <div style="width: 190px; height: 128px; background: #0A0A0B; border: 1px solid var(--hairline); border-radius: 2px; display: flex; align-items: center; justify-content: center;">
+              <div class="plate cool" style="width: 96px; height: 128px;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="rsn">A FIXED-HEIGHT BOX PADS EVERY FRAME WITH DEAD BARS. IN THE WALL THE FRAME SETS ITS OWN HEIGHT — THERE IS NO BOX TO FILL.</div>
+      </div>
+
+    </div>
+  </div>
+  <div class="folio">END · GALLERY SLATE</div>
+</section>
+
+</body>
+</html>

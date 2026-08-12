@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Local editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/catalogue.css">
+<style>
+  /* deck-local helpers */
+  .sectionlbl {
+    font-family: var(--f-mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.24em; text-transform: uppercase; color: var(--ann);
+    margin-bottom: 14px;
+  }
+  .note-under {
+    font-family: var(--f-mono); font-size: 10px; line-height: 1.8;
+    color: var(--ann); letter-spacing: 0.02em;
+  }
+
+  /* dim Grid context (context only, never the subject) */
+  .grid-context {
+    position: relative;
+    background:
+      linear-gradient(rgba(36,36,40,0.55) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(36,36,40,0.55) 1px, transparent 1px),
+      var(--canvas);
+    background-size: 48px 48px, 48px 48px, auto;
+    border: 1px solid var(--hairline);
+    border-radius: var(--r);
+    overflow: hidden;
+  }
+
+  /* a placed Note on the Grid (the source) */
+  .note-src {
+    background: #1C1C20;
+    border: 1px solid var(--hairline);
+    border-radius: var(--r);
+    padding: 14px;
+    font-family: var(--f-ui);
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  /* the local editor frame — the subject of this deck */
+  .editor {
+    background: var(--surface);
+    border: 1px solid var(--edit-border);
+    border-radius: var(--r);
+    padding: var(--sp-md); /* 16px */
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+    display: flex;
+    flex-direction: column;
+  }
+  .editor.view { border-color: var(--view-border); }
+
+  .ed-label {
+    font-family: var(--f-mono);
+    font-size: 9.5px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(234,234,234,0.45);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 10px;
+  }
+  .dirty-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--edit); }
+
+  .ed-text {
+    font-family: var(--f-ui);
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--text);
+    flex: 1;
+  }
+  .caret {
+    display: inline-block;
+    width: 1.5px; height: 15px;
+    background: var(--text);
+    vertical-align: -2px;
+    margin-left: 1px;
+  }
+
+  .ed-foot {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 14px;
+  }
+  .btn {
+    font-family: var(--f-ui);
+    font-size: 11.5px;
+    padding: 6px 13px;
+    border-radius: var(--r);
+    color: rgba(234,234,234,0.75);
+  }
+  .btn.primary { background: var(--interaction); color: var(--paper-ink); font-weight: 500; }
+  .btn.danger  { background: var(--invalid);     color: var(--paper-ink); font-weight: 500; }
+  .kh {
+    font-family: var(--f-mono);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(234,234,234,0.35);
+  }
+
+  /* viewer control strip (slide 3) */
+  .vctrl {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 12px;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: rgba(234,234,234,0.45);
+  }
+  .vctrl .on { color: var(--view); }
+
+  /* refusal panels (slide 7) */
+  .ref-wrap { position: relative; width: 368px; }
+  .ref-wrap .verdict { top: 0; left: 0; }
+  .ref-stage { margin-top: 26px; height: 330px; }
+  .ref-reason { margin-top: 14px; font-family: var(--f-mono); font-size: 10px; line-height: 1.75; letter-spacing: 0.02em; color: var(--ann); }
+</style>
+</head>
+<body>
+
+<!-- ============================ 01 · COVER ============================ -->
+<section class="slide cover">
+  <div class="running"><span>GROVE · DESIGN CATALOGUE</span><span class="fig">01</span></div>
+  <div class="plane">INFORMATION PLANE · SURFACE CLASS</div>
+  <h1>Local<br>editor</h1>
+  <div class="rule"></div>
+  <div class="scope">
+    Class anatomy · Role borders · Editing states ·
+    Inline confirm · Escalation · Refusals
+  </div>
+  <div class="folio">SOURCE: DESIGN.MD · TE-00–TE-05</div>
+</section>
+
+<!-- ============================ 02 · CLASS ANATOMY ============================ -->
+<section class="slide">
+  <div class="running"><span>LOCAL EDITOR · ANATOMY</span><span class="fig">01 / 06</span></div>
+
+  <div class="stage">
+    <div class="grid-context" style="width:836px; height:576px;">
+      <!-- the source: a placed Note -->
+      <div class="note-src" style="position:absolute; left:56px; top:208px; width:232px;">
+        Framer confirmed Thursday — bring the two river prints and the walnut
+        sample, not the oak.
+      </div>
+
+      <!-- the local editor, beside its source -->
+      <div class="editor" style="position:absolute; left:348px; top:142px; width:432px; height:284px;">
+        <div class="ed-label">Note</div>
+        <div class="ed-text">Framer confirmed Thursday — bring the two river prints and the walnut sample, not the oak.<span class="caret"></span></div>
+        <div class="ed-foot">
+          <span class="kh">Esc</span><span class="btn">Cancel</span>
+          <span style="flex:1;"></span>
+          <span class="kh">Ctrl+Enter</span><span class="btn primary">Save</span>
+        </div>
+      </div>
+
+      <div class="mark" style="left:330px; top:128px;">1</div>
+      <div class="mark" style="left:772px; top:274px;">2</div>
+      <div class="mark" style="left:372px; top:338px;">3</div>
+      <div class="mark" style="left:556px; top:440px;">4</div>
+      <div class="mark" style="left:64px; top:190px;">5</div>
+      <div class="mark" style="left:302px; top:330px;">6</div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Compact frame</b>Surface fill #161618, 2px radius. Sized to the task — a small focused editor, never a full-screen surface.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Operation border</b>1px in the edit role border #7A3F3A. The border is the frame's only role signal.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>MD padding</b>16px on every side. The draft sets in UI type, brighter than any chrome around it.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Soft subordinate shadow</b>Lifts the frame off the Grid. Separation only — never a glow.</span></div>
+    <div class="ann"><span class="n">05</span><span><b>Source stays visible</b>The Note remains in view the whole time its text is edited.</span></div>
+    <div class="ann"><span class="n">06</span><span><b>Beside, never over</b>Anchored to the Content it serves. Never center-screen, never covering its source.</span></div>
+  </div>
+  <div class="folio">CLASS: LOCAL EDITOR · DESIGN.MD</div>
+</section>
+
+<!-- ============================ 03 · ROLE BORDERS ============================ -->
+<section class="slide">
+  <div class="running"><span>LOCAL EDITOR · ROLE BORDERS</span><span class="fig">02 / 06</span></div>
+
+  <div class="stage" style="gap:44px; align-items:center;">
+    <!-- edit-bordered text editor -->
+    <div style="width:396px;">
+      <div class="editor" style="height:312px;">
+        <div class="ed-label">Note</div>
+        <div class="ed-text">Ask Priya whether the reading list still needs the two chapters on rivers before Friday.<span class="caret"></span></div>
+        <div class="ed-foot">
+          <span class="kh">Esc</span><span class="btn">Cancel</span>
+          <span style="flex:1;"></span>
+          <span class="kh">Ctrl+Enter</span><span class="btn primary">Save</span>
+        </div>
+      </div>
+      <div class="note-under" style="margin-top:12px; display:flex; align-items:center; gap:8px;">
+        <span style="width:11px; height:11px; background:#E0A9A3; border-radius:var(--r);"></span>
+        <span style="width:11px; height:11px; background:#7A3F3A; border-radius:var(--r);"></span>
+        EDIT · #E0A9A3 / #7A3F3A · TEXT SURFACES
+      </div>
+    </div>
+
+    <!-- view-bordered viewer -->
+    <div style="width:396px;">
+      <div class="editor view" style="height:312px;">
+        <div class="ed-label">river-bend.jpg</div>
+        <div class="plate cool" style="flex:1; border-radius:var(--r);"></div>
+        <div class="vctrl">
+          <span>Fit</span><span>100%</span>
+          <span style="flex:1;"></span>
+          <span>−</span><span class="on">64%</span><span>+</span>
+        </div>
+      </div>
+      <div class="note-under" style="margin-top:12px; display:flex; align-items:center; gap:8px;">
+        <span style="width:11px; height:11px; background:#9BB6E0; border-radius:var(--r);"></span>
+        <span style="width:11px; height:11px; background:#3F5F8A; border-radius:var(--r);"></span>
+        VIEW · #9BB6E0 / #3F5F8A · VIEWERS
+      </div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>One class, one variable</b>Fill, radius, padding, and shadow are identical across both frames. The 1px border is the only per-role change.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Edit for text</b>Text surfaces wear the edit border. The brighter edit fill appears only in small in-frame signals, never as chrome.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>View for viewers</b>Inspection surfaces wear the view border; their controls read in view fill. Presentation never mutates the source.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>No slate hue here</b>The slate family belongs to HUD surfaces. A local editor wearing it would claim the wrong class.</span></div>
+  </div>
+  <div class="folio">ROLES: EDIT · VIEW</div>
+</section>
+
+<!-- ============================ 04 · EDITING STATES ============================ -->
+<section class="slide">
+  <div class="running"><span>LOCAL EDITOR · EDITING STATES</span><span class="fig">03 / 06</span></div>
+
+  <div class="stage" style="gap:44px; align-items:center;">
+    <!-- TE-01: open, clean draft -->
+    <div style="width:396px;">
+      <div class="sectionlbl">TE-01 · OPEN EDITING</div>
+      <div class="editor" style="height:284px;">
+        <div class="ed-label">Note</div>
+        <div class="ed-text">Framer confirmed Thursday — bring the two river prints and the walnut sample, not the oak.<span class="caret"></span></div>
+        <div class="ed-foot">
+          <span class="kh">Esc</span>
+          <span style="flex:1;"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TE-02: dirty draft -->
+    <div style="width:396px;">
+      <div class="sectionlbl">TE-02 · DIRTY DRAFT</div>
+      <div class="editor" style="height:284px;">
+        <div class="ed-label">Note<span class="dirty-dot"></span></div>
+        <div class="ed-text">Framer confirmed Thursday — bring the two river prints, the walnut sample, and the smaller mat.<span class="caret"></span></div>
+        <div class="ed-foot">
+          <span class="kh">Esc</span><span class="btn">Cancel</span>
+          <span style="flex:1;"></span>
+          <span class="kh">Ctrl+Enter</span><span class="btn primary">Save</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>Complete text, caret in</b>The editor opens with the whole Note and a live caret. Nothing is truncated to fit; a long Note scrolls inside the frame.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>Typing never commits</b>The draft is local until Save. Escape on a clean draft dismisses silently — no question to answer.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Quiet dirty signal</b>A small edit-hue dot beside the label marks unsaved work. No banner, no asterisk in the text.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>Save is the only durable write</b>Ctrl+Enter saves, Escape cancels. Both read as quiet mono hints beside the actions, not as chrome.</span></div>
+  </div>
+  <div class="folio">STATES: TE-01 · TE-02</div>
+</section>
+
+<!-- ============================ 05 · INLINE CONFIRM ============================ -->
+<section class="slide">
+  <div class="running"><span>LOCAL EDITOR · INLINE CONFIRM</span><span class="fig">04 / 06</span></div>
+
+  <div class="stage">
+    <div style="width:520px;">
+      <div class="sectionlbl">ESCAPE ON A DIRTY DRAFT</div>
+      <div class="editor" style="height:330px;">
+        <div class="ed-label">Note<span class="dirty-dot"></span></div>
+        <div class="ed-text" style="opacity:0.45;">Framer confirmed Thursday — bring the two river prints, the walnut sample, and the smaller mat.</div>
+        <div style="height:1px; background:var(--hairline); margin:14px 0;"></div>
+        <div>
+          <div style="font-family:var(--f-ui); font-size:12.5px; color:var(--text); margin-bottom:12px;">Discard unsaved changes?</div>
+          <div style="display:flex; gap:12px; justify-content:flex-end; align-items:center;">
+            <span class="btn">Keep editing</span>
+            <span class="btn danger">Discard</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>The ask lives in the frame</b>Escape on a dirty draft renders the question inside the editor that owns the draft — same fill, same border, same frame.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>No floating dialog exists</b>Grove has no modal, no scrim, no dialog box. Nothing detaches from the surface it serves.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>Quiet keep, invalid discard</b>The safe path is quiet text. Only the destructive act wears the invalid role, and only while the question is open.</span></div>
+    <div class="ann"><span class="n">04</span><span><b>The draft waits</b>The text dims behind a hairline but stays whole. Keep editing restores the caret exactly where it was.</span></div>
+  </div>
+  <div class="folio">STATE: TE-02 → TE-05</div>
+</section>
+
+<!-- ============================ 06 · ESCALATION ============================ -->
+<section class="slide">
+  <div class="running"><span>LOCAL EDITOR · ESCALATION</span><span class="fig">05 / 06</span></div>
+
+  <div class="stage">
+    <div style="width:520px;">
+      <div class="sectionlbl">WHEN A QUICK EDIT STOPS BEING QUICK</div>
+      <div class="editor" style="height:330px;">
+        <div class="ed-label">Note<span class="dirty-dot"></span></div>
+        <div class="ed-text">Framer confirmed Thursday — bring the two river prints, the walnut sample, and the smaller mat. Draft the note to Priya about hanging order while I am there, and list which walls still need measuring.<span class="caret"></span></div>
+        <div class="ed-foot">
+          <span style="font-family:var(--f-ui); font-size:11px; color:rgba(234,234,234,0.5);">Open in Writing Slate&thinsp;↗</span>
+          <span style="flex:1;"></span>
+          <span class="kh">Esc</span><span class="btn">Cancel</span>
+          <span class="kh">Ctrl+Enter</span><span class="btn primary">Save</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ann-col right">
+    <div class="ann"><span class="n">01</span><span><b>A quiet route, not a button</b>Escalation reads at reduced ink on the far side of the actions. It never competes with Save.</span></div>
+    <div class="ann"><span class="n">02</span><span><b>The draft travels</b>The current text — dirty state included — arrives in the Writing Slate intact. Nothing is lost in the move.</span></div>
+    <div class="ann"><span class="n">03</span><span><b>The taxonomy split</b>Quick edits live here, beside the source. Long-form work deliberately escalates to the HUD writing surface — toolbar, preview, and room to think live there, not here.</span></div>
+  </div>
+  <div class="folio">STATE: TE-04</div>
+</section>
+
+<!-- ============================ 07 · REFUSALS ============================ -->
+<section class="slide">
+  <div class="running"><span>LOCAL EDITOR · REFUSALS</span><span class="fig">06 / 06</span></div>
+
+  <div class="stage full" style="gap:40px; align-items:center;">
+
+    <!-- A · centered modal with scrim -->
+    <div class="ref-wrap">
+      <div class="verdict refuse">REFUSE · CENTERED MODAL</div>
+      <div class="ref-stage Grid context">
+        <div class="note-src" style="position:absolute; left:22px; top:28px; width:170px; font-size:11px; padding:10px;">
+          Framer confirmed Thursday — bring the two river prints.
+        </div>
+        <div style="position:absolute; inset:0; background:rgba(0,0,0,0.55);"></div>
+        <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:250px; background:var(--surface); border:1px solid var(--hairline); border-radius:var(--r); padding:16px;">
+          <div style="font-family:var(--f-ui); font-size:12px; color:var(--text); margin-bottom:12px;">Discard unsaved changes?</div>
+          <div style="display:flex; gap:10px; justify-content:flex-end;">
+            <span class="btn" style="font-size:10.5px; padding:5px 10px;">Keep editing</span>
+            <span class="btn danger" style="font-size:10.5px; padding:5px 10px;">Discard</span>
+          </div>
+        </div>
+      </div>
+      <div class="ref-reason">A scrim and a centered box detach the ask from its source. The question belongs inside the frame that asked it.</div>
+    </div>
+
+    <!-- B · rich toolbar -->
+    <div class="ref-wrap">
+      <div class="verdict refuse">REFUSE · RICH TOOLBAR</div>
+      <div class="ref-stage Grid context" style="display:flex; align-items:center; justify-content:center;">
+        <div class="editor" style="width:310px; height:250px;">
+          <div style="display:flex; gap:4px; margin-bottom:10px; padding:5px 6px; background:#1E1E22; border:1px solid var(--hairline); border-radius:var(--r); font-family:var(--f-ui); font-size:10.5px; color:rgba(234,234,234,0.7);">
+            <span style="padding:2px 7px; font-weight:700;">B</span>
+            <span style="padding:2px 7px; font-style:italic;">I</span>
+            <span style="padding:2px 7px; text-decoration:underline;">U</span>
+            <span style="padding:2px 7px;">H1</span>
+            <span style="padding:2px 7px;">H2</span>
+            <span style="padding:2px 7px;">&ldquo;&thinsp;&rdquo;</span>
+            <span style="padding:2px 7px;">≡</span>
+          </div>
+          <div class="ed-text" style="font-size:12px;">Framer confirmed Thursday — bring the two river prints.<span class="caret"></span></div>
+          <div class="ed-foot" style="margin-top:10px;">
+            <span style="flex:1;"></span>
+            <span class="btn" style="font-size:10.5px;">Cancel</span>
+            <span class="btn primary" style="font-size:10.5px;">Save</span>
+          </div>
+        </div>
+      </div>
+      <div class="ref-reason">Formatting chrome makes a small editor claim long-form work. That work escalates to the Writing Slate instead.</div>
+    </div>
+
+    <!-- C · editor covering its source -->
+    <div class="ref-wrap">
+      <div class="verdict refuse">REFUSE · COVERING THE SOURCE</div>
+      <div class="ref-stage Grid context">
+        <div class="note-src" style="position:absolute; left:28px; top:36px; width:200px;">
+          Framer confirmed Thursday — bring the two river prints and the walnut sample.
+        </div>
+        <div class="editor" style="position:absolute; left:56px; top:62px; width:270px; height:220px;">
+          <div class="ed-label">Note</div>
+          <div class="ed-text" style="font-size:12px;">Framer confirmed Thursday — bring the two river prints and the walnut sample.<span class="caret"></span></div>
+          <div class="ed-foot" style="margin-top:10px;">
+            <span style="flex:1;"></span>
+            <span class="btn" style="font-size:10.5px;">Cancel</span>
+            <span class="btn primary" style="font-size:10.5px;">Save</span>
+          </div>
+        </div>
+      </div>
+      <div class="ref-reason">An editor over its own Note hides the thing being edited. The frame opens beside its source, which stays in view.</div>
+    </div>
+
+  </div>
+  <div class="folio">END · LOCAL EDITOR</div>
+</section>
+
+</body>
+</html>

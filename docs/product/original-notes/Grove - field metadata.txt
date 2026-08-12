@@ -1,0 +1,7 @@
+08.05 17:00
+Grove - field metadata
+An aura field isn't just a visual representation of the contents impact locally within a grid layer. Each cell also contains information from the content itself. 
+All cells, no matter how bright they are, get source information on where that brightness is coming from. Meaning, the cell itself contains metadata. 
+That means every single aura field that adds information to a cell (ie. Saturation), also adds to the same metadata. A saturated cell contains context on numerous forms of content adding to its source material across multiple layers.
+This is how meta-driven features such as annotations are able to query for the specific content that is used to create annotation guides (the content that is organized, not summarized, for the user). 
+

@@ -1,0 +1,6 @@
+08.04 18:20
+Grove v8: separation of church and state
+The first thing we need to do is break down the app into its core parts.
+Each mechanic deserves its own JavaScript file.
+Each JavaScript file should be using world class JavaScript to be as efficient and performant as possible while still preserving existing use cases.
+
