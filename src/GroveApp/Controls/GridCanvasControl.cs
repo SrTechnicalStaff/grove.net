@@ -938,6 +938,15 @@ namespace GroveApp.Controls
 
             if (props.IsLeftButtonPressed)
             {
+                if (_isResizingItem &&
+                    !_resizeCandidateIsValid &&
+                    _feedbackRenderer.ResizeCancelBounds.Contains(e.GetPosition(this)))
+                {
+                    CancelActiveResize();
+                    e.Handled = true;
+                    return;
+                }
+
                 if (_panInteraction.IsSpacePanModifierActive)
                 {
                     _panInteraction.TryBegin(new PanGestureStart(

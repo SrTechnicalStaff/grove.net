@@ -15,6 +15,8 @@ public sealed class GridCanvasFeedbackRenderer
 {
     private readonly CursorRenderModule _cursorRenderer;
 
+    public Rect ResizeCancelBounds { get; private set; }
+
     public GridCanvasFeedbackRenderer(CursorRenderModule cursorRenderer)
     {
         _cursorRenderer = cursorRenderer ?? throw new ArgumentNullException(nameof(cursorRenderer));
@@ -149,6 +151,7 @@ public sealed class GridCanvasFeedbackRenderer
     {
         if (!isResizing || !candidateFootprint.IsValid)
         {
+            ResizeCancelBounds = new Rect();
             return;
         }
 
@@ -174,6 +177,7 @@ public sealed class GridCanvasFeedbackRenderer
                 null,
                 new Pen(Colors.SignalInteractionBrush, Tokens.FieldPerimeterWidth),
                 candidateBounds.Deflate(Tokens.FieldPerimeterWidth / 2.0));
+            ResizeCancelBounds = new Rect();
             return;
         }
 
@@ -203,7 +207,7 @@ public sealed class GridCanvasFeedbackRenderer
             new Pen(new SolidColorBrush(Color.FromArgb(115, refusal.R, refusal.G, refusal.B)), Tokens.FieldPerimeterWidth),
             candidateBounds.Deflate(Tokens.FieldPerimeterWidth / 2.0));
 
-        double stripWidth = 156.0;
+        double stripWidth = 246.0;
         double stripHeight = 24.0;
         double stripX = candidateBounds.Right + Tokens.SpaceXs;
         double stripY = candidateBounds.Top;
@@ -213,6 +217,13 @@ public sealed class GridCanvasFeedbackRenderer
         }
 
         var strip = new Rect(stripX, stripY, stripWidth, stripHeight);
+        double cancelWidth = 58.0;
+        double placeWidth = 52.0;
+        ResizeCancelBounds = new Rect(
+            strip.Right - cancelWidth - placeWidth - Tokens.SpaceXs,
+            strip.Top,
+            cancelWidth,
+            strip.Height);
         context.FillRectangle(
             new SolidColorBrush(Color.FromArgb(220, refusal.R, refusal.G, refusal.B)),
             strip);
@@ -227,6 +238,35 @@ public sealed class GridCanvasFeedbackRenderer
             MaxTextWidth = strip.Width - Tokens.SpaceSm
         };
         context.DrawText(text, new Point(strip.Left + Tokens.SpaceXs, strip.Top + Tokens.SpaceXs));
+
+        Rect cancelRect = ResizeCancelBounds;
+        Rect placeRect = new Rect(cancelRect.Right, strip.Top, placeWidth, strip.Height);
+        context.DrawRectangle(
+            new SolidColorBrush(Color.FromArgb(70, 255, 255, 255)),
+            new Pen(new SolidColorBrush(Color.FromArgb(140, 255, 255, 255)), 1),
+            cancelRect.Deflate(2));
+        context.DrawRectangle(
+            new SolidColorBrush(Color.FromArgb(25, 234, 234, 234)),
+            new Pen(new SolidColorBrush(Color.FromArgb(60, 234, 234, 234)), 1),
+            placeRect.Deflate(2));
+
+        var cancelText = new FormattedText(
+            "CANCEL",
+            CultureInfo.InvariantCulture,
+            FlowDirection.LeftToRight,
+            new Typeface(Typography.FontFamilyMono, FontStyle.Normal, FontWeight.Bold),
+            Typography.SizeMicro,
+            Colors.CPaperInkBrush);
+        context.DrawText(cancelText, new Point(cancelRect.Left + Tokens.SpaceXs, cancelRect.Top + Tokens.SpaceXs));
+
+        var placeText = new FormattedText(
+            "PLACE",
+            CultureInfo.InvariantCulture,
+            FlowDirection.LeftToRight,
+            new Typeface(Typography.FontFamilyMono, FontStyle.Normal, FontWeight.Normal),
+            Typography.SizeMicro,
+            Colors.TextUnavailableBrush);
+        context.DrawText(placeText, new Point(placeRect.Left + Tokens.SpaceXs, placeRect.Top + Tokens.SpaceXs));
     }
 
     public void RenderMarqueeSelection(
