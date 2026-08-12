@@ -12,211 +12,7 @@
         <!-- PLANE 0: Infinite Spatial Grid Canvas -->
         <controls:GridCanvasControl x:Name="CanvasControl" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
 
-        <!-- PLANE 2: HUD Slate Control matching docs/design_catalogue/src/hud/01-slate-anatomy.html -->
-        <Border HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,16,0,0"
-                Background="{x:Static ds:Colors.SurfaceChromeHex}"
-                BorderBrush="{x:Static ds:Colors.HudSlateBorderHex}"
-                BorderThickness="1"
-                CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
-                Padding="16,12"
-                BoxShadow="0 8 24 #80000000">
-            <StackPanel Orientation="Vertical" Spacing="10">
-                <!-- Header Identity Row (Slate Anatomy Specification) -->
-                <Grid ColumnDefinitions="Auto, *, Auto">
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                        <TextBlock Text="GROVE ENGINE"
-                                   FontFamily="{x:Static ds:Typography.FontFamilyDisplay}"
-                                   FontSize="{x:Static ds:Typography.SizeDense}"
-                                   FontWeight="Medium"
-                                   Foreground="{x:Static ds:Colors.SlateFillHex}"
-                                   LetterSpacing="1.5"
-                                   VerticalAlignment="Center" />
-                        <Border Width="1" Height="14" Background="{x:Static ds:Colors.GridMajorLineHex}" VerticalAlignment="Center" />
-                        <TextBlock Text="HUD SLATE"
-                                   FontFamily="{x:Static ds:Typography.FontFamilyMono}"
-                                   FontSize="{x:Static ds:Typography.SizeMicro}"
-                                   FontWeight="Medium"
-                                   Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
-                                   LetterSpacing="1.0"
-                                   VerticalAlignment="Center" />
-                    </StackPanel>
-
-                    <!-- Primary Host Commands -->
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <Button Name="BtnAddNote" Click="BtnAddNote_Click"
-                                Background="{x:Static ds:Colors.NoteVioletHex}"
-                                Foreground="{x:Static ds:Colors.NoteTextHex}"
-                                BorderBrush="{x:Static ds:Colors.GridMajorLineHex}"
-                                BorderThickness="1"
-                                CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
-                                Padding="12,5"
-                                FontFamily="{x:Static ds:Typography.FontFamilyUi}"
-                                FontSize="{x:Static ds:Typography.SizeLabel}"
-                                FontWeight="Medium"
-                                ToolTip.Tip="Add Note at Cursor (Key N)">
-                            + NOTE
-                        </Button>
-
-                        <Button Name="BtnToggleAnchor" Click="BtnToggleAnchor_Click"
-                                Background="{x:Static ds:Colors.SurfaceChromeHex}"
-                                Foreground="{x:Static ds:Colors.SignalAuthoredContextHex}"
-                                BorderBrush="{x:Static ds:Colors.HudSlateBorderHex}"
-                                BorderThickness="1"
-                                CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
-                                Padding="10,5"
-                                FontFamily="{x:Static ds:Typography.FontFamilyMono}"
-                                FontSize="{x:Static ds:Typography.SizeLabel}"
-                                ToolTip.Tip="Toggle Anchor Ribbon (Key A)">
-                            ANCHOR
-                        </Button>
-
-                        <Button Name="BtnDelete" Click="BtnDelete_Click"
-                                Background="{x:Static ds:Colors.SurfaceChromeHex}"
-                                Foreground="{x:Static ds:Colors.SignalRefusalHex}"
-                                BorderBrush="{x:Static ds:Colors.HudSlateBorderHex}"
-                                BorderThickness="1"
-                                CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
-                                Padding="10,5"
-                                FontFamily="{x:Static ds:Typography.FontFamilyMono}"
-                                FontSize="{x:Static ds:Typography.SizeLabel}"
-                                ToolTip.Tip="Delete Selected Note (Del)">
-                            DELETE
-                        </Button>
-
-                        <Border Width="1" Height="16" Background="{x:Static ds:Colors.GridMajorLineHex}" Margin="2,0" />
-
-                        <Button Name="BtnZoomIn" Click="BtnZoomIn_Click"
-                                Background="{x:Static ds:Colors.SurfaceChromeHex}"
-                                Foreground="{x:Static ds:Colors.NoteTextHex}"
-                                BorderBrush="{x:Static ds:Colors.HudSlateBorderHex}"
-                                BorderThickness="1"
-                                CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
-                                Padding="8,4"
-                                FontFamily="{x:Static ds:Typography.FontFamilyMono}">+</Button>
-
-                        <Button Name="BtnZoomOut" Click="BtnZoomOut_Click"
-                                Background="{x:Static ds:Colors.SurfaceChromeHex}"
-                                Foreground="{x:Static ds:Colors.NoteTextHex}"
-                                BorderBrush="{x:Static ds:Colors.HudSlateBorderHex}"
-                                BorderThickness="1"
-                                CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
-                                Padding="8,4"
-                                FontFamily="{x:Static ds:Typography.FontFamilyMono}">−</Button>
-
-                        <Button Name="BtnResetCamera" Click="BtnResetCamera_Click"
-                                Background="{x:Static ds:Colors.SurfaceChromeHex}"
-                                Foreground="{x:Static ds:Colors.NoteTextHex}"
-                                BorderBrush="{x:Static ds:Colors.HudSlateBorderHex}"
-                                BorderThickness="1"
-                                CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
-                                Padding="10,4"
-                                FontFamily="{x:Static ds:Typography.FontFamilyMono}"
-                                FontSize="{x:Static ds:Typography.SizeLabel}">RESET</Button>
-                    </StackPanel>
-                </Grid>
-
-                <Border Height="1" Background="{x:Static ds:Colors.GridMajorLineHex}" />
-
-                <!-- Tools & Authored Colors Control Bar -->
-                <Grid ColumnDefinitions="Auto, *, Auto">
-                    <!-- Active Tool Signals -->
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <TextBlock Text="ACTIVE TOOL:"
-                                   FontFamily="{x:Static ds:Typography.FontFamilyMono}"
-                                   FontSize="{x:Static ds:Typography.SizeMicro}"
-                                   Foreground="{x:Static ds:Colors.TextMetaBrush}"
-                                   LetterSpacing="1"
-                                   VerticalAlignment="Center"
-                                   Margin="0,0,4,0" />
-
-                        <Button Name="BtnToolSelect" Click="BtnToolSelect_Click"
-                                Background="#242B38"
-                                Foreground="{x:Static ds:Colors.SignalInteractionHex}"
-                                BorderBrush="{x:Static ds:Colors.SignalInteractionHex}"
-                                BorderThickness="1"
-                                CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
-                                Padding="8,3"
-                                FontFamily="{x:Static ds:Typography.FontFamilyMono}"
-                                FontSize="{x:Static ds:Typography.SizeMicro}">
-                            [V] SELECT
-                        </Button>
-
-                        <Button Name="BtnToolNote" Click="BtnToolNote_Click"
-                                Background="{x:Static ds:Colors.SurfaceChromeHex}"
-                                Foreground="{x:Static ds:Colors.NoteTextHex}"
-                                BorderBrush="{x:Static ds:Colors.HudSlateBorderHex}"
-                                BorderThickness="1"
-                                CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
-                                Padding="8,3"
-                                FontFamily="{x:Static ds:Typography.FontFamilyMono}"
-                                FontSize="{x:Static ds:Typography.SizeMicro}">
-                            [N] NOTE
-                        </Button>
-
-                        <Button Name="BtnToolAnchor" Click="BtnToolAnchor_Click"
-                                Background="{x:Static ds:Colors.SurfaceChromeHex}"
-                                Foreground="{x:Static ds:Colors.SignalAuthoredContextHex}"
-                                BorderBrush="{x:Static ds:Colors.HudSlateBorderHex}"
-                                BorderThickness="1"
-                                CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
-                                Padding="8,3"
-                                FontFamily="{x:Static ds:Typography.FontFamilyMono}"
-                                FontSize="{x:Static ds:Typography.SizeMicro}">
-                            [A] ANCHOR
-                        </Button>
-
-                        <Button Name="BtnToolResize" Click="BtnToolResize_Click"
-                                Background="{x:Static ds:Colors.SurfaceChromeHex}"
-                                Foreground="{x:Static ds:Colors.EditFillHex}"
-                                BorderBrush="{x:Static ds:Colors.HudSlateBorderHex}"
-                                BorderThickness="1"
-                                CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
-                                Padding="8,3"
-                                FontFamily="{x:Static ds:Typography.FontFamilyMono}"
-                                FontSize="{x:Static ds:Typography.SizeMicro}">
-                            [R] RESIZE
-                        </Button>
-                    </StackPanel>
-
-                    <!-- Authored Color Swatches -->
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <TextBlock Text="NOTE FILL:"
-                                   FontFamily="{x:Static ds:Typography.FontFamilyMono}"
-                                   FontSize="{x:Static ds:Typography.SizeMicro}"
-                                   Foreground="{x:Static ds:Colors.TextMetaBrush}"
-                                   LetterSpacing="1"
-                                   VerticalAlignment="Center"
-                                   Margin="0,0,4,0" />
-
-                        <Button Name="BtnColorViolet" Click="BtnColorViolet_Click"
-                                Background="{x:Static ds:Colors.NoteVioletHex}"
-                                Width="22" Height="22"
-                                CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
-                                BorderBrush="{x:Static ds:Colors.SignalInteractionHex}"
-                                BorderThickness="2"
-                                ToolTip.Tip="Violet (Key 2)" />
-
-                        <Button Name="BtnColorClay" Click="BtnColorClay_Click"
-                                Background="{x:Static ds:Colors.NoteClayHex}"
-                                Width="22" Height="22"
-                                CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
-                                BorderBrush="{x:Static ds:Colors.ContainmentEdgeHex}"
-                                BorderThickness="1"
-                                ToolTip.Tip="Clay (Key 3)" />
-
-                        <Button Name="BtnColorSlateBlue" Click="BtnColorSlateBlue_Click"
-                                Background="{x:Static ds:Colors.NoteSlateBlueHex}"
-                                Width="22" Height="22"
-                                CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
-                                BorderBrush="{x:Static ds:Colors.ContainmentEdgeHex}"
-                                BorderThickness="1"
-                                ToolTip.Tip="Slate Blue (Key 4)" />
-                    </StackPanel>
-                </Grid>
-            </StackPanel>
-        </Border>
-
-        <!-- PLANE 1: Floating In-Place Text Editor Overlay -->
+        <!-- PLANE 1: Floating In-Place Text Editor Overlay (Shown on Note Double-Click) -->
         <Border Name="EditorOverlay" IsVisible="False"
                 Background="{x:Static ds:Colors.SurfaceChromeHex}"
                 BorderBrush="{x:Static ds:Colors.SignalInteractionHex}"
@@ -264,8 +60,8 @@
             </StackPanel>
         </Border>
 
-        <!-- Bottom Telemetry HUD Status Bar -->
-        <Border HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Height="30"
+        <!-- Minimal Grid Telemetry Strip at Bottom -->
+        <Border HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Height="28"
                 Background="{x:Static ds:Colors.SurfaceChromeHex}"
                 BorderBrush="{x:Static ds:Colors.GridMajorLineHex}"
                 BorderThickness="0,1,0,0">
@@ -286,20 +82,10 @@
                                FontSize="{x:Static ds:Typography.SizeLabel}"
                                FontFamily="{x:Static ds:Typography.FontFamilyMono}"
                                LetterSpacing="0.8" />
-                    <TextBlock Text="FIELD: 0.22 GAIN"
-                               Foreground="{x:Static ds:Colors.TextMetaBrush}"
-                               FontSize="{x:Static ds:Typography.SizeLabel}"
-                               FontFamily="{x:Static ds:Typography.FontFamilyMono}"
-                               LetterSpacing="0.8" />
-                    <TextBlock Text="PITCH: 220PX"
-                               Foreground="{x:Static ds:Colors.TextMetaBrush}"
-                               FontSize="{x:Static ds:Typography.SizeLabel}"
-                               FontFamily="{x:Static ds:Typography.FontFamilyMono}"
-                               LetterSpacing="0.8" />
                 </StackPanel>
 
                 <TextBlock Grid.Column="2"
-                           Text="Middle / Right Click Drag to Pan • Wheel: Zoom • Double Click: Add/Edit Note • Key 2-4: Colors • A: Anchor • R: Resize"
+                           Text="Middle / Right Click Drag to Pan • Wheel: Zoom • Double Click Cell: Add/Edit Note • Keys 2-4: Colors • A: Anchor • Del: Delete"
                            Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
                            FontSize="{x:Static ds:Typography.SizeLabel}"
                            VerticalAlignment="Center"
