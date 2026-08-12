@@ -12,6 +12,7 @@ namespace GroveApp.Models
     {
         public override ContentKind Kind => ContentKind.Image;
         public override float Mass => 4.0f;
+        public override string FieldHueHex => IsAnchored ? DesignSystem.Colors.AnchorHex : DesignSystem.Colors.ToolFillHex;
 
         public string FilePath { get; set; } = "";
         public int IntrinsicWidthPx { get; set; }

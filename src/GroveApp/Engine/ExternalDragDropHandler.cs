@@ -13,12 +13,6 @@ namespace GroveApp.Engine
 {
     public sealed record CellCoordinate(int X, int Y);
 
-    public sealed record PlacementRequest(
-        CellCoordinate Origin,
-        int CellWidth,
-        int CellHeight,
-        GridContentItem CreatedItem);
-
     public static class SpatialCoordinateResolver
     {
         public const double CellPitch = Tokens.GridCell; // 220.0px
@@ -75,8 +69,48 @@ namespace GroveApp.Engine
             Point screenPos = e.GetPosition(visual);
             CellCoordinate origin = SpatialCoordinateResolver.ScreenToCell(screenPos, panOffset, zoomScale);
 
-            // Check if baseline cell is free
-            bool isFree = _isRegionFreeChecker(origin, 1, 1);
+            var files = e.Data.GetFiles()?.Select(f => f.Path.LocalPath).ToList();
+            int reqW = 1;
+            int reqH = 1;
+
+            if (files != null && files.Count > 0)
+            {
+                string firstFile = files[0];
+                string ext = Path.GetExtension(firstFile).ToLowerInvariant();
+                if (ext is ".png" or ".jpg" or ".jpeg" or ".webp" or ".gif")
+                {
+                    try
+                    {
+                        using var stream = File.OpenRead(firstFile);
+                        using var bitmap = new Avalonia.Media.Imaging.Bitmap(stream);
+                        var fp = ImageFootprintResolver.Resolve((int)bitmap.Size.Width, (int)bitmap.Size.Height);
+                        reqW = fp.CellsW;
+                        reqH = fp.CellsH;
+                    }
+                    catch
+                    {
+                        reqW = 2;
+                        reqH = 2;
+                    }
+                }
+                else if (ext is ".md" or ".json" or ".pdf")
+                {
+                    reqW = 2;
+                    reqH = 2;
+                }
+                else if (ext == ".txt")
+                {
+                    try
+                    {
+                        long len = new FileInfo(firstFile).Length;
+                        if (len >= 500) { reqW = 2; reqH = 2; }
+                    }
+                    catch { }
+                }
+            }
+
+            // Check if full resolved footprint (CellWidth, CellHeight) is free across region
+            bool isFree = _isRegionFreeChecker(origin, reqW, reqH);
             e.DragEffects = isFree ? DragDropEffects.Copy : DragDropEffects.None;
             e.Handled = true;
         }
@@ -149,11 +183,14 @@ namespace GroveApp.Engine
                 h = (int)bitmap.Size.Height;
                 var img = new GridImage(origin.X, origin.Y, filePath, w, h);
                 img.LoadedBitmap = bitmap;
+                img.UpdateFootprint(w, h);
                 return img;
             }
             catch
             {
-                return new GridImage(origin.X, origin.Y, filePath, w, h);
+                var img = new GridImage(origin.X, origin.Y, filePath, w, h);
+                img.UpdateFootprint(w, h);
+                return img;
             }
         }
 

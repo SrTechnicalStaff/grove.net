@@ -407,6 +407,11 @@ namespace GroveApp.Controls
             Closed?.Invoke();
         }
 
+        public void ShowRefusal()
+        {
+            RefusalRow.IsVisible = true;
+        }
+
         private void BtnHeaderClose_Click(object? sender, RoutedEventArgs e) => HandleEscape();
         private void BtnKeepEditingUnsaved_Click(object? sender, RoutedEventArgs e) => UnsavedConfirmRow.IsVisible = false;
         private void BtnDiscardUnsaved_Click(object? sender, RoutedEventArgs e) => CloseSelf();
@@ -414,5 +419,60 @@ namespace GroveApp.Controls
         private void BtnSaveComposer_Click(object? sender, RoutedEventArgs e) => SaveCurrentAndNext();
         private void BtnRefusalDismiss_Click(object? sender, RoutedEventArgs e) => RefusalRow.IsVisible = false;
         private void BtnRefusalRetry_Click(object? sender, RoutedEventArgs e) => SaveCurrentAndNext();
+
+        private bool IsOutsideFrame(Point pt)
+        {
+            Point borderPt = this.TranslatePoint(pt, FrameBorder) ?? pt;
+            return borderPt.X < 0 || borderPt.Y < 0 || borderPt.X > FrameBorder.Bounds.Width || borderPt.Y > FrameBorder.Bounds.Height;
+        }
+
+        private void PassToCanvas(PointerEventArgs e)
+        {
+            var canvas = (VisualRoot as MainWindow)?.CanvasControl;
+            if (canvas != null)
+            {
+                canvas.RaiseEvent(e);
+            }
+        }
+
+        protected override void OnPointerPressed(PointerPressedEventArgs e)
+        {
+            if (IsOutsideFrame(e.GetPosition(this)))
+            {
+                PassToCanvas(e);
+                return;
+            }
+            base.OnPointerPressed(e);
+        }
+
+        protected override void OnPointerMoved(PointerEventArgs e)
+        {
+            if (IsOutsideFrame(e.GetPosition(this)))
+            {
+                PassToCanvas(e);
+                return;
+            }
+            base.OnPointerMoved(e);
+        }
+
+        protected override void OnPointerReleased(PointerReleasedEventArgs e)
+        {
+            if (IsOutsideFrame(e.GetPosition(this)))
+            {
+                PassToCanvas(e);
+                return;
+            }
+            base.OnPointerReleased(e);
+        }
+
+        protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
+        {
+            if (IsOutsideFrame(e.GetPosition(this)))
+            {
+                PassToCanvas(e);
+                return;
+            }
+            base.OnPointerWheelChanged(e);
+        }
     }
 }

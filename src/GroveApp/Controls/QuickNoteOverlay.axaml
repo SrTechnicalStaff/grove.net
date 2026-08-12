@@ -2,7 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
              xmlns:ds="clr-namespace:GroveApp.DesignSystem"
-             x:Class="GroveApp.Controls.QuickNoteOverlay">
+             x:Class="GroveApp.Controls.QuickNoteOverlay"
+             Background="Transparent">
 
     <Border Name="FrameBorder"
             Width="540"

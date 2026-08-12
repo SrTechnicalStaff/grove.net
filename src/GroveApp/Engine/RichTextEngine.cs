@@ -96,6 +96,7 @@ namespace GroveApp.Engine
         public bool IsInlineCode { get; set; }
         public bool IsMark { get; set; }
         public bool IsLink { get; set; }
+        public FontFamily? FontFamily { get; set; }
         public IBrush? Foreground { get; set; }
         public IBrush? Background { get; set; }
         public string? LinkUrl { get; set; }
@@ -110,6 +111,7 @@ namespace GroveApp.Engine
             IsInlineCode = IsInlineCode,
             IsMark = IsMark,
             IsLink = IsLink,
+            FontFamily = FontFamily,
             Foreground = Foreground,
             Background = Background,
             LinkUrl = LinkUrl
@@ -125,6 +127,7 @@ namespace GroveApp.Engine
                    IsInlineCode == other.IsInlineCode &&
                    IsMark == other.IsMark &&
                    IsLink == other.IsLink &&
+                   FontFamily == other.FontFamily &&
                    Foreground == other.Foreground &&
                    Background == other.Background &&
                    LinkUrl == other.LinkUrl;
@@ -134,7 +137,7 @@ namespace GroveApp.Engine
         {
             return !Bold && !Italic && !Underline && !Strikethrough &&
                    SubSup == SubSupMode.None && !IsInlineCode && !IsMark && !IsLink &&
-                   Foreground == null && Background == null && LinkUrl == null;
+                   FontFamily == null && Foreground == null && Background == null && LinkUrl == null;
         }
     }
 
@@ -967,6 +970,7 @@ namespace GroveApp.Engine
                             IsMark = currentState.IsMark,
                             IsLink = currentState.IsLink,
                             LinkUrl = currentState.LinkUrl,
+                            FontFamily = currentState.FontFamily,
                             Foreground = currentState.Foreground,
                             Background = currentState.Background
                         });
@@ -1121,6 +1125,12 @@ namespace GroveApp.Engine
                     state.IsMark = true;
                     state.Background = MarkBgBrush;
                     break;
+                case "font":
+                    if (attrs.TryGetValue("face", out string? faceVal))
+                    {
+                        state.FontFamily = new FontFamily(faceVal);
+                    }
+                    break;
                 case "span":
                     if (attrs.TryGetValue("style", out string? styleVal))
                     {
@@ -1163,6 +1173,10 @@ namespace GroveApp.Engine
                             state.Background = brush;
                             state.IsMark = true;
                         }
+                    }
+                    else if (prop == "font-family")
+                    {
+                        state.FontFamily = new FontFamily(val);
                     }
                 }
             }

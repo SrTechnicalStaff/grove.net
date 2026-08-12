@@ -129,6 +129,10 @@ namespace GroveApp.Controls
         private int _dragOffsetCellX;
         private int _dragOffsetCellY;
 
+        // Drag to Resize Corner State (ADR-010)
+        private bool _isResizingItem;
+        private GridContentItem? _resizingItem;
+
         // Native GPU VSync Render Loop State
         private TopLevel? _topLevel;
         private bool _isAnimationFrameRequested;
@@ -263,6 +267,44 @@ namespace GroveApp.Controls
                 return;
             }
 
+            // Handle Drag-to-Resize Corner (ADR-010)
+            if (_isResizingItem && _resizingItem != null)
+            {
+                int newCellWidth = Math.Max(1, cx - _resizingItem.CellX + 1);
+                int newCellHeight = Math.Max(1, cy - _resizingItem.CellY + 1);
+
+                if (_resizingItem is GridNote note)
+                {
+                    int newSize = Math.Max(1, Math.Max(newCellWidth, newCellHeight));
+                    if (IsRegionFree(new CellCoordinate(note.CellX, note.CellY), newSize, newSize, note))
+                    {
+                        note.SizeCells = newSize;
+                    }
+                }
+                else if (_resizingItem is GridDocument doc)
+                {
+                    int w = Math.Clamp(newCellWidth, 2, 8);
+                    int h = Math.Clamp(newCellHeight, 2, 8);
+                    if (IsRegionFree(new CellCoordinate(doc.CellX, doc.CellY), w, h, doc))
+                    {
+                        doc.CellWidth = w;
+                        doc.CellHeight = h;
+                    }
+                }
+                else if (_resizingItem is GridImage img)
+                {
+                    int w = Math.Max(1, newCellWidth);
+                    int h = Math.Max(1, newCellHeight);
+                    if (IsRegionFree(new CellCoordinate(img.CellX, img.CellY), w, h, img))
+                    {
+                        img.CellWidth = w;
+                        img.CellHeight = h;
+                    }
+                }
+                InvalidateVisual();
+                return;
+            }
+
             // Handle Drag & Drop Item Movement
             if (_isDraggingItem && _draggedItem != null)
             {
@@ -326,6 +368,20 @@ namespace GroveApp.Controls
             // Left Click
             if (props.IsLeftButtonPressed)
             {
+                // Check for Corner Resize Handle hit on SelectedItem first
+                if (SelectedItem != null)
+                {
+                    Point brScreen = WorldToScreen(new Point((SelectedItem.CellX + SelectedItem.CellWidth) * CellSize, (SelectedItem.CellY + SelectedItem.CellHeight) * CellSize));
+                    Point mouseScreen = e.GetPosition(this);
+                    if (Vector.Distance(mouseScreen, brScreen) <= 24.0)
+                    {
+                        _isResizingItem = true;
+                        _resizingItem = SelectedItem;
+                        e.Handled = true;
+                        return;
+                    }
+                }
+
                 Point clickWorld = ScreenToWorld(e.GetPosition(this));
                 var (cx, cy) = WorldToCell(clickWorld);
                 GridContentItem? hitItem = FindItemAtCell(cx, cy);
@@ -358,6 +414,12 @@ namespace GroveApp.Controls
             if (_isPanning)
             {
                 _isPanning = false;
+                e.Handled = true;
+            }
+            if (_isResizingItem)
+            {
+                _isResizingItem = false;
+                _resizingItem = null;
                 e.Handled = true;
             }
             if (_isDraggingItem)
@@ -520,7 +582,7 @@ namespace GroveApp.Controls
             int maxCellY = (int)Math.Ceiling((h - CameraY + bufferPx) / (CellSize * Zoom));
 
             // 1. Field Ledger Module: Gravitational Cell Fills, Atmosphere & Perimeter Rings
-            _fieldLedgerModule.RenderFieldLedger(context, WorldToScreen, CellSize, Zoom, minCellX, maxCellX, minCellY, maxCellY, FieldEngine, Notes);
+            _fieldLedgerModule.RenderFieldLedger(context, WorldToScreen, CellSize, Zoom, minCellX, maxCellX, minCellY, maxCellY, FieldEngine, Items);
 
             // 2. Grid Line Module: Major 220px, Minor 44px Subdivisions & LOD Fading
             _gridLineModule.RenderGridLines(context, WorldToScreen, CellSize, Zoom, minCellX, maxCellX, minCellY, maxCellY);

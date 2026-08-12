@@ -210,14 +210,14 @@ namespace GroveApp.Engine
         /// <summary>
         /// Recalculates field energy, composite colors, and metadata sources across a bounding range of cells.
         /// </summary>
-        public void RecalculateField(IEnumerable<GridNote> notes, int minCol, int maxCol, int minRow, int maxRow)
+        public void RecalculateField(IEnumerable<GridContentItem> items, int minCol, int maxCol, int minRow, int maxRow)
         {
-            var noteList = notes.ToList();
+            var itemList = items.ToList();
             for (int c = minCol; c <= maxCol; c++)
             {
                 for (int r = minRow; r <= maxRow; r++)
                 {
-                    UpdateCell(c, r, noteList);
+                    UpdateCell(c, r, itemList);
                 }
             }
             PerimeterSubscriber.RecomputePerimeter();
@@ -227,12 +227,12 @@ namespace GroveApp.Engine
         /// Recalculates field energy, composite colors, and metadata sources strictly for specified active aura envelope cells.
         /// Implements Spatial Aura Bounding-Box Culling (d <= 6 cells).
         /// </summary>
-        public void RecalculateField(IEnumerable<GridNote> notes, IEnumerable<(int col, int row)> activeCells)
+        public void RecalculateField(IEnumerable<GridContentItem> items, IEnumerable<(int col, int row)> activeCells)
         {
-            var noteList = notes as List<GridNote> ?? notes.ToList();
+            var itemList = items as List<GridContentItem> ?? items.ToList();
             foreach (var (c, r) in activeCells)
             {
-                UpdateCell(c, r, noteList);
+                UpdateCell(c, r, itemList);
             }
             PerimeterSubscriber.RecomputePerimeter();
         }
@@ -240,7 +240,7 @@ namespace GroveApp.Engine
         /// <summary>
         /// Updates a single cell's accumulated energy, weight formula W_i = M_i / (1 + 0.4 * d_i^2), and notifies subscribers.
         /// </summary>
-        public void UpdateCell(int col, int row, IEnumerable<GridNote> notes)
+        public void UpdateCell(int col, int row, IEnumerable<GridContentItem> items)
         {
             var key = (col, row);
             if (!_ledger.TryGetValue(key, out var entry))
@@ -252,35 +252,42 @@ namespace GroveApp.Engine
             entry.SourceMetadata.Clear();
             double accumulatedEnergy = 0.05; // default non-zero baseline
 
-            foreach (var note in notes)
+            foreach (var item in items)
             {
-                // Distance squared from cell (col, row) to note footprint
+                // Distance squared from cell (col, row) to item footprint
                 double dx = 0.0;
-                if (col < note.CellX)
-                    dx = note.CellX - col;
-                else if (col >= note.CellX + note.SizeCells)
-                    dx = col - (note.CellX + note.SizeCells - 1);
+                if (col < item.CellX)
+                    dx = item.CellX - col;
+                else if (col >= item.CellX + item.CellWidth)
+                    dx = col - (item.CellX + item.CellWidth - 1);
 
                 double dy = 0.0;
-                if (row < note.CellY)
-                    dy = note.CellY - row;
-                else if (row >= note.CellY + note.SizeCells)
-                    dy = row - (note.CellY + note.SizeCells - 1);
+                if (row < item.CellY)
+                    dy = item.CellY - row;
+                else if (row >= item.CellY + item.CellHeight)
+                    dy = row - (item.CellY + item.CellHeight - 1);
 
                 // Spatial aura bounding-box culling check: d <= 6 cells
                 if (dx > 6 || dy > 6) continue;
 
                 double distSq = dx * dx + dy * dy;
-                double mass = Tokens.FieldGain; // M_i
+                double mass = Tokens.FieldGain * item.Mass; // M_i = FieldGain * Mass (Note: 1.0, Doc: 2.5, Image: 4.0)
                 double weight = mass / (1.0 + 0.4 * distSq); // W_i = M_i / (1 + 0.4 * d_i^2)
 
                 if (weight > 0.001)
                 {
                     accumulatedEnergy += weight;
-                    string contentId = note.Id;
-                    Color hue = Color.Parse(note.FieldHueHex);
+                    string contentId = item.Id;
+                    Color hue = Color.Parse(item.FieldHueHex);
 
-                    string snippet = note.Text.Length > 30 ? note.Text.Substring(0, 30) + "..." : note.Text;
+                    string snippet = item switch
+                    {
+                        GridNote n => n.Text.Length > 30 ? n.Text.Substring(0, 30) + "..." : n.Text,
+                        GridDocument d => d.Title,
+                        GridImage img => System.IO.Path.GetFileName(img.FilePath),
+                        _ => item.Id
+                    };
+
                     entry.SourceMetadata[contentId] = new CellMetadataSource
                     {
                         ContentId = contentId,

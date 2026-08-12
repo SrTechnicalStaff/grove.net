@@ -3,7 +3,8 @@
              xmlns:ui="using:FluentAvalonia.UI.Controls"
              xmlns:ds="clr-namespace:GroveApp.DesignSystem"
              xmlns:controls="clr-namespace:GroveApp.Controls"
-             x:Class="GroveApp.Controls.LocalEditorOverlay">
+             x:Class="GroveApp.Controls.LocalEditorOverlay"
+             Background="Transparent">
 
     <Border Name="FrameBorder"
             Width="580"

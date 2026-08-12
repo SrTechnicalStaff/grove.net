@@ -11,6 +11,7 @@ namespace GroveApp.Models
     {
         public override ContentKind Kind => ContentKind.Document;
         public override float Mass => 2.5f;
+        public override string FieldHueHex => IsAnchored ? DesignSystem.Colors.AnchorHex : DesignSystem.Colors.ViewFillHex;
 
         public string Title { get; set; } = "";
         public string RawText { get; set; } = "";

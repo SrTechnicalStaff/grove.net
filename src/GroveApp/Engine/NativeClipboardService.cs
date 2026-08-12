@@ -173,6 +173,26 @@ namespace GroveApp.Engine
         }
     }
 
+    public static class ClipboardExtensions
+    {
+        public static async Task<Avalonia.Media.Imaging.Bitmap?> GetBitmapAsync(this IClipboard clipboard)
+        {
+            if (clipboard is null) return null;
+            try
+            {
+                object? data = await clipboard.GetDataAsync("PNG") ?? await clipboard.GetDataAsync("Bitmap");
+                if (data is Avalonia.Media.Imaging.Bitmap b) return b;
+                if (data is byte[] bytes)
+                {
+                    using var ms = new System.IO.MemoryStream(bytes);
+                    return new Avalonia.Media.Imaging.Bitmap(ms);
+                }
+            }
+            catch { }
+            return null;
+        }
+    }
+
     /// <summary>
     /// Implements ADR-014 Native System Clipboard Interop Service.
     /// Provides copy/paste operations supporting CF_HTML and plain text AST deserialization.
@@ -208,6 +228,25 @@ namespace GroveApp.Engine
             var clipboard = _getClipboardFunc();
             var results = new List<GridContentItem>();
             if (clipboard is null) return results;
+
+            // 1. Direct Bitmap Image Clipboard Paste (ADR-014)
+            try
+            {
+                var bitmap = await clipboard.GetBitmapAsync();
+                if (bitmap != null)
+                {
+                    int w = (int)bitmap.Size.Width;
+                    int h = (int)bitmap.Size.Height;
+                    string tempPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"pasted_img_{Guid.NewGuid():N}.png");
+                    bitmap.Save(tempPath);
+                    var img = new GridImage(dropOrigin.X, dropOrigin.Y, tempPath, w, h);
+                    img.LoadedBitmap = bitmap;
+                    img.UpdateFootprint(w, h);
+                    results.Add(img);
+                    return results;
+                }
+            }
+            catch { }
 
             string? html = null;
             try

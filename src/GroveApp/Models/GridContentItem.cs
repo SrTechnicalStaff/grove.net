@@ -28,6 +28,7 @@ namespace GroveApp.Models
 
         public abstract ContentKind Kind { get; }
         public virtual float Mass => 1.0f;
+        public virtual string FieldHueHex => IsAnchored ? DesignSystem.Colors.AnchorHex : DesignSystem.Colors.NoteVioletFieldHex;
 
         protected GridContentItem(int cellX, int cellY, int cellWidth = 1, int cellHeight = 1, bool isAnchored = false, int layerId = 0)
         {

@@ -63,7 +63,7 @@ namespace GroveApp.Models
             _ => DesignSystem.Colors.NoteVioletHex
         };
 
-        public string FieldHueHex => IsAnchored ? DesignSystem.Colors.AnchorHex : Color switch
+        public override string FieldHueHex => IsAnchored ? DesignSystem.Colors.AnchorHex : Color switch
         {
             NoteColor.Violet => DesignSystem.Colors.NoteVioletFieldHex,
             NoteColor.Clay => DesignSystem.Colors.NoteClayFieldHex,

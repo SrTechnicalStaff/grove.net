@@ -184,17 +184,64 @@ namespace GroveApp.Engine
                                 context.DrawText(fmt, new Point(slice.X, yCursor));
                                 yCursor += fmt.Height + 12.0;
                             }
+                            else if (block is CodeBlockNode codeNode)
+                            {
+                                var codeBg = new SolidColorBrush(Color.Parse("#1A1A1D"));
+                                var codePen = new Pen(new SolidColorBrush(Color.Parse("#2D2D32")), 1.0);
+                                var codeFmt = new FormattedText(
+                                    codeNode.Code,
+                                    CultureInfo.CurrentCulture,
+                                    FlowDirection.LeftToRight,
+                                    new Typeface("Consolas", FontStyle.Normal, FontWeight.Regular),
+                                    13.0,
+                                    new SolidColorBrush(Color.Parse("#E8B964")))
+                                {
+                                    MaxTextWidth = Math.Max(1.0, slice.Width - 16.0)
+                                };
+                                Rect boxRect = new Rect(slice.X, yCursor, slice.Width, codeFmt.Height + 12.0);
+                                context.FillRectangle(codeBg, boxRect, 4.0f);
+                                context.DrawRectangle(null, codePen, boxRect, 4.0f);
+                                context.DrawText(codeFmt, new Point(slice.X + 8.0, yCursor + 6.0));
+                                yCursor += boxRect.Height + 12.0;
+                            }
+                            else if (block is ListBlockNode listNode)
+                            {
+                                int listIdx = 1;
+                                foreach (var itemStr in listNode.Items)
+                                {
+                                    string prefix = listNode.IsOrdered ? $"{listIdx++}. " : "• ";
+                                    var itemFmt = new FormattedText(
+                                        prefix + itemStr,
+                                        CultureInfo.CurrentCulture,
+                                        FlowDirection.LeftToRight,
+                                        typeface,
+                                        15.0,
+                                        textBrush)
+                                    {
+                                        MaxTextWidth = slice.Width,
+                                        LineHeight = DocumentReflowEngine.LineHeightPx
+                                    };
+                                    context.DrawText(itemFmt, new Point(slice.X, yCursor));
+                                    yCursor += itemFmt.Height + 4.0;
+                                }
+                                yCursor += 8.0;
+                            }
                         }
                     }
                 }
             }
 
-            // 5. Selection Ring
+            // 5. Selection Ring & Resize Handle
             if (isSelected)
             {
                 Rect selRect = docRect.Inflate(3.0 * zoom);
                 var selectionPen = new Pen(Colors.SignalInteractionBrush, Tokens.StrokeState * Math.Max(0.8, zoom));
                 context.DrawRectangle(null, selectionPen, selRect);
+            }
+
+            if (isHovered || isSelected)
+            {
+                RenderResizeCorner(context, docRect, zoom);
             }
         }
 
@@ -263,12 +310,35 @@ namespace GroveApp.Engine
                 context.DrawText(fmt, new Point(badgeX + 2 * zoom, badgeY + 1 * zoom));
             }
 
-            // Selection Ring
+            // EffectivePpi Canvas Label on Hover
+            if (isHovered)
+            {
+                string ppiText = $"{Math.Round(img.EffectivePpi)} PPI";
+                double ppiBadgeX = imgRect.Left + 8.0 * zoom;
+                double ppiBadgeY = imgRect.Bottom - 20.0 * zoom;
+                var ppiFmt = new FormattedText(
+                    ppiText,
+                    CultureInfo.CurrentCulture,
+                    FlowDirection.LeftToRight,
+                    new Typeface("Consolas", FontStyle.Normal, FontWeight.Bold),
+                    Typography.SizeMicro * zoom,
+                    Brushes.White);
+                Rect ppiBgRect = new Rect(ppiBadgeX, ppiBadgeY, ppiFmt.Width + 8 * zoom, ppiFmt.Height + 4 * zoom);
+                context.FillRectangle(new SolidColorBrush(Color.FromArgb(200, 14, 14, 16)), ppiBgRect);
+                context.DrawText(ppiFmt, new Point(ppiBadgeX + 4 * zoom, ppiBadgeY + 2 * zoom));
+            }
+
+            // Selection Ring & Resize Handle
             if (isSelected)
             {
                 Rect selRect = imgRect.Inflate(3.0 * zoom);
                 var selectionPen = new Pen(Colors.SignalInteractionBrush, Tokens.StrokeState * Math.Max(0.8, zoom));
                 context.DrawRectangle(null, selectionPen, selRect);
+            }
+
+            if (isHovered || isSelected)
+            {
+                RenderResizeCorner(context, imgRect, zoom);
             }
         }
 

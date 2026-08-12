@@ -16,42 +16,42 @@ namespace GroveApp.Engine
     public class FieldLedgerModule
     {
         /// <summary>
-        /// Calculates the gravitational presence accumulation color for cell (cx, cy) from all notes.
+        /// Calculates the gravitational presence accumulation color for cell (cx, cy) from all content items.
         /// Restricts calculations strictly to active aura envelopes (d <= 6 cells).
         /// </summary>
-        public Color CalculateCellFieldColor(int cx, int cy, IEnumerable<GridNote> notes)
+        public Color CalculateCellFieldColor(int cx, int cy, IEnumerable<GridContentItem> items)
         {
             Color baseColor = Colors.SurfaceGrid;
             double r = baseColor.R;
             double g = baseColor.G;
             double b = baseColor.B;
 
-            foreach (var note in notes)
+            foreach (var item in items)
             {
                 double dx = 0.0;
-                if (cx < note.CellX)
-                    dx = note.CellX - cx;
-                else if (cx >= note.CellX + note.SizeCells)
-                    dx = cx - (note.CellX + note.SizeCells - 1);
+                if (cx < item.CellX)
+                    dx = item.CellX - cx;
+                else if (cx >= item.CellX + item.CellWidth)
+                    dx = cx - (item.CellX + item.CellWidth - 1);
 
                 double dy = 0.0;
-                if (cy < note.CellY)
-                    dy = note.CellY - cy;
-                else if (cy >= note.CellY + note.SizeCells)
-                    dy = cy - (note.CellY + note.SizeCells - 1);
+                if (cy < item.CellY)
+                    dy = item.CellY - cy;
+                else if (cy >= item.CellY + item.CellHeight)
+                    dy = cy - (item.CellY + item.CellHeight - 1);
 
                 // Spatial aura bounding-box culling: d <= 6 cells
                 if (dx > 6 || dy > 6) continue;
 
                 double distSq = dx * dx + dy * dy;
 
-                // Field gravity equation: FieldWeight = FieldGain / (1 + 0.4 * distSq)
-                double fieldWeight = Tokens.FieldGain / (1.0 + 0.4 * distSq);
-                Color noteFieldColor = Color.Parse(note.FieldHueHex);
+                // Field gravity equation: FieldWeight = (FieldGain * Mass) / (1 + 0.4 * distSq)
+                double fieldWeight = (Tokens.FieldGain * item.Mass) / (1.0 + 0.4 * distSq);
+                Color fieldColor = Color.Parse(item.FieldHueHex);
 
-                r += noteFieldColor.R * fieldWeight;
-                g += noteFieldColor.G * fieldWeight;
-                b += noteFieldColor.B * fieldWeight;
+                r += fieldColor.R * fieldWeight;
+                g += fieldColor.G * fieldWeight;
+                b += fieldColor.B * fieldWeight;
             }
 
             byte finalR = (byte)Math.Clamp(r, 0, 255);
@@ -75,10 +75,10 @@ namespace GroveApp.Engine
             int minCellY,
             int maxCellY,
             FieldLedgerEngine fieldEngine,
-            IEnumerable<GridNote> notes)
+            IEnumerable<GridContentItem> items)
         {
-            var noteList = notes as List<GridNote> ?? new List<GridNote>(notes);
-            if (noteList.Count == 0) return;
+            var itemList = items as List<GridContentItem> ?? new List<GridContentItem>(items);
+            if (itemList.Count == 0) return;
 
             double projectedCellSize = cellSize * zoom;
             const int auraRadius = 6;
@@ -89,15 +89,15 @@ namespace GroveApp.Engine
             if (enableCellFills)
             {
                 // Spatial Aura Bounding-Box Culling (d <= 6 cells):
-                // Collect unique active aura envelope cells across all notes in the viewport
+                // Collect unique active aura envelope cells across all content items in the viewport
                 var activeAuraCells = new HashSet<(int col, int row)>();
 
-                foreach (var note in noteList)
+                foreach (var item in itemList)
                 {
-                    int nMinX = Math.Max(minCellX, note.CellX - auraRadius);
-                    int nMaxX = Math.Min(maxCellX, note.CellX + note.SizeCells - 1 + auraRadius);
-                    int nMinY = Math.Max(minCellY, note.CellY - auraRadius);
-                    int nMaxY = Math.Min(maxCellY, note.CellY + note.SizeCells - 1 + auraRadius);
+                    int nMinX = Math.Max(minCellX, item.CellX - auraRadius);
+                    int nMaxX = Math.Min(maxCellX, item.CellX + item.CellWidth - 1 + auraRadius);
+                    int nMinY = Math.Max(minCellY, item.CellY - auraRadius);
+                    int nMaxY = Math.Min(maxCellY, item.CellY + item.CellHeight - 1 + auraRadius);
 
                     if (nMinX <= nMaxX && nMinY <= nMaxY)
                     {
@@ -113,8 +113,8 @@ namespace GroveApp.Engine
 
                 if (activeAuraCells.Count > 0)
                 {
-                    // 0. Recalculate Field Ledger ONLY for active aura envelope cells (O(Active Aura Envelopes) instead of O(Viewport Area))
-                    fieldEngine.RecalculateField(noteList, activeAuraCells);
+                    // 0. Recalculate Field Ledger ONLY for active aura envelope cells
+                    fieldEngine.RecalculateField(itemList, activeAuraCells);
 
                     // 1. Layer 0: High-Precision Cell Fill Matrix for active aura cells
                     foreach (var (cx, cy) in activeAuraCells)
@@ -133,28 +133,28 @@ namespace GroveApp.Engine
                 }
             }
 
-            // 2. Layer 1: Gravitational Atmosphere Radial Glows around Note Footprints (LOD Shedding when projected cell size < 6px)
+            // 2. Layer 1: Gravitational Atmosphere Radial Glows around Item Footprints (LOD Shedding when projected cell size < 6px)
             if (projectedCellSize >= Tokens.GridFadeStart)
             {
-                foreach (var note in noteList)
+                foreach (var item in itemList)
                 {
-                    if (note.CellX + note.SizeCells + auraRadius < minCellX || note.CellX - auraRadius > maxCellX ||
-                        note.CellY + note.SizeCells + auraRadius < minCellY || note.CellY - auraRadius > maxCellY)
+                    if (item.CellX + item.CellWidth + auraRadius < minCellX || item.CellX - auraRadius > maxCellX ||
+                        item.CellY + item.CellHeight + auraRadius < minCellY || item.CellY - auraRadius > maxCellY)
                     {
                         continue;
                     }
 
-                    Point noteStartWorld = new Point(note.CellX * cellSize, note.CellY * cellSize);
-                    Point noteEndWorld = new Point((note.CellX + note.SizeCells) * cellSize, (note.CellY + note.SizeCells) * cellSize);
-                    Point startScreen = worldToScreen(noteStartWorld);
-                    Point endScreen = worldToScreen(noteEndWorld);
+                    Point itemStartWorld = new Point(item.CellX * cellSize, item.CellY * cellSize);
+                    Point itemEndWorld = new Point((item.CellX + item.CellWidth) * cellSize, (item.CellY + item.CellHeight) * cellSize);
+                    Point startScreen = worldToScreen(itemStartWorld);
+                    Point endScreen = worldToScreen(itemEndWorld);
 
-                    double noteW = endScreen.X - startScreen.X;
-                    double noteH = endScreen.Y - startScreen.Y;
-                    Point center = new Point(startScreen.X + noteW / 2.0, startScreen.Y + noteH / 2.0);
+                    double itemW = endScreen.X - startScreen.X;
+                    double itemH = endScreen.Y - startScreen.Y;
+                    Point center = new Point(startScreen.X + itemW / 2.0, startScreen.Y + itemH / 2.0);
 
-                    double auraRadiusPx = Math.Max(noteW, noteH) * 1.6;
-                    Color fieldHue = Color.Parse(note.FieldHueHex);
+                    double auraRadiusPx = Math.Max(itemW, itemH) * 1.6;
+                    Color fieldHue = Color.Parse(item.FieldHueHex);
                     Color auraCenterColor = Color.FromArgb((byte)(255 * Tokens.FieldAlphaMax * 0.4), fieldHue.R, fieldHue.G, fieldHue.B);
                     Color auraOuterColor = Color.FromArgb(0, fieldHue.R, fieldHue.G, fieldHue.B);
 
@@ -179,23 +179,23 @@ namespace GroveApp.Engine
             // 3. Layer 2: Cell Presence Perimeter Rings (--field-perimeter-width = 1.5px) (LOD Shedding below 3px)
             if (projectedCellSize >= 3.0)
             {
-                foreach (var note in noteList)
+                foreach (var item in itemList)
                 {
-                    if (note.CellX + note.SizeCells < minCellX || note.CellX > maxCellX ||
-                        note.CellY + note.SizeCells < minCellY || note.CellY > maxCellY)
+                    if (item.CellX + item.CellWidth < minCellX || item.CellX > maxCellX ||
+                        item.CellY + item.CellHeight < minCellY || item.CellY > maxCellY)
                     {
                         continue;
                     }
 
-                    Color perimeterHue = Color.Parse(note.FieldHueHex);
-                    double alpha = note.IsSelected ? Tokens.FieldPerimeterSelected : Tokens.FieldPerimeterInk;
+                    Color perimeterHue = Color.Parse(item.FieldHueHex);
+                    double alpha = item.IsSelected ? Tokens.FieldPerimeterSelected : Tokens.FieldPerimeterInk;
                     Color lineClr = Color.FromArgb((byte)(255 * alpha), perimeterHue.R, perimeterHue.G, perimeterHue.B);
                     var perimeterPen = new Pen(new SolidColorBrush(lineClr), Tokens.FieldPerimeterWidth * Math.Max(0.5, zoom));
 
-                    int startX = note.CellX;
-                    int endX = note.CellX + note.SizeCells - 1;
-                    int startY = note.CellY;
-                    int endY = note.CellY + note.SizeCells - 1;
+                    int startX = item.CellX;
+                    int endX = item.CellX + item.CellWidth - 1;
+                    int startY = item.CellY;
+                    int endY = item.CellY + item.CellHeight - 1;
 
                     Point topLeftScreen = worldToScreen(new Point(startX * cellSize, startY * cellSize));
                     Point bottomRightScreen = worldToScreen(new Point((endX + 1) * cellSize, (endY + 1) * cellSize));
