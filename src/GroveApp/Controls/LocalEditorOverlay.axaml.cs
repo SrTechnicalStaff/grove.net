@@ -167,6 +167,19 @@ namespace GroveApp.Controls
                     title += " •";
                 }
 
+                var tabStack = new StackPanel
+                {
+                    Orientation = Avalonia.Layout.Orientation.Horizontal,
+                    Spacing = 6
+                };
+
+                var icon = new FluentAvalonia.UI.Controls.SymbolIcon
+                {
+                    Symbol = FluentAvalonia.UI.Controls.Symbol.Document,
+                    FontSize = 11,
+                    Foreground = isActive ? Colors.SignalInteractionBrush : Colors.TextSecondaryBrush
+                };
+
                 var textBlock = new TextBlock
                 {
                     Text = title,
@@ -176,7 +189,10 @@ namespace GroveApp.Controls
                     Foreground = isActive ? new SolidColorBrush(Color.Parse("#EAEAEA")) : Colors.TextSecondaryBrush
                 };
 
-                tabButton.Content = textBlock;
+                tabStack.Children.Add(icon);
+                tabStack.Children.Add(textBlock);
+
+                tabButton.Content = tabStack;
                 tabButton.Click += (s, e) => SelectTab(index);
 
                 TabStripPanel.Children.Add(tabButton);

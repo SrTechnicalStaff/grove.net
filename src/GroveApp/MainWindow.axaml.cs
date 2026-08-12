@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using FluentAvalonia.UI.Windowing;
 using GroveApp.Controls;
 using GroveApp.DesignSystem;
 using GroveApp.Engine;
@@ -12,13 +13,33 @@ using Colors = GroveApp.DesignSystem.Colors;
 
 namespace GroveApp
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow : AppWindow
     {
         private readonly KeybindModule _keybindModule = new();
 
         public MainWindow()
         {
             InitializeComponent();
+
+            // Enable Windows 11 Mica / Acrylic backdrop materials where supported
+            TransparencyLevelHint = new[]
+            {
+                WindowTransparencyLevel.Mica,
+                WindowTransparencyLevel.AcrylicBlur,
+                WindowTransparencyLevel.Blur,
+                WindowTransparencyLevel.None
+            };
+
+            // Enable FluentAvalonia Dark Titlebar & Extend Content Into Titlebar
+            TitleBar.ExtendsContentIntoTitleBar = true;
+            TitleBar.ButtonBackgroundColor = Colors.SurfaceChrome;
+            TitleBar.ButtonForegroundColor = Colors.NoteText;
+            TitleBar.ButtonHoverBackgroundColor = Color.Parse("#242428");
+            TitleBar.ButtonHoverForegroundColor = Colors.NoteText;
+            TitleBar.ButtonPressedBackgroundColor = Color.Parse("#1C1C20");
+            TitleBar.ButtonPressedForegroundColor = Colors.NoteText;
+            TitleBar.ButtonInactiveBackgroundColor = Colors.SurfaceChrome;
+            TitleBar.ButtonInactiveForegroundColor = Color.Parse("#80F4F4F2");
 
             // Wire GridCanvasControl events
             CanvasControl.NoteSelected += OnNoteSelected;

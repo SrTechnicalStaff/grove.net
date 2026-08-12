@@ -1,8 +1,23 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sty="using:FluentAvalonia.Styling"
+             xmlns:ds="clr-namespace:GroveApp.DesignSystem"
              x:Class="GroveApp.App"
              RequestedThemeVariant="Dark">
     <Application.Styles>
-        <FluentTheme />
+        <sty:FluentAvaloniaTheme CustomAccentColor="#96B6F8" PreferUserAccentColor="False" />
     </Application.Styles>
+    <Application.Resources>
+        <ResourceDictionary>
+            <!-- Mapping FluentAvalonia theme brushes & Grove Design System tokens -->
+            <SolidColorBrush x:Key="SurfaceGridBrush" Color="{x:Static ds:Colors.SurfaceGrid}" />
+            <SolidColorBrush x:Key="SurfaceChromeBrush" Color="{x:Static ds:Colors.SurfaceChrome}" />
+            <SolidColorBrush x:Key="SurfaceNestedBrush" Color="{x:Static ds:Colors.SurfaceNested}" />
+            <SolidColorBrush x:Key="SignalInteractionBrush" Color="{x:Static ds:Colors.SignalInteraction}" />
+            <SolidColorBrush x:Key="SignalRefusalBrush" Color="{x:Static ds:Colors.SignalRefusal}" />
+            <SolidColorBrush x:Key="KEditBorderBrush" Color="{x:Static ds:Colors.KEditBorder}" />
+            <SolidColorBrush x:Key="TextPrimaryBrush" Color="{x:Static ds:Colors.InkPrimary}" />
+            <SolidColorBrush x:Key="TextSecondaryBrush" Color="{x:Static ds:Colors.InkSecondary}" />
+        </ResourceDictionary>
+    </Application.Resources>
 </Application>

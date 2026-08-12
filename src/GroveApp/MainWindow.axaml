@@ -1,12 +1,14 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:controls="clr-namespace:GroveApp.Controls"
-        xmlns:ds="clr-namespace:GroveApp.DesignSystem"
-        x:Class="GroveApp.MainWindow"
-        Title="Grove v9 — Spatial Grid Desktop Engine"
-        Width="1280" Height="800"
-        WindowStartupLocation="CenterScreen"
-        Background="{x:Static ds:Colors.SurfaceGridHex}">
+<fa:AppWindow xmlns="https://github.com/avaloniaui"
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:fa="using:FluentAvalonia.UI.Windowing"
+              xmlns:ui="using:FluentAvalonia.UI.Controls"
+              xmlns:controls="clr-namespace:GroveApp.Controls"
+              xmlns:ds="clr-namespace:GroveApp.DesignSystem"
+              x:Class="GroveApp.MainWindow"
+              Title="Grove v9 — Spatial Grid Desktop Engine"
+              Width="1280" Height="800"
+              WindowStartupLocation="CenterScreen"
+              Background="{x:Static ds:Colors.SurfaceGridHex}">
 
     <Grid>
         <!-- PLANE 0: Infinite Spatial Grid Canvas -->
@@ -19,42 +21,59 @@
         <!-- Quick Note Overlay (Viewport-Centered Slate) -->
         <controls:QuickNoteOverlay x:Name="QuickNote" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center" />
 
-        <!-- Minimal Grid Telemetry Strip at Bottom -->
-        <Border HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Height="28"
+        <!-- Minimal Grid Telemetry Strip at Bottom (FluentAvalonia Styled) -->
+        <Border HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Height="32"
                 Background="{x:Static ds:Colors.SurfaceChromeHex}"
                 BorderBrush="{x:Static ds:Colors.GridMajorLineHex}"
                 BorderThickness="0,1,0,0">
             <Grid ColumnDefinitions="Auto, *, Auto" Margin="14,0">
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="20" VerticalAlignment="Center">
-                    <TextBlock Name="TxtCellCoord" Text="CELL: (0, 0)"
-                               Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
-                               FontSize="{x:Static ds:Typography.SizeLabel}"
-                               FontFamily="{x:Static ds:Typography.FontFamilyMono}"
-                               LetterSpacing="0.8" />
-                    <TextBlock Name="TxtZoom" Text="ZOOM: 100%"
-                               Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
-                               FontSize="{x:Static ds:Typography.SizeLabel}"
-                               FontFamily="{x:Static ds:Typography.FontFamilyMono}"
-                               LetterSpacing="0.8" />
-                    <TextBlock Name="TxtNoteCount" Text="NOTES: 3"
-                               Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
-                               FontSize="{x:Static ds:Typography.SizeLabel}"
-                               FontFamily="{x:Static ds:Typography.FontFamilyMono}"
-                               LetterSpacing="0.8" />
-                    <TextBlock Name="TxtLedgerCount" Text="LEDGER METADATA: 0"
-                               Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
-                               FontSize="{x:Static ds:Typography.SizeLabel}"
-                               FontFamily="{x:Static ds:Typography.FontFamilyMono}"
-                               LetterSpacing="0.8" />
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="18" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <ui:SymbolIcon Symbol="Target" FontSize="12" Foreground="{x:Static ds:Colors.SignalInteractionBrush}" />
+                        <TextBlock Name="TxtCellCoord" Text="CELL: (0, 0)"
+                                   Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
+                                   FontSize="{x:Static ds:Typography.SizeLabel}"
+                                   FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                                   LetterSpacing="0.8" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <ui:SymbolIcon Symbol="Find" FontSize="12" Foreground="{x:Static ds:Colors.SignalInteractionBrush}" />
+                        <TextBlock Name="TxtZoom" Text="ZOOM: 100%"
+                                   Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
+                                   FontSize="{x:Static ds:Typography.SizeLabel}"
+                                   FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                                   LetterSpacing="0.8" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <ui:SymbolIcon Symbol="Document" FontSize="12" Foreground="{x:Static ds:Colors.SignalInteractionBrush}" />
+                        <TextBlock Name="TxtNoteCount" Text="NOTES: 3"
+                                   Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
+                                   FontSize="{x:Static ds:Typography.SizeLabel}"
+                                   FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                                   LetterSpacing="0.8" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <ui:SymbolIcon Symbol="Tag" FontSize="12" Foreground="{x:Static ds:Colors.SignalInteractionBrush}" />
+                        <TextBlock Name="TxtLedgerCount" Text="LEDGER METADATA: 0"
+                                   Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
+                                   FontSize="{x:Static ds:Typography.SizeLabel}"
+                                   FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                                   LetterSpacing="0.8" />
+                    </StackPanel>
                 </StackPanel>
 
-                <TextBlock Grid.Column="2"
-                           Text="N: Quick Note • Middle/Right Drag: Pan • Wheel: Zoom • Double Click: Edit Note • Keys 2-4: Colors • A: Anchor • Del: Delete"
-                           Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
-                           FontSize="{x:Static ds:Typography.SizeLabel}"
-                           VerticalAlignment="Center"
-                           FontFamily="{x:Static ds:Typography.FontFamilyUi}" />
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <ui:SymbolIcon Symbol="Help" FontSize="12" Foreground="{x:Static ds:Colors.TextMetaBrush}" />
+                    <TextBlock Text="N: Quick Note • Middle/Right Drag: Pan • Wheel: Zoom • Double Click: Edit Note • Keys 2-4: Colors • A: Anchor • Del: Delete"
+                               Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
+                               FontSize="{x:Static ds:Typography.SizeLabel}"
+                               VerticalAlignment="Center"
+                               FontFamily="{x:Static ds:Typography.FontFamilyUi}" />
+                </StackPanel>
             </Grid>
         </Border>
     </Grid>
-</Window>
+</fa:AppWindow>

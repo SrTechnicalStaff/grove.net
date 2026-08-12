@@ -322,9 +322,22 @@ namespace GroveApp.Controls
                         Spacing = 16
                     };
 
+                    var editStack = new StackPanel
+                    {
+                        Orientation = Avalonia.Layout.Orientation.Horizontal,
+                        Spacing = 4
+                    };
+                    editStack.Children.Add(new FluentAvalonia.UI.Controls.SymbolIcon
+                    {
+                        Symbol = FluentAvalonia.UI.Controls.Symbol.Edit,
+                        FontSize = 11,
+                        Foreground = isEditingActive ? Colors.TextUnavailableBrush : Colors.TextSecondaryBrush
+                    });
+                    editStack.Children.Add(new TextBlock { Text = "Edit" });
+
                     var btnEdit = new Button
                     {
-                        Content = "Edit",
+                        Content = editStack,
                         Background = Brushes.Transparent,
                         BorderThickness = new Thickness(0),
                         Foreground = isEditingActive ? Colors.TextUnavailableBrush : Colors.TextSecondaryBrush,
@@ -334,9 +347,22 @@ namespace GroveApp.Controls
                     };
                     btnEdit.Click += (s, e) => StartEditingItem(item);
 
+                    var discardStack = new StackPanel
+                    {
+                        Orientation = Avalonia.Layout.Orientation.Horizontal,
+                        Spacing = 4
+                    };
+                    discardStack.Children.Add(new FluentAvalonia.UI.Controls.SymbolIcon
+                    {
+                        Symbol = FluentAvalonia.UI.Controls.Symbol.Delete,
+                        FontSize = 11,
+                        Foreground = isEditingActive ? Colors.TextUnavailableBrush : Colors.TextSecondaryBrush
+                    });
+                    discardStack.Children.Add(new TextBlock { Text = "Discard" });
+
                     var btnDiscard = new Button
                     {
-                        Content = "Discard",
+                        Content = discardStack,
                         Background = Brushes.Transparent,
                         BorderThickness = new Thickness(0),
                         Foreground = isEditingActive ? Colors.TextUnavailableBrush : Colors.TextSecondaryBrush,
