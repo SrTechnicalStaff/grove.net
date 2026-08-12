@@ -224,6 +224,20 @@ namespace GroveApp.Engine
         }
 
         /// <summary>
+        /// Recalculates field energy, composite colors, and metadata sources strictly for specified active aura envelope cells.
+        /// Implements Spatial Aura Bounding-Box Culling (d <= 6 cells).
+        /// </summary>
+        public void RecalculateField(IEnumerable<GridNote> notes, IEnumerable<(int col, int row)> activeCells)
+        {
+            var noteList = notes as List<GridNote> ?? notes.ToList();
+            foreach (var (c, r) in activeCells)
+            {
+                UpdateCell(c, r, noteList);
+            }
+            PerimeterSubscriber.RecomputePerimeter();
+        }
+
+        /// <summary>
         /// Updates a single cell's accumulated energy, weight formula W_i = M_i / (1 + 0.4 * d_i^2), and notifies subscribers.
         /// </summary>
         public void UpdateCell(int col, int row, IEnumerable<GridNote> notes)
@@ -252,6 +266,9 @@ namespace GroveApp.Engine
                     dy = note.CellY - row;
                 else if (row >= note.CellY + note.SizeCells)
                     dy = row - (note.CellY + note.SizeCells - 1);
+
+                // Spatial aura bounding-box culling check: d <= 6 cells
+                if (dx > 6 || dy > 6) continue;
 
                 double distSq = dx * dx + dy * dy;
                 double mass = Tokens.FieldGain; // M_i

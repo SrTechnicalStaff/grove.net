@@ -26,9 +26,48 @@ namespace GroveApp.Controls
 
         // Camera Module & State
         public CameraModule Camera { get; } = new CameraModule();
-        public double CameraX { get => Camera.CameraX; set => Camera.CameraX = value; }
-        public double CameraY { get => Camera.CameraY; set => Camera.CameraY = value; }
-        public double Zoom { get => Camera.Zoom; set => Camera.Zoom = value; }
+        public double CameraX
+        {
+            get => Camera.CameraX;
+            set
+            {
+                if (Math.Abs(Camera.CameraX - value) > 1e-6)
+                {
+                    Camera.CameraX = value;
+                    InvalidateVisual();
+                    CameraChanged?.Invoke();
+                }
+            }
+        }
+
+        public double CameraY
+        {
+            get => Camera.CameraY;
+            set
+            {
+                if (Math.Abs(Camera.CameraY - value) > 1e-6)
+                {
+                    Camera.CameraY = value;
+                    InvalidateVisual();
+                    CameraChanged?.Invoke();
+                }
+            }
+        }
+
+        public double Zoom
+        {
+            get => Camera.Zoom;
+            set
+            {
+                double clamped = Math.Clamp(value, CameraModule.MinZoom, CameraModule.MaxZoom);
+                if (Math.Abs(Camera.Zoom - clamped) > 1e-6)
+                {
+                    Camera.Zoom = clamped;
+                    InvalidateVisual();
+                    CameraChanged?.Invoke();
+                }
+            }
+        }
 
         // Pointer & Cursor State
         public Point MousePointerScreen { get; private set; }
