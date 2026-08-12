@@ -63,10 +63,11 @@ namespace GroveApp.DesignSystem
         public const double FieldPerimeterSelected = 0.80;
         public const double CursorRing = 2.0;
         public const double CursorRingInk = 0.88;
-        public const double CursorFillGain = 0.22;
+        public const double CursorFillGain = 0.132; // 13.2% cursor fill
         public const double CursorSteady = 0.6;
-        public const double CursorTrailDecay = 0.84;
+        public const double CursorTrailDecay = 0.84; // 18-step decay factor per frame
         public const double CursorTrailMin = 0.03;
+        public const int CursorTrailMaxSteps = 18;
 
         // Distance Thresholds (Projected Cell Size in px)
         public const double TierStandinDemote = 18.0;

@@ -5,7 +5,9 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using GroveApp.Controls;
+using GroveApp.DesignSystem;
 using GroveApp.Models;
+using Colors = GroveApp.DesignSystem.Colors;
 
 namespace GroveApp
 {
@@ -28,13 +30,16 @@ namespace GroveApp
             // Handle Keyboard Input
             KeyDown += OnWindowKeyDown;
 
-            // Update HUD status periodically
+            // Update HUD status telemetry periodically
             var timer = new Avalonia.Threading.DispatcherTimer
             {
                 Interval = TimeSpan.FromMilliseconds(50)
             };
             timer.Tick += (s, e) => UpdateHudStatus();
             timer.Start();
+
+            UpdateToolButtonStyles();
+            UpdateColorSwatchStyles();
         }
 
         private void OnCanvasPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -49,15 +54,15 @@ namespace GroveApp
 
         private void UpdateHudStatus()
         {
-            TxtCellCoord.Text = $"Cell: ({CanvasControl.CursorCellX}, {CanvasControl.CursorCellY})";
-            TxtZoom.Text = $"Zoom: {(int)(CanvasControl.Zoom * 100)}%";
-            TxtNoteCount.Text = $"Notes: {CanvasControl.Notes.Count}";
+            TxtCellCoord.Text = $"CELL: ({CanvasControl.CursorCellX}, {CanvasControl.CursorCellY})";
+            TxtZoom.Text = $"ZOOM: {(int)(CanvasControl.Zoom * 100)}%";
+            TxtNoteCount.Text = $"NOTES: {CanvasControl.Notes.Count}";
         }
 
         private void OnNoteSelected(GridNote note)
         {
-            // Focus canvas when note is selected
             CanvasControl.Focus();
+            UpdateColorSwatchStyles();
         }
 
         private void OnNoteDoubleClicked(GridNote note)
@@ -83,8 +88,8 @@ namespace GroveApp
             Point startScreen = CanvasControl.WorldToScreen(startWorld);
 
             EditorOverlay.Margin = new Thickness(
-                Math.Clamp(startScreen.X, 20, Math.Max(20, Bounds.Width - 320)),
-                Math.Clamp(startScreen.Y, 50, Math.Max(50, Bounds.Height - 200)),
+                Math.Clamp(startScreen.X, 20, Math.Max(20, Bounds.Width - 340)),
+                Math.Clamp(startScreen.Y, 50, Math.Max(50, Bounds.Height - 220)),
                 0, 0
             );
 
@@ -113,21 +118,86 @@ namespace GroveApp
             CanvasControl.Focus();
         }
 
-        // Event Handlers for Buttons & Keys
-        private void BtnAddNote_Click(object? sender, RoutedEventArgs e)
+        // Active Tool Selector Mechanics
+        private void SetActiveTool(string toolName)
         {
-            OnEmptyCellDoubleClicked(CanvasControl.CursorCellX, CanvasControl.CursorCellY);
+            CanvasControl.ActiveTool = toolName;
+            UpdateToolButtonStyles();
         }
 
-        private void BtnColorViolet_Click(object? sender, RoutedEventArgs e) => SetSelectedNoteColor(NoteColor.Violet);
-        private void BtnColorClay_Click(object? sender, RoutedEventArgs e) => SetSelectedNoteColor(NoteColor.Clay);
-        private void BtnColorSlateBlue_Click(object? sender, RoutedEventArgs e) => SetSelectedNoteColor(NoteColor.SlateBlue);
+        private void UpdateToolButtonStyles()
+        {
+            string tool = CanvasControl.ActiveTool;
+            SetToolBtnState(BtnToolSelect, tool == "SELECT", Colors.SignalInteraction);
+            SetToolBtnState(BtnToolNote, tool == "NOTE", Colors.NoteViolet);
+            SetToolBtnState(BtnToolAnchor, tool == "ANCHOR", Colors.SignalAuthoredContext);
+            SetToolBtnState(BtnToolResize, tool == "RESIZE", Colors.NoteClay);
+        }
 
+        private void SetToolBtnState(Button btn, bool isActive, Color activeColor)
+        {
+            if (isActive)
+            {
+                btn.Background = new SolidColorBrush(Color.FromArgb(40, activeColor.R, activeColor.G, activeColor.B));
+                btn.Foreground = new SolidColorBrush(activeColor);
+                btn.BorderBrush = new SolidColorBrush(activeColor);
+                btn.BorderThickness = new Thickness(1);
+            }
+            else
+            {
+                btn.Background = Colors.SurfaceChromeBrush;
+                btn.Foreground = Colors.TextPrimaryBrush;
+                btn.BorderBrush = Colors.HudSlateBorderBrush;
+                btn.BorderThickness = new Thickness(1);
+            }
+        }
+
+        // Color Swatch Selection Mechanics
         private void SetSelectedNoteColor(NoteColor color)
         {
             if (CanvasControl.SelectedNote != null)
             {
                 CanvasControl.SelectedNote.Color = color;
+                CanvasControl.InvalidateVisual();
+            }
+            UpdateColorSwatchStyles();
+        }
+
+        private void UpdateColorSwatchStyles()
+        {
+            NoteColor activeCol = CanvasControl.SelectedNote?.Color ?? NoteColor.Violet;
+
+            BtnColorViolet.BorderBrush = activeCol == NoteColor.Violet ? Colors.SignalInteractionBrush : Colors.ContainmentEdgeBrush;
+            BtnColorViolet.BorderThickness = new Thickness(activeCol == NoteColor.Violet ? 2 : 1);
+
+            BtnColorClay.BorderBrush = activeCol == NoteColor.Clay ? Colors.SignalInteractionBrush : Colors.ContainmentEdgeBrush;
+            BtnColorClay.BorderThickness = new Thickness(activeCol == NoteColor.Clay ? 2 : 1);
+
+            BtnColorSlateBlue.BorderBrush = activeCol == NoteColor.SlateBlue ? Colors.SignalInteractionBrush : Colors.ContainmentEdgeBrush;
+            BtnColorSlateBlue.BorderThickness = new Thickness(activeCol == NoteColor.SlateBlue ? 2 : 1);
+        }
+
+        // Action Handlers
+        private void BtnAddNote_Click(object? sender, RoutedEventArgs e)
+        {
+            OnEmptyCellDoubleClicked(CanvasControl.CursorCellX, CanvasControl.CursorCellY);
+        }
+
+        private void BtnToggleAnchor_Click(object? sender, RoutedEventArgs e)
+        {
+            if (CanvasControl.SelectedNote != null)
+            {
+                CanvasControl.SelectedNote.IsAnchored = !CanvasControl.SelectedNote.IsAnchored;
+                CanvasControl.InvalidateVisual();
+            }
+        }
+
+        private void BtnDelete_Click(object? sender, RoutedEventArgs e)
+        {
+            if (CanvasControl.SelectedNote != null)
+            {
+                CanvasControl.Notes.Remove(CanvasControl.SelectedNote);
+                CanvasControl.SelectedNote = null;
                 CanvasControl.InvalidateVisual();
             }
         }
@@ -152,15 +222,14 @@ namespace GroveApp
             CanvasControl.InvalidateVisual();
         }
 
-        private void BtnDelete_Click(object? sender, RoutedEventArgs e)
-        {
-            if (CanvasControl.SelectedNote != null)
-            {
-                CanvasControl.Notes.Remove(CanvasControl.SelectedNote);
-                CanvasControl.SelectedNote = null;
-                CanvasControl.InvalidateVisual();
-            }
-        }
+        private void BtnToolSelect_Click(object? sender, RoutedEventArgs e) => SetActiveTool("SELECT");
+        private void BtnToolNote_Click(object? sender, RoutedEventArgs e) => SetActiveTool("NOTE");
+        private void BtnToolAnchor_Click(object? sender, RoutedEventArgs e) => SetActiveTool("ANCHOR");
+        private void BtnToolResize_Click(object? sender, RoutedEventArgs e) => SetActiveTool("RESIZE");
+
+        private void BtnColorViolet_Click(object? sender, RoutedEventArgs e) => SetSelectedNoteColor(NoteColor.Violet);
+        private void BtnColorClay_Click(object? sender, RoutedEventArgs e) => SetSelectedNoteColor(NoteColor.Clay);
+        private void BtnColorSlateBlue_Click(object? sender, RoutedEventArgs e) => SetSelectedNoteColor(NoteColor.SlateBlue);
 
         private void BtnSaveEdit_Click(object? sender, RoutedEventArgs e) => CommitEdit();
         private void BtnCancelEdit_Click(object? sender, RoutedEventArgs e) => CancelEdit();
@@ -193,6 +262,21 @@ namespace GroveApp
                     CanvasControl.InvalidateVisual();
                 }
             }
+            else if (e.Key == Key.V) SetActiveTool("SELECT");
+            else if (e.Key == Key.N) SetActiveTool("NOTE");
+            else if (e.Key == Key.A)
+            {
+                if (CanvasControl.SelectedNote != null)
+                {
+                    CanvasControl.SelectedNote.IsAnchored = !CanvasControl.SelectedNote.IsAnchored;
+                    CanvasControl.InvalidateVisual();
+                }
+                else
+                {
+                    SetActiveTool("ANCHOR");
+                }
+            }
+            else if (e.Key == Key.R) SetActiveTool("RESIZE");
             else if (e.Key == Key.D2 || e.Key == Key.NumPad2) SetSelectedNoteColor(NoteColor.Violet);
             else if (e.Key == Key.D3 || e.Key == Key.NumPad3) SetSelectedNoteColor(NoteColor.Clay);
             else if (e.Key == Key.D4 || e.Key == Key.NumPad4) SetSelectedNoteColor(NoteColor.SlateBlue);

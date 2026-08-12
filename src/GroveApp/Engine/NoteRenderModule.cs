@@ -1,0 +1,291 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+
+using Avalonia;
+using Avalonia.Media;
+using GroveApp.DesignSystem;
+using GroveApp.Models;
+using Colors = GroveApp.DesignSystem.Colors;
+
+namespace GroveApp.Engine
+{
+    /// <summary>
+    /// Engine module for rendering notes matching docs/design_catalogue/src/grid-plane/02-note.html
+    /// and Note.md specifications exactly.
+    /// </summary>
+    public class NoteRenderModule
+    {
+        public void RenderNotes(
+            DrawingContext context,
+            Func<Point, Point> worldToScreen,
+            double cellSize,
+            double zoom,
+            int minCellX,
+            int maxCellX,
+            int minCellY,
+            int maxCellY,
+            IEnumerable<GridNote> notes,
+            GridNote? selectedNote,
+            GridNote? hoveredNote)
+        {
+            double projectedCellSize = cellSize * zoom;
+
+            foreach (var note in notes)
+            {
+                if (note.CellX + note.SizeCells < minCellX || note.CellX > maxCellX ||
+                    note.CellY + note.SizeCells < minCellY || note.CellY > maxCellY)
+                {
+                    continue;
+                }
+
+                Point startScreen = worldToScreen(new Point(note.CellX * cellSize, note.CellY * cellSize));
+                Point endScreen = worldToScreen(new Point((note.CellX + note.SizeCells) * cellSize, (note.CellY + note.SizeCells) * cellSize));
+
+                double rectW = endScreen.X - startScreen.X;
+                double rectH = endScreen.Y - startScreen.Y;
+                Rect noteRect = new Rect(startScreen.X, startScreen.Y, rectW, rectH);
+
+                bool isSelected = note.IsSelected || note == selectedNote;
+                bool isHovered = note.IsHovered || note == hoveredNote;
+
+                // -------------------------------------------------------------
+                // Distance Tier Representation Logic (Note.md)
+                // -------------------------------------------------------------
+                if (projectedCellSize < Tokens.TierStandinPromote) // < 28px: Stand-in Tier
+                {
+                    RenderStandInTier(context, note, noteRect, zoom, isSelected);
+                }
+                else if (projectedCellSize < Tokens.TierDetailPromote) // 28px <= size < 72px: Stepped Tier
+                {
+                    RenderSteppedTier(context, note, noteRect, zoom, isSelected);
+                }
+                else // >= 72px: Working Tier
+                {
+                    RenderWorkingTier(context, note, noteRect, zoom, isSelected, isHovered);
+                }
+            }
+        }
+
+        private void RenderWorkingTier(
+            DrawingContext context,
+            GridNote note,
+            Rect noteRect,
+            double zoom,
+            bool isSelected,
+            bool isHovered)
+        {
+            // 1. Authored Fill (Opaque flat fill: Violet #6E62A6, Clay #B0524E, Slate Blue #4E6E9C)
+            var fillBrush = new SolidColorBrush(Color.Parse(note.FillHex));
+            context.FillRectangle(fillBrush, noteRect);
+
+            // 2. 1px Inset Containment Edge in #6E6E6A / --edge-on-color
+            var insetEdgePen = new Pen(Colors.ContainmentEdgeBrush, Tokens.StrokeContainment);
+            context.DrawRectangle(null, insetEdgePen, noteRect.Deflate(0.5));
+
+            // 3. Selection Outline (2px --signal-interaction #96B6F8 offset by 3px per Shape.md)
+            if (isSelected)
+            {
+                Rect selRect = noteRect.Inflate(3.0 * zoom);
+                var selectionPen = new Pen(Colors.SignalInteractionBrush, Tokens.StrokeState * Math.Max(0.8, zoom));
+                context.DrawRectangle(null, selectionPen, selRect);
+            }
+
+            // 4. Anchor Ribbon (Tab notched at foot, filled #9E8CEA)
+            if (note.IsAnchored)
+            {
+                RenderAnchorRibbon(context, noteRect, zoom);
+            }
+
+            // 5. Text Block (#F4F4F2 ink, --f-ui Inter 500, --t-body 15px, --lh-snug 1.42, 16px 15px padding)
+            if (!string.IsNullOrEmpty(note.Text))
+            {
+                double fontSize = Math.Max(9.0, Typography.SizeBody * zoom);
+                double padTop = 16.0 * zoom;
+                double padLeft = 15.0 * zoom;
+
+                var formattedText = new FormattedText(
+                    note.Text,
+                    CultureInfo.CurrentCulture,
+                    FlowDirection.LeftToRight,
+                    new Typeface(Typography.UiFamily, FontStyle.Normal, Typography.WeightNoteText),
+                    fontSize,
+                    Colors.NoteTextBrush
+                )
+                {
+                    MaxTextWidth = Math.Max(10.0, noteRect.Width - (padLeft * 2.0)),
+                    MaxTextHeight = Math.Max(10.0, noteRect.Height - (padTop * 2.0)),
+                    LineHeight = fontSize * Typography.LineHeightSnug
+                };
+
+                Point textPos = new Point(noteRect.X + padLeft, noteRect.Y + padTop);
+                context.DrawText(formattedText, textPos);
+            }
+
+            // 6. Hover / Focus Edit Affordance Pill (Top-Right inset 8px, EDIT uppercase mono)
+            if (isHovered || isSelected)
+            {
+                RenderEditAffordance(context, noteRect, zoom);
+                RenderResizeCorner(context, noteRect, zoom);
+            }
+        }
+
+        private void RenderSteppedTier(
+            DrawingContext context,
+            GridNote note,
+            Rect noteRect,
+            double zoom,
+            bool isSelected)
+        {
+            // Stepped Tier: Drops inset containment edge and edit affordances, keeps authored fill and full text set at --t-body
+            var fillBrush = new SolidColorBrush(Color.Parse(note.FillHex));
+            context.FillRectangle(fillBrush, noteRect);
+
+            if (isSelected)
+            {
+                Rect selRect = noteRect.Inflate(3.0 * zoom);
+                var selectionPen = new Pen(Colors.SignalInteractionBrush, Tokens.StrokeState * Math.Max(0.8, zoom));
+                context.DrawRectangle(null, selectionPen, selRect);
+            }
+
+            if (note.IsAnchored)
+            {
+                RenderAnchorRibbon(context, noteRect, zoom);
+            }
+
+            if (!string.IsNullOrEmpty(note.Text))
+            {
+                double fontSize = Math.Max(6.0, Typography.SizeBody * zoom);
+                double padTop = 16.0 * zoom;
+                double padLeft = 15.0 * zoom;
+
+                var formattedText = new FormattedText(
+                    note.Text,
+                    CultureInfo.CurrentCulture,
+                    FlowDirection.LeftToRight,
+                    new Typeface(Typography.UiFamily, FontStyle.Normal, Typography.WeightNoteText),
+                    fontSize,
+                    Colors.NoteTextBrush
+                )
+                {
+                    MaxTextWidth = Math.Max(5.0, noteRect.Width - (padLeft * 2.0)),
+                    MaxTextHeight = Math.Max(5.0, noteRect.Height - (padTop * 2.0)),
+                    LineHeight = fontSize * Typography.LineHeightSnug
+                };
+
+                Point textPos = new Point(noteRect.X + padLeft, noteRect.Y + padTop);
+                context.DrawText(formattedText, textPos);
+            }
+        }
+
+        private void RenderStandInTier(
+            DrawingContext context,
+            GridNote note,
+            Rect noteRect,
+            double zoom,
+            bool isSelected)
+        {
+            // Stand-in Tier: Authored fill block, 1px inset edge, and kind-coded written lines mark
+            var fillBrush = new SolidColorBrush(Color.Parse(note.FillHex));
+            context.FillRectangle(fillBrush, noteRect);
+
+            var insetEdgePen = new Pen(Colors.EdgeOnColorBrush, Tokens.StrokeContainment);
+            context.DrawRectangle(null, insetEdgePen, noteRect.Deflate(0.5));
+
+            if (isSelected)
+            {
+                Rect selRect = noteRect.Inflate(3.0 * zoom);
+                var selectionPen = new Pen(Colors.SignalInteractionBrush, Tokens.StrokeState * Math.Max(0.8, zoom));
+                context.DrawRectangle(null, selectionPen, selRect);
+            }
+
+            // Kind-coded written lines mark: 3 light horizontal strokes in --ink-primary
+            var markPen = new Pen(Colors.TextPrimaryBrush, Math.Max(1.0, 2.0 * zoom));
+            double stroke1Y = noteRect.Y + noteRect.Height * 0.26;
+            double stroke2Y = noteRect.Y + noteRect.Height * 0.46;
+            double stroke3Y = noteRect.Y + noteRect.Height * 0.66;
+            double strokeLeft = noteRect.X + noteRect.Width * 0.14;
+
+            context.DrawLine(markPen, new Point(strokeLeft, stroke1Y), new Point(strokeLeft + noteRect.Width * 0.60, stroke1Y));
+            context.DrawLine(markPen, new Point(strokeLeft, stroke2Y), new Point(strokeLeft + noteRect.Width * 0.46, stroke2Y));
+            context.DrawLine(markPen, new Point(strokeLeft, stroke3Y), new Point(strokeLeft + noteRect.Width * 0.60, stroke3Y));
+        }
+
+        private void RenderAnchorRibbon(DrawingContext context, Rect noteRect, double zoom)
+        {
+            // Anchor ribbon tab geometry per Marks.md:
+            // 12px x 22px tab, left edge inset 16px (--sp-md) from Note left edge,
+            // hanging 5px above top edge and 17px down over head.
+            double ribbonW = 12.0 * Math.Max(0.7, zoom);
+            double ribbonH = 22.0 * Math.Max(0.7, zoom);
+            double leftInset = 16.0 * Math.Max(0.7, zoom);
+            double topHang = 5.0 * Math.Max(0.7, zoom);
+
+            double rx = noteRect.X + leftInset;
+            double ry = noteRect.Y - topHang;
+
+            StreamGeometry geom = new StreamGeometry();
+            using (StreamGeometryContext ctx = geom.Open())
+            {
+                ctx.BeginFigure(new Point(rx, ry), true);
+                ctx.LineTo(new Point(rx + ribbonW, ry));
+                ctx.LineTo(new Point(rx + ribbonW, ry + ribbonH));
+                ctx.LineTo(new Point(rx + ribbonW / 2.0, ry + ribbonH * 0.72)); // Shallow V notch
+                ctx.LineTo(new Point(rx, ry + ribbonH));
+                ctx.EndFigure(true);
+            }
+
+            context.DrawGeometry(Colors.SignalAuthoredContextBrush, null, geom);
+        }
+
+        private void RenderEditAffordance(DrawingContext context, Rect noteRect, double zoom)
+        {
+            // Edit Affordance Pill per Note.md & Marks.md:
+            // Inset --sp-sm (8px) from top & right edges; fill #161618 at 0.72; 1px border #F4F4F2 at 0.62 alpha;
+            // --r-sm (2px); label "EDIT" mono uppercase #F4F4F2, padding 4px 6px.
+            double scale = Math.Max(0.65, zoom);
+            double pillW = 44.0 * scale;
+            double pillH = 20.0 * scale;
+            double insetRight = 8.0 * scale;
+            double insetTop = 8.0 * scale;
+
+            Rect pillRect = new Rect(noteRect.X + noteRect.Width - insetRight - pillW, noteRect.Y + insetTop, pillW, pillH);
+
+            var pillBg = new SolidColorBrush(Color.FromArgb((byte)(255 * 0.72), 22, 22, 24));
+            var pillBorderPen = new Pen(new SolidColorBrush(Color.FromArgb((byte)(255 * Tokens.InkSecondary), 244, 244, 242)), Tokens.StrokeHairline);
+
+            context.FillRectangle(pillBg, pillRect, (float)(Tokens.RadiusSm * scale));
+            context.DrawRectangle(null, pillBorderPen, pillRect, (float)(Tokens.RadiusSm * scale));
+
+            var pillText = new FormattedText(
+                "EDIT",
+                CultureInfo.CurrentCulture,
+                FlowDirection.LeftToRight,
+                new Typeface(Typography.MonoFamily, FontStyle.Normal, Typography.WeightMono),
+                Math.Max(7.5, Typography.SizeMicro * scale),
+                Colors.NoteTextBrush
+            );
+
+            Point textPt = new Point(pillRect.X + 6.0 * scale, pillRect.Y + 3.0 * scale);
+            context.DrawText(pillText, textPt);
+        }
+
+        private void RenderResizeCorner(DrawingContext context, Rect noteRect, double zoom)
+        {
+            // Resize Corner per Marks.md:
+            // 18x18px target at bottom-right corner, two 10px arms of 2px weight meeting at corner.
+            double scale = Math.Max(0.7, zoom);
+            double armLen = 10.0 * scale;
+            double strokeW = Tokens.StrokeState * scale;
+
+            var cornerPen = new Pen(Colors.TextPrimaryBrush, strokeW);
+
+            Point br = new Point(noteRect.X + noteRect.Width - 3.0 * scale, noteRect.Y + noteRect.Height - 3.0 * scale);
+            Point topArm = new Point(br.X, br.Y - armLen);
+            Point leftArm = new Point(br.X - armLen, br.Y);
+
+            context.DrawLine(cornerPen, topArm, br);
+            context.DrawLine(cornerPen, leftArm, br);
+        }
+    }
+}

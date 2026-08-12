@@ -16,6 +16,12 @@ namespace GroveApp.DesignSystem
         public const string PaperHex = "#F5F5F5";
         public const string PaperInkHex = "#1A1A1A";
 
+        // Grid Lines Hex Values
+        public const string GridMajorLineHex = "#1F1F22"; // Major grid line (#1F1F22)
+        public const string GridMinorLineHex = "#151517"; // Minor grid line subdivision (#151517)
+        public const string ContainmentEdgeHex = "#6E6E6A"; // 1px inset containment edge (#6E6E6A)
+        public const string HudSlateBorderHex = "#2D2D2A"; // Slate border (#2D2D2A)
+
         // Signal Hex Values
         public const string SelectHex = "#96B6F8";   // RGB: 150, 182, 248 --signal-interaction
         public const string InvalidHex = "#E2625C";  // RGB: 226, 98, 92   --signal-refusal
@@ -56,8 +62,8 @@ namespace GroveApp.DesignSystem
         public const string SignalAuthoredContextHex = AnchorHex;
 
         // Grid Lines
-        public const string GridMinorInkHex = GridMinHex; // --grid-minor-ink (#161618)
-        public const string GridMajorInkHex = GridMajHex; // --grid-major-ink (#242428)
+        public const string GridMinorInkHex = GridMinorLineHex; // --grid-minor-ink (#151517)
+        public const string GridMajorInkHex = GridMajorLineHex; // --grid-major-ink (#1F1F22)
 
         // Avalonia Color Structs
         public static Color BaseColor => Color.Parse(BaseHex);
@@ -70,6 +76,7 @@ namespace GroveApp.DesignSystem
         public static Color NoteClay => Color.Parse(NoteClayHex);
         public static Color NoteSlateBlue => Color.Parse(NoteSlateBlueHex);
         public static Color NoteText => Color.Parse(NoteTextHex);
+        public static Color ContainmentEdge => Color.Parse(ContainmentEdgeHex);
 
         public static Color SignalInteraction => Color.Parse(SignalInteractionHex);
         public static Color SignalActiveWork => Color.Parse(SignalActiveWorkHex);
@@ -95,6 +102,8 @@ namespace GroveApp.DesignSystem
         public static IBrush NoteClayBrush => new SolidColorBrush(NoteClay);
         public static IBrush NoteSlateBlueBrush => new SolidColorBrush(NoteSlateBlue);
         public static IBrush NoteTextBrush => new SolidColorBrush(NoteText);
+        public static IBrush ContainmentEdgeBrush => new SolidColorBrush(ContainmentEdge);
+        public static IBrush HudSlateBorderBrush => new SolidColorBrush(Color.Parse(HudSlateBorderHex));
 
         public static IBrush SignalInteractionBrush => new SolidColorBrush(SignalInteraction);
         public static IBrush SignalActiveWorkBrush => new SolidColorBrush(SignalActiveWork);

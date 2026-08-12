@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Threading;
 using GroveApp.DesignSystem;
+using GroveApp.Engine;
 using GroveApp.Models;
 using Colors = GroveApp.DesignSystem.Colors;
 
@@ -16,6 +16,12 @@ namespace GroveApp.Controls
     {
         public const double CellSize = Tokens.GridCell;
         public const double MinorCellSize = Tokens.MinorCellSize;
+
+        // Engine Modules
+        private readonly FieldLedgerModule _fieldLedgerModule = new();
+        private readonly NoteRenderModule _noteRenderModule = new();
+        private readonly CursorRenderModule _cursorRenderModule = new();
+        private readonly GridLineModule _gridLineModule = new();
 
         // Camera State
         public double CameraX { get; set; } = 100.0;
@@ -28,7 +34,7 @@ namespace GroveApp.Controls
         public int CursorCellX { get; private set; }
         public int CursorCellY { get; private set; }
 
-        // Spent Cell Trail (Tail Physics)
+        // Spent Cell Trail
         public List<SpentCell> SpentCells { get; } = new();
         private int _lastCursorCellX = int.MinValue;
         private int _lastCursorCellY = int.MinValue;
@@ -37,6 +43,9 @@ namespace GroveApp.Controls
         public List<GridNote> Notes { get; } = new();
         public GridNote? SelectedNote { get; set; }
         public GridNote? HoveredNote { get; set; }
+
+        // Active Tool State
+        public string ActiveTool { get; set; } = "SELECT"; // SELECT, NOTE, ANCHOR, PAN
 
         // Interaction States
         private bool _isPanning;
@@ -68,7 +77,7 @@ namespace GroveApp.Controls
             ClipToBounds = true;
             Focusable = true;
 
-            // 60 FPS Animation loop for smooth tail-physics decay
+            // 60 FPS Animation loop for smooth spent cell trail decay
             _animationTimer = new DispatcherTimer
             {
                 Interval = TimeSpan.FromMilliseconds(16.66)
@@ -81,26 +90,14 @@ namespace GroveApp.Controls
 
         private void SeedSampleData()
         {
-            Notes.Add(new GridNote(0, 0, "Grove v9 Field Ledger\n\nEvery cell derives its background color directly from aura field gravity.", NoteColor.Violet));
+            Notes.Add(new GridNote(0, 0, "Grove v9 Field Ledger\n\nEvery cell derives its background color directly from aura field gravity.", NoteColor.Violet, isAnchored: true));
             Notes.Add(new GridNote(3, 1, "Marquee & Drag Mechanics\n\nDrag notes across cells or sweep a marquee selection box.", NoteColor.Clay));
             Notes.Add(new GridNote(-2, 3, "Spacetime Grid\n\nCell energy accumulates from surrounding content presence.", NoteColor.SlateBlue));
         }
 
         private void OnAnimationTick(object? sender, EventArgs e)
         {
-            bool needsRedraw = false;
-
-            // Decay spent trail energy using design system token parameters
-            for (int i = SpentCells.Count - 1; i >= 0; i--)
-            {
-                SpentCells[i].Energy *= Tokens.CursorTrailDecay;
-                if (SpentCells[i].Energy <= Tokens.CursorTrailMin)
-                {
-                    SpentCells.RemoveAt(i);
-                }
-                needsRedraw = true;
-            }
-
+            bool needsRedraw = _cursorRenderModule.DecayTrail(SpentCells);
             if (needsRedraw)
             {
                 InvalidateVisual();
@@ -171,14 +168,7 @@ namespace GroveApp.Controls
             // Update Spent Cells Trail Physics when cell changes
             if (cx != _lastCursorCellX || cy != _lastCursorCellY)
             {
-                if (_lastCursorCellX != int.MinValue && _lastCursorCellY != int.MinValue)
-                {
-                    SpentCells.Add(new SpentCell(_lastCursorCellX, _lastCursorCellY));
-                    if (SpentCells.Count > 18)
-                    {
-                        SpentCells.RemoveAt(0);
-                    }
-                }
+                _cursorRenderModule.RegisterCellTransition(SpentCells, _lastCursorCellX, _lastCursorCellY);
                 _lastCursorCellX = cx;
                 _lastCursorCellY = cy;
             }
@@ -212,7 +202,7 @@ namespace GroveApp.Controls
                 return;
             }
 
-            // Left Click: Drag Note or Sweep Marquee
+            // Left Click
             if (props.IsLeftButtonPressed)
             {
                 Point clickWorld = ScreenToWorld(e.GetPosition(this));
@@ -221,23 +211,19 @@ namespace GroveApp.Controls
 
                 if (hitNote != null)
                 {
-                    // Start Dragging Note
                     _isDraggingNote = true;
                     _draggedNote = hitNote;
                     _dragOffsetCellX = cx - hitNote.CellX;
                     _dragOffsetCellY = cy - hitNote.CellY;
 
-                    // Update Selection
                     SelectNote(hitNote);
                 }
                 else
                 {
-                    // Start Marquee Selection on empty space
                     _isMarqueeSelecting = true;
                     _marqueeStartWorld = clickWorld;
                     _marqueeCurrentWorld = clickWorld;
 
-                    // Deselect previous selection
                     DeselectAllNotes();
                 }
 
@@ -345,48 +331,7 @@ namespace GroveApp.Controls
             }
         }
 
-        // Field Ledger Matrix Calculations (Gravitational Field Inheritance per cell)
-        private Color CalculateCellFieldColor(int cx, int cy)
-        {
-            // Base spacetime canvas ground color (--surface-grid / --c-base #0E0E10)
-            Color baseColor = Colors.SurfaceGrid;
-            double r = baseColor.R;
-            double g = baseColor.G;
-            double b = baseColor.B;
-
-            // Sum gravitational field energy vectors from all placed notes
-            foreach (var note in Notes)
-            {
-                // Distance in cell units to note bounds
-                double dx = 0.0;
-                if (cx < note.CellX) dx = note.CellX - cx;
-                else if (cx >= note.CellX + note.SizeCells) dx = cx - (note.CellX + note.SizeCells - 1);
-
-                double dy = 0.0;
-                if (cy < note.CellY) dy = note.CellY - cy;
-                else if (cy >= note.CellY + note.SizeCells) dy = cy - (note.CellY + note.SizeCells - 1);
-
-                double distSq = dx * dx + dy * dy;
-
-                // Field ledger gravity equation: FieldWeight = FieldGain / (1 + 0.4 * distSq)
-                double mass = Tokens.FieldGain; // --field-gain (0.22)
-                double fieldWeight = mass / (1.0 + 0.4 * distSq);
-
-                Color noteFieldColor = Color.Parse(note.FieldHueHex);
-
-                r += noteFieldColor.R * fieldWeight;
-                g += noteFieldColor.G * fieldWeight;
-                b += noteFieldColor.B * fieldWeight;
-            }
-
-            byte finalR = (byte)Math.Clamp(r, 0, 255);
-            byte finalG = (byte)Math.Clamp(g, 0, 255);
-            byte finalB = (byte)Math.Clamp(b, 0, 255);
-
-            return Color.FromRgb(finalR, finalG, finalB);
-        }
-
-        // High-Frequency Render Pipeline
+        // High-Frequency Engine Pipeline Delegation
         public override void Render(DrawingContext context)
         {
             base.Render(context);
@@ -401,206 +346,24 @@ namespace GroveApp.Controls
             int minCellY = (int)Math.Floor((-CameraY) / (CellSize * Zoom)) - 1;
             int maxCellY = (int)Math.Ceiling((h - CameraY) / (CellSize * Zoom)) + 1;
 
-            // 1. Field Ledger Grid Canvas
-            RenderFieldLedgerGridCanvas(context, minCellX, maxCellX, minCellY, maxCellY);
+            // 1. Field Ledger Module: Gravitational Cell Fills, Atmosphere & Perimeter Rings
+            _fieldLedgerModule.RenderFieldLedger(context, WorldToScreen, CellSize, Zoom, minCellX, maxCellX, minCellY, maxCellY, Notes);
 
-            // 2. Grid Lines (Major 220px & Minor 44px)
-            RenderGridLines(context, minCellX, maxCellX, minCellY, maxCellY);
+            // 2. Grid Line Module: Major 220px, Minor 44px Subdivisions & LOD Fading
+            _gridLineModule.RenderGridLines(context, WorldToScreen, CellSize, Zoom, minCellX, maxCellX, minCellY, maxCellY);
 
-            // 3. Placed Notes
-            RenderNotes(context, minCellX, maxCellX, minCellY, maxCellY);
+            // 3. Note Render Module: Authored Fills, Containment Edge, Padding & Affordances
+            _noteRenderModule.RenderNotes(context, WorldToScreen, CellSize, Zoom, minCellX, maxCellX, minCellY, maxCellY, Notes, SelectedNote, HoveredNote);
 
-            // 4. Spent Cell Decay Trail
-            RenderCursorTrail(context);
+            // 4. Cursor Render Module: Spent Cell Decay Trail Physics
+            _cursorRenderModule.RenderSpentTrail(context, WorldToScreen, CellSize, Zoom, SpentCells);
 
-            // 5. Grid Cursor Head & Inset Ring
-            RenderGridCursor(context);
-
-            // 6. Marquee Selection Box
-            RenderMarqueeSelection(context);
-        }
-
-        private void RenderFieldLedgerGridCanvas(DrawingContext context, int minX, int maxX, int minY, int maxY)
-        {
-            for (int cx = minX; cx <= maxX; cx++)
-            {
-                for (int cy = minY; cy <= maxY; cy++)
-                {
-                    Point startScreen = WorldToScreen(new Point(cx * CellSize, cy * CellSize));
-                    double sizeScreen = CellSize * Zoom;
-                    Rect cellRect = new Rect(startScreen.X, startScreen.Y, sizeScreen, sizeScreen);
-
-                    Color cellFieldColor = CalculateCellFieldColor(cx, cy);
-                    var cellBrush = new SolidColorBrush(cellFieldColor);
-                    context.FillRectangle(cellBrush, cellRect);
-                }
-            }
-        }
-
-        private void RenderGridLines(DrawingContext context, int minX, int maxX, int minY, int maxY)
-        {
-            var majorPen = new Pen(Colors.GridMajorInkBrush, Tokens.StrokeHairline);
-            var minorPen = new Pen(Colors.GridMinorInkBrush, Tokens.StrokeHairline);
-
-            if (Zoom >= 0.45)
-            {
-                int minMinorX = minX * Tokens.GridSubdivisions;
-                int maxMinorX = maxX * Tokens.GridSubdivisions;
-                int minMinorY = minY * Tokens.GridSubdivisions;
-                int maxMinorY = maxY * Tokens.GridSubdivisions;
-
-                for (int mx = minMinorX; mx <= maxMinorX; mx++)
-                {
-                    if (mx % Tokens.GridSubdivisions == 0) continue;
-                    double wx = mx * MinorCellSize;
-                    Point p1 = WorldToScreen(new Point(wx, minY * CellSize));
-                    Point p2 = WorldToScreen(new Point(wx, maxY * CellSize));
-                    context.DrawLine(minorPen, p1, p2);
-                }
-
-                for (int my = minMinorY; my <= maxMinorY; my++)
-                {
-                    if (my % Tokens.GridSubdivisions == 0) continue;
-                    double wy = my * MinorCellSize;
-                    Point p1 = WorldToScreen(new Point(minX * CellSize, wy));
-                    Point p2 = WorldToScreen(new Point(maxX * CellSize, wy));
-                    context.DrawLine(minorPen, p1, p2);
-                }
-            }
-
-            for (int cx = minX; cx <= maxX; cx++)
-            {
-                double wx = cx * CellSize;
-                Point p1 = WorldToScreen(new Point(wx, minY * CellSize));
-                Point p2 = WorldToScreen(new Point(wx, maxY * CellSize));
-                context.DrawLine(majorPen, p1, p2);
-            }
-
-            for (int cy = minY; cy <= maxY; cy++)
-            {
-                double wy = cy * CellSize;
-                Point p1 = WorldToScreen(new Point(minX * CellSize, wy));
-                Point p2 = WorldToScreen(new Point(maxX * CellSize, wy));
-                context.DrawLine(majorPen, p1, p2);
-            }
-        }
-
-        private void RenderNotes(DrawingContext context, int minX, int maxX, int minY, int maxY)
-        {
-            var textInkBrush = Colors.NoteTextBrush;
-            var insetEdgePen = new Pen(Colors.EdgeQuietBrush, Tokens.StrokeContainment);
-            var selectionPen = new Pen(Colors.SignalInteractionBrush, Tokens.StrokeState);
-
-            foreach (var note in Notes)
-            {
-                if (note.CellX + note.SizeCells < minX || note.CellX > maxX ||
-                    note.CellY + note.SizeCells < minY || note.CellY > maxY)
-                {
-                    continue;
-                }
-
-                Point startScreen = WorldToScreen(new Point(note.CellX * CellSize, note.CellY * CellSize));
-                Point endScreen = WorldToScreen(new Point((note.CellX + note.SizeCells) * CellSize, (note.CellY + note.SizeCells) * CellSize));
-
-                double rectW = endScreen.X - startScreen.X;
-                double rectH = endScreen.Y - startScreen.Y;
-                Rect noteRect = new Rect(startScreen.X, startScreen.Y, rectW, rectH);
-
-                // Authored Fill
-                var fillBrush = new SolidColorBrush(Color.Parse(note.FillHex));
-                context.FillRectangle(fillBrush, noteRect);
-
-                // Inset Containment Edge
-                context.DrawRectangle(null, insetEdgePen, noteRect.Deflate(0.5));
-
-                // Selection Outline (2px --signal-interaction offset by 3px per Shape.md)
-                if (note.IsSelected)
-                {
-                    Rect selRect = noteRect.Inflate(3.0 * Zoom);
-                    context.DrawRectangle(null, selectionPen, selRect);
-                }
-
-                // Render Text Block inside Note
-                if (!string.IsNullOrEmpty(note.Text) && Zoom >= 0.3)
-                {
-                    double fontSize = Math.Max(10, Typography.SizeBody * Zoom);
-                    var formattedText = new FormattedText(
-                        note.Text,
-                        CultureInfo.CurrentCulture,
-                        FlowDirection.LeftToRight,
-                        new Typeface(Typography.UiFamily, FontStyle.Normal, Typography.WeightNoteText),
-                        fontSize,
-                        textInkBrush
-                    )
-                    {
-                        MaxTextWidth = Math.Max(10, rectW - Tokens.SpaceXl * Zoom),
-                        MaxTextHeight = Math.Max(10, rectH - Tokens.SpaceXl * Zoom)
-                    };
-
-                    Point textPos = new Point(startScreen.X + Tokens.SpaceMd * Zoom, startScreen.Y + Tokens.SpaceMd * Zoom);
-                    context.DrawText(formattedText, textPos);
-                }
-
-                // Render Edit Affordance Pill on Hover (Chrome affordance uses --r-sm)
-                if (note.IsHovered && Zoom >= 0.5)
-                {
-                    Rect pillRect = new Rect(startScreen.X + rectW - 48 * Zoom, startScreen.Y + Tokens.SpaceSm * Zoom, 40 * Zoom, 18 * Zoom);
-                    var pillBg = Colors.SurfaceChromeBrush;
-                    var pillPen = new Pen(Colors.EdgeQuietBrush, Tokens.StrokeHairline);
-                    context.FillRectangle(pillBg, pillRect, (float)Tokens.RadiusSm);
-                    context.DrawRectangle(null, pillPen, pillRect, (float)Tokens.RadiusSm);
-
-                    var pillText = new FormattedText(
-                        "EDIT",
-                        CultureInfo.CurrentCulture,
-                        FlowDirection.LeftToRight,
-                        new Typeface(Typography.MonoFamily, FontStyle.Normal, Typography.WeightMono),
-                        Math.Max(8, Typography.SizeMicro * Zoom),
-                        textInkBrush
-                    );
-                    context.DrawText(pillText, new Point(pillRect.X + Tokens.SpaceSm * Zoom, pillRect.Y + 3 * Zoom));
-                }
-            }
-        }
-
-        private void RenderCursorTrail(DrawingContext context)
-        {
-            foreach (var spent in SpentCells)
-            {
-                Point startWorld = new Point(spent.CellX * CellSize, spent.CellY * CellSize);
-                Point startScreen = WorldToScreen(startWorld);
-                double sizeScreen = CellSize * Zoom;
-
-                Rect cellRect = new Rect(startScreen.X, startScreen.Y, sizeScreen, sizeScreen);
-                byte alpha = (byte)(255 * Tokens.InkQuiet * spent.Energy);
-                var trailBrush = new SolidColorBrush(Color.FromArgb(alpha, Colors.NoteText.R, Colors.NoteText.G, Colors.NoteText.B));
-                context.FillRectangle(trailBrush, cellRect);
-            }
-        }
-
-        private void RenderGridCursor(DrawingContext context)
-        {
+            // 5. Cursor Render Module: Grid Cursor Head, 13.2% Fill & Inset 2px Ring
             GridNote? targetNote = FindNoteAtCell(CursorCellX, CursorCellY);
+            _cursorRenderModule.RenderGridCursor(context, WorldToScreen, CellSize, Zoom, CursorCellX, CursorCellY, targetNote);
 
-            int startCellX = targetNote?.CellX ?? CursorCellX;
-            int startCellY = targetNote?.CellY ?? CursorCellY;
-            int spanCells = targetNote?.SizeCells ?? 1;
-
-            Point startWorld = new Point(startCellX * CellSize, startCellY * CellSize);
-            Point endWorld = new Point((startCellX + spanCells) * CellSize, (startCellY + spanCells) * CellSize);
-
-            Point startScreen = WorldToScreen(startWorld);
-            Point endScreen = WorldToScreen(endWorld);
-
-            double curW = endScreen.X - startScreen.X;
-            double curH = endScreen.Y - startScreen.Y;
-            Rect cursorRect = new Rect(startScreen.X, startScreen.Y, curW, curH);
-
-            var headFillBrush = new SolidColorBrush(Color.FromArgb((byte)(255 * Tokens.CursorFillGain), Colors.NoteText.R, Colors.NoteText.G, Colors.NoteText.B));
-            context.FillRectangle(headFillBrush, cursorRect);
-
-            var ringPen = new Pen(new SolidColorBrush(Color.FromArgb((byte)(255 * Tokens.CursorRingInk), Colors.NoteText.R, Colors.NoteText.G, Colors.NoteText.B)), Tokens.StrokeCursorRing);
-            context.DrawRectangle(null, ringPen, cursorRect.Deflate(1.0));
+            // 6. Marquee Selection Box Sweep
+            RenderMarqueeSelection(context);
         }
 
         private void RenderMarqueeSelection(DrawingContext context)

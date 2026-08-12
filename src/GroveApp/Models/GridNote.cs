@@ -1,4 +1,5 @@
 using System;
+using GroveApp.DesignSystem;
 
 namespace GroveApp.Models
 {
@@ -19,23 +20,26 @@ namespace GroveApp.Models
         public NoteColor Color { get; set; } = NoteColor.Violet;
         public bool IsSelected { get; set; }
         public bool IsHovered { get; set; }
+        public bool IsAnchored { get; set; }
 
-        public GridNote(int cellX, int cellY, string text = "", NoteColor color = NoteColor.Violet)
+        public GridNote(int cellX, int cellY, string text = "", NoteColor color = NoteColor.Violet, bool isAnchored = false)
         {
             CellX = cellX;
             CellY = cellY;
             Text = text;
             Color = color;
+            IsAnchored = isAnchored;
             RecalculateFootprint();
         }
 
         public void RecalculateFootprint()
         {
-            // Minimum 1x1 cell (220x220px). Expands to 2x2 or 3x3 as text grows.
+            // Solve footprint n x n per Note.md geometry:
+            // n=1 box holds up to ~100 chars, n=2 holds up to ~280 chars, n=3 for larger prose.
             int charCount = Text.Length;
-            if (charCount > 250)
+            if (charCount > 280)
                 SizeCells = 3;
-            else if (charCount > 80)
+            else if (charCount > 100)
                 SizeCells = 2;
             else
                 SizeCells = 1;
@@ -50,7 +54,7 @@ namespace GroveApp.Models
             _ => DesignSystem.Colors.NoteVioletHex
         };
 
-        public string FieldHueHex => Color switch
+        public string FieldHueHex => IsAnchored ? DesignSystem.Colors.AnchorHex : Color switch
         {
             NoteColor.Violet => DesignSystem.Colors.NoteVioletFieldHex,
             NoteColor.Clay => DesignSystem.Colors.NoteClayFieldHex,
