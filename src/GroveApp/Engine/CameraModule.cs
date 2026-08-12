@@ -35,9 +35,10 @@ namespace GroveApp.Engine
         /// </summary>
         public Point ScreenToWorld(Point screenPt)
         {
+            double invZoom = 1.0 / Zoom;
             return new Point(
-                (screenPt.X - CameraX) / Zoom,
-                (screenPt.Y - CameraY) / Zoom
+                (screenPt.X - CameraX) * invZoom,
+                (screenPt.Y - CameraY) * invZoom
             );
         }
 

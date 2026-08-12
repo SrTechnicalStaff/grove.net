@@ -66,8 +66,9 @@ namespace GroveApp.Controls
         private int _dragOffsetCellX;
         private int _dragOffsetCellY;
 
-        // Animation Timer (60 FPS)
-        private readonly DispatcherTimer _animationTimer;
+        // Native GPU VSync Render Loop State (Unlocks 120Hz, 144Hz, 165Hz, 240Hz Native Refresh Rate Sync)
+        private TopLevel? _topLevel;
+        private bool _isAnimationFrameRequested;
 
         // Events
         public event Action<GridNote>? NoteSelected;
@@ -80,14 +81,6 @@ namespace GroveApp.Controls
             ClipToBounds = true;
             Focusable = true;
 
-            // 60 FPS Animation loop for smooth spent cell trail decay
-            _animationTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(16.66)
-            };
-            _animationTimer.Tick += OnAnimationTick;
-            _animationTimer.Start();
-
             SeedSampleData();
         }
 
@@ -98,13 +91,43 @@ namespace GroveApp.Controls
             Notes.Add(new GridNote(-2, 3, "### Spacetime Grid\n\n1. **Zero** global overhead\n2. [Primary signal](#E8B964) status\n3. <i>Crisp</i> Inter & Consolas", NoteColor.SlateBlue));
         }
 
-        private void OnAnimationTick(object? sender, EventArgs e)
+        protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
         {
+            base.OnAttachedToVisualTree(e);
+            _topLevel = TopLevel.GetTopLevel(this);
+            RequestNextAnimationFrame();
+        }
+
+        protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+        {
+            base.OnDetachedFromVisualTree(e);
+            _topLevel = null;
+            _isAnimationFrameRequested = false;
+        }
+
+        private void RequestNextAnimationFrame()
+        {
+            if (_topLevel != null && !_isAnimationFrameRequested)
+            {
+                _isAnimationFrameRequested = true;
+                _topLevel.RequestAnimationFrame(OnAnimationFrame);
+            }
+        }
+
+        private void OnAnimationFrame(TimeSpan timeStamp)
+        {
+            _isAnimationFrameRequested = false;
+
+            // Decay spent cell trail physics & update interactive state
             bool needsRedraw = _cursorRenderModule.DecayTrail(SpentCells);
-            if (needsRedraw)
+
+            if (needsRedraw || SpentCells.Count > 0 || _isPanning || _isMarqueeSelecting || _isDraggingNote)
             {
                 InvalidateVisual();
             }
+
+            // Sync with native monitor refresh rate (120Hz, 144Hz, 165Hz, 240Hz display sync)
+            RequestNextAnimationFrame();
         }
 
         // Camera Transforms delegated to CameraModule
