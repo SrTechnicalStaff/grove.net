@@ -84,7 +84,7 @@ namespace GroveApp.Controls
 
             InlineConfirmRow.IsVisible = false;
 
-            _fixedSide = ResolveAnchorSide(primarySourceBounds, viewportSize);
+            _fixedSide = AnchorSide.Right;
             UpdatePosition(primarySourceBounds, viewportSize);
 
             IsVisible = true;
@@ -213,40 +213,12 @@ namespace GroveApp.Controls
         public void UpdatePosition(Rect sourceScreenBounds, Size viewportSize)
         {
             const double gap = Tokens.SpaceMd;
-            const double margin = Tokens.SpaceMd;
             double frameWidth = 580.0;
             double frameHeight = FrameBorder.Bounds.Height > 0 ? FrameBorder.Bounds.Height : 380.0;
 
             Point pos = CalculateSidePosition(_fixedSide, sourceScreenBounds, frameWidth, frameHeight, gap);
 
-            double clampedX = Math.Clamp(pos.X, margin, Math.Max(margin, viewportSize.Width - frameWidth - margin));
-            double clampedY = Math.Clamp(pos.Y, margin, Math.Max(margin, viewportSize.Height - frameHeight - margin));
-
-            Margin = new Thickness(clampedX, clampedY, 0, 0);
-        }
-
-        private AnchorSide ResolveAnchorSide(Rect sourceScreenBounds, Size viewportSize)
-        {
-            const double gap = Tokens.SpaceMd;
-            const double margin = Tokens.SpaceMd;
-            double frameWidth = 580.0;
-            double frameHeight = FrameBorder.Bounds.Height > 0 ? FrameBorder.Bounds.Height : 380.0;
-
-            AnchorSide[] candidateOrder = new[] { AnchorSide.Right, AnchorSide.Left, AnchorSide.Below, AnchorSide.Above };
-
-            foreach (var side in candidateOrder)
-            {
-                Point p = CalculateSidePosition(side, sourceScreenBounds, frameWidth, frameHeight, gap);
-                bool fitsX = p.X >= margin && (p.X + frameWidth) <= (viewportSize.Width - margin);
-                bool fitsY = p.Y >= margin && (p.Y + frameHeight) <= (viewportSize.Height - margin);
-
-                if (fitsX && fitsY)
-                {
-                    return side;
-                }
-            }
-
-            return AnchorSide.Above;
+            Margin = new Thickness(pos.X, pos.Y, 0, 0);
         }
 
         private static Point CalculateSidePosition(AnchorSide side, Rect s, double width, double height, double gap)

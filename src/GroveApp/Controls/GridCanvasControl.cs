@@ -23,10 +23,11 @@ namespace GroveApp.Controls
         private readonly CursorRenderModule _cursorRenderModule = new();
         private readonly GridLineModule _gridLineModule = new();
 
-        // Camera State
-        public double CameraX { get; set; } = 100.0;
-        public double CameraY { get; set; } = 100.0;
-        public double Zoom { get; set; } = 1.0;
+        // Camera Module & State
+        public CameraModule Camera { get; } = new CameraModule();
+        public double CameraX { get => Camera.CameraX; set => Camera.CameraX = value; }
+        public double CameraY { get => Camera.CameraY; set => Camera.CameraY = value; }
+        public double Zoom { get => Camera.Zoom; set => Camera.Zoom = value; }
 
         // Pointer & Cursor State
         public Point MousePointerScreen { get; private set; }
@@ -105,33 +106,20 @@ namespace GroveApp.Controls
             }
         }
 
-        // Camera Transforms
-        public Point ScreenToWorld(Point screenPt)
-        {
-            double wx = (screenPt.X - CameraX) / Zoom;
-            double wy = (screenPt.Y - CameraY) / Zoom;
-            return new Point(wx, wy);
-        }
+        // Camera Transforms delegated to CameraModule
+        public Point ScreenToWorld(Point screenPt) => Camera.ScreenToWorld(screenPt);
 
-        public Point WorldToScreen(Point worldPt)
-        {
-            double sx = worldPt.X * Zoom + CameraX;
-            double sy = worldPt.Y * Zoom + CameraY;
-            return new Point(sx, sy);
-        }
+        public Point WorldToScreen(Point worldPt) => Camera.WorldToScreen(worldPt);
 
-        public (int cellX, int cellY) WorldToCell(Point worldPt)
-        {
-            int cx = (int)Math.Floor(worldPt.X / CellSize);
-            int cy = (int)Math.Floor(worldPt.Y / CellSize);
-            return (cx, cy);
-        }
+        public (int cellX, int cellY) WorldToCell(Point worldPt) => Camera.WorldToCell(worldPt, CellSize);
+
+        public Point CellToWorld(int cellX, int cellY) => Camera.CellToWorld(cellX, cellY, CellSize);
 
         public Rect GetNoteScreenBounds(GridNote note)
         {
-            Point worldTopLeft = new Point(note.CellX * CellSize, note.CellY * CellSize);
-            Point screenTopLeft = WorldToScreen(worldTopLeft);
-            double sizePx = note.SizeCells * CellSize * Zoom;
+            Point worldTopLeft = Camera.CellToWorld(note.CellX, note.CellY, CellSize);
+            Point screenTopLeft = Camera.WorldToScreen(worldTopLeft);
+            double sizePx = note.SizeCells * CellSize * Camera.Zoom;
             return new Rect(screenTopLeft.X, screenTopLeft.Y, sizePx, sizePx);
         }
 
@@ -267,12 +255,7 @@ namespace GroveApp.Controls
             base.OnPointerWheelChanged(e);
 
             double zoomFactor = e.Delta.Y > 0 ? 1.15 : 0.85;
-            double newZoom = Math.Clamp(Zoom * zoomFactor, 0.2, 3.5);
-
-            Point mousePt = e.GetPosition(this);
-            CameraX = mousePt.X - (mousePt.X - CameraX) * (newZoom / Zoom);
-            CameraY = mousePt.Y - (mousePt.Y - CameraY) * (newZoom / Zoom);
-            Zoom = newZoom;
+            Camera.ZoomAt(e.GetPosition(this), zoomFactor);
 
             InvalidateVisual();
             CameraChanged?.Invoke();

@@ -78,7 +78,12 @@ namespace GroveApp
         {
             if (LocalEditor.IsVisible && LocalEditor.TargetNote != null)
             {
-                Rect sourceBounds = CanvasControl.GetNoteScreenBounds(LocalEditor.TargetNote);
+                var targetNote = LocalEditor.TargetNote;
+                Point worldTopLeft = CanvasControl.Camera.CellToWorld(targetNote.CellX, targetNote.CellY, GridCanvasControl.CellSize);
+                Point screenTopLeft = CanvasControl.WorldToScreen(worldTopLeft);
+                double sizePx = targetNote.SizeCells * GridCanvasControl.CellSize * CanvasControl.Zoom;
+                Rect sourceBounds = new Rect(screenTopLeft.X, screenTopLeft.Y, sizePx, sizePx);
+
                 LocalEditor.UpdatePosition(sourceBounds, Bounds.Size);
             }
         }

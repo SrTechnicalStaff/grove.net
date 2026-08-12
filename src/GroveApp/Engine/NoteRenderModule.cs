@@ -100,24 +100,27 @@ namespace GroveApp.Engine
             // 5. Rich Text Block (#F4F4F2 ink, formatted via RichTextEngine: bold, italic, code, headings, bullets, colors)
             if (!string.IsNullOrEmpty(note.Text))
             {
-                double fontSize = Math.Max(9.0, Typography.SizeBody * zoom);
-                double padTop = 16.0 * zoom;
-                double padLeft = 15.0 * zoom;
+                double padTop = Tokens.SpaceMd;
+                double padLeft = 15.0;
 
-                double maxWidth = Math.Max(10.0, noteRect.Width - (padLeft * 2.0));
-                double maxHeight = Math.Max(10.0, noteRect.Height - (padTop * 2.0));
-                Point textPos = new Point(noteRect.X + padLeft, noteRect.Y + padTop);
+                double noteWorldW = noteRect.Width / zoom;
+                double noteWorldH = noteRect.Height / zoom;
+                double maxWidth = Math.Max(10.0, noteWorldW - (padLeft * 2.0));
+                double maxHeight = Math.Max(10.0, noteWorldH - (padTop * 2.0));
 
-                var layout = RichTextEngine.CreateLayout(
-                    note.Text,
-                    fontSize,
-                    Colors.NoteTextBrush,
-                    maxWidth,
-                    maxHeight,
-                    zoom
-                );
+                using (context.PushTransform(Matrix.CreateScale(zoom, zoom) * Matrix.CreateTranslation(noteRect.X, noteRect.Y)))
+                {
+                    Point textPos = new Point(padLeft, padTop);
+                    var layout = RichTextEngine.CreateLayout(
+                        note.Text,
+                        Typography.SizeBody,
+                        Colors.NoteTextBrush,
+                        maxWidth,
+                        maxHeight
+                    );
 
-                RichTextEngine.Render(context, textPos, layout);
+                    RichTextEngine.Render(context, textPos, layout);
+                }
             }
 
             // 6. Focus / Selection Resize Affordance Corner
@@ -152,24 +155,27 @@ namespace GroveApp.Engine
 
             if (!string.IsNullOrEmpty(note.Text))
             {
-                double fontSize = Math.Max(6.0, Typography.SizeBody * zoom);
-                double padTop = 16.0 * zoom;
-                double padLeft = 15.0 * zoom;
+                double padTop = Tokens.SpaceMd;
+                double padLeft = 15.0;
 
-                double maxWidth = Math.Max(5.0, noteRect.Width - (padLeft * 2.0));
-                double maxHeight = Math.Max(5.0, noteRect.Height - (padTop * 2.0));
-                Point textPos = new Point(noteRect.X + padLeft, noteRect.Y + padTop);
+                double noteWorldW = noteRect.Width / zoom;
+                double noteWorldH = noteRect.Height / zoom;
+                double maxWidth = Math.Max(5.0, noteWorldW - (padLeft * 2.0));
+                double maxHeight = Math.Max(5.0, noteWorldH - (padTop * 2.0));
 
-                var layout = RichTextEngine.CreateLayout(
-                    note.Text,
-                    fontSize,
-                    Colors.NoteTextBrush,
-                    maxWidth,
-                    maxHeight,
-                    zoom
-                );
+                using (context.PushTransform(Matrix.CreateScale(zoom, zoom) * Matrix.CreateTranslation(noteRect.X, noteRect.Y)))
+                {
+                    Point textPos = new Point(padLeft, padTop);
+                    var layout = RichTextEngine.CreateLayout(
+                        note.Text,
+                        Typography.SizeBody,
+                        Colors.NoteTextBrush,
+                        maxWidth,
+                        maxHeight
+                    );
 
-                RichTextEngine.Render(context, textPos, layout);
+                    RichTextEngine.Render(context, textPos, layout);
+                }
             }
         }
 

@@ -344,26 +344,26 @@ namespace GroveApp.Engine
                 switch (block.Kind)
                 {
                     case BlockKind.Heading1:
-                        bh = MeasureHeading(block, baseFontSize * 1.6, FontWeight.Bold, 1.3, maxWidth, blockMaxH) + 10.0 * zoom;
+                        bh = MeasureHeading(block, Typography.SizeHero, FontWeight.Bold, 1.3, maxWidth, blockMaxH) + 10.0;
                         break;
                     case BlockKind.Heading2:
-                        bh = MeasureHeading(block, baseFontSize * 1.2, FontWeight.Bold, 1.35, maxWidth, blockMaxH) + 8.0 * zoom;
+                        bh = MeasureHeading(block, 18.0, FontWeight.Bold, 1.35, maxWidth, blockMaxH) + 8.0;
                         break;
                     case BlockKind.Heading3:
-                        bh = MeasureHeading(block, baseFontSize * 1.0, FontWeight.SemiBold, 1.4, maxWidth, blockMaxH) + 6.0 * zoom;
+                        bh = MeasureHeading(block, Typography.SizeBody, FontWeight.SemiBold, 1.4, maxWidth, blockMaxH) + 6.0;
                         break;
                     case BlockKind.Paragraph:
-                        bh = MeasureFormattedBlock(block, baseFontSize, 1.45, maxWidth, blockMaxH) + 8.0 * zoom;
+                        bh = MeasureFormattedBlock(block, baseFontSize, 1.45, maxWidth, blockMaxH) + 8.0;
                         break;
                     case BlockKind.Blockquote:
-                        bh = MeasureBlockquote(block, baseFontSize, maxWidth, blockMaxH, zoom) + 8.0 * zoom;
+                        bh = MeasureBlockquote(block, baseFontSize, maxWidth, blockMaxH, zoom) + 8.0;
                         break;
                     case BlockKind.CodeBlock:
-                        bh = MeasureCodeBlock(block, baseFontSize, maxWidth, zoom) + 10.0 * zoom;
+                        bh = MeasureCodeBlock(block, baseFontSize, maxWidth, zoom) + 10.0;
                         break;
                     case BlockKind.UnorderedListItem:
                     case BlockKind.OrderedListItem:
-                        bh = MeasureListItem(block, baseFontSize, maxWidth, blockMaxH, zoom) + 4.0 * zoom;
+                        bh = MeasureListItem(block, baseFontSize, maxWidth, blockMaxH, zoom) + 4.0;
                         break;
                 }
 
@@ -400,43 +400,43 @@ namespace GroveApp.Engine
                 switch (block.Kind)
                 {
                     case BlockKind.Heading1:
-                        currentY += RenderHeading(context, new Point(origin.X, currentY), block, baseFontSize * 1.6, FontWeight.Bold, 1.3, maxWidth, blockMaxH, defaultForeground, zoom, tracking: true);
-                        currentY += 10.0 * zoom;
+                        currentY += RenderHeading(context, new Point(origin.X, currentY), block, Typography.SizeHero, FontWeight.Bold, 1.3, maxWidth, blockMaxH, defaultForeground, zoom, tracking: true);
+                        currentY += 10.0;
                         break;
 
                     case BlockKind.Heading2:
-                        currentY += RenderHeading(context, new Point(origin.X, currentY), block, baseFontSize * 1.2, FontWeight.Bold, 1.35, maxWidth, blockMaxH, defaultForeground, zoom, tracking: false);
-                        currentY += 8.0 * zoom;
+                        currentY += RenderHeading(context, new Point(origin.X, currentY), block, 18.0, FontWeight.Bold, 1.35, maxWidth, blockMaxH, defaultForeground, zoom, tracking: false);
+                        currentY += 8.0;
                         break;
 
                     case BlockKind.Heading3:
-                        currentY += RenderHeading(context, new Point(origin.X, currentY), block, baseFontSize * 1.0, FontWeight.SemiBold, 1.4, maxWidth, blockMaxH, defaultForeground, zoom, tracking: false);
-                        currentY += 6.0 * zoom;
+                        currentY += RenderHeading(context, new Point(origin.X, currentY), block, Typography.SizeBody, FontWeight.SemiBold, 1.4, maxWidth, blockMaxH, defaultForeground, zoom, tracking: false);
+                        currentY += 6.0;
                         break;
 
                     case BlockKind.Paragraph:
                         currentY += RenderFormattedBlock(context, new Point(origin.X, currentY), block, baseFontSize, 1.45, maxWidth, blockMaxH, defaultForeground, zoom);
-                        currentY += 8.0 * zoom;
+                        currentY += 8.0;
                         break;
 
                     case BlockKind.Blockquote:
                         currentY += RenderBlockquote(context, new Point(origin.X, currentY), block, baseFontSize, maxWidth, blockMaxH, zoom);
-                        currentY += 8.0 * zoom;
+                        currentY += 8.0;
                         break;
 
                     case BlockKind.CodeBlock:
                         currentY += RenderCodeBlock(context, new Point(origin.X, currentY), block, baseFontSize, maxWidth, blockMaxH, zoom);
-                        currentY += 10.0 * zoom;
+                        currentY += 10.0;
                         break;
 
                     case BlockKind.UnorderedListItem:
                         currentY += RenderListItem(context, new Point(origin.X, currentY), block, "•", baseFontSize, maxWidth, blockMaxH, defaultForeground, zoom);
-                        currentY += 4.0 * zoom;
+                        currentY += 4.0;
                         break;
 
                     case BlockKind.OrderedListItem:
                         currentY += RenderListItem(context, new Point(origin.X, currentY), block, $"{block.ListIndex}.", baseFontSize, maxWidth, blockMaxH, defaultForeground, zoom);
-                        currentY += 4.0 * zoom;
+                        currentY += 4.0;
                         break;
                 }
             }
@@ -549,24 +549,24 @@ namespace GroveApp.Engine
 
         private static double MeasureBlockquote(RichTextBlock block, double fontSize, double maxWidth, double maxHeight, double zoom)
         {
-            double textMaxW = Math.Max(1.0, maxWidth - 16.0 * zoom);
+            double textMaxW = Math.Max(1.0, maxWidth - 16.0);
             var ft = CreateFormattedText(block.CleanText, block.Spans, fontSize, Typography.WeightNoteText, FontStyle.Italic, Typography.UiFamily, Colors.TextSecondaryBrush, 1.45, textMaxW, maxHeight);
-            return ft.Height + 12.0 * zoom;
+            return ft.Height + 12.0;
         }
 
         private static double RenderBlockquote(
             DrawingContext context, Point point, RichTextBlock block, double fontSize, double maxWidth, double maxHeight, double zoom)
         {
-            double textMaxW = Math.Max(1.0, maxWidth - 16.0 * zoom);
+            double textMaxW = Math.Max(1.0, maxWidth - 16.0);
             var ft = CreateFormattedText(block.CleanText, block.Spans, fontSize, Typography.WeightNoteText, FontStyle.Italic, Typography.UiFamily, Colors.TextSecondaryBrush, 1.45, textMaxW, maxHeight);
 
-            double bqH = ft.Height + 12.0 * zoom;
+            double bqH = ft.Height + 12.0;
             Rect bgRect = new Rect(point.X, point.Y, maxWidth, bqH);
 
-            context.FillRectangle(BlockquoteBgBrush, bgRect, (float)(2.0 * zoom));
-            context.DrawLine(BlockquoteAccentPen, new Point(point.X + 1.5 * zoom, point.Y), new Point(point.X + 1.5 * zoom, point.Y + bqH));
+            context.FillRectangle(BlockquoteBgBrush, bgRect, 2.0f);
+            context.DrawLine(BlockquoteAccentPen, new Point(point.X + 1.5, point.Y), new Point(point.X + 1.5, point.Y + bqH));
 
-            Point textPt = new Point(point.X + 16.0 * zoom, point.Y + 6.0 * zoom);
+            Point textPt = new Point(point.X + 16.0, point.Y + 6.0);
             RenderSpanHighlightsAndDecorations(context, textPt, ft, block.CleanText, block.Spans);
             context.DrawText(ft, textPt);
 
@@ -578,7 +578,7 @@ namespace GroveApp.Engine
             double codeFontSize = Math.Max(8.0, baseFontSize * 0.88);
             double codeLineH = codeFontSize * 1.35;
             int lineCount = Math.Max(1, block.CodeLines.Count);
-            return 20.0 * zoom + lineCount * codeLineH;
+            return 20.0 + lineCount * codeLineH;
         }
 
         private static double RenderCodeBlock(
@@ -589,16 +589,16 @@ namespace GroveApp.Engine
             int lineCount = Math.Max(1, block.CodeLines.Count);
 
             int digitCount = Math.Max(2, lineCount.ToString().Length);
-            double numColW = digitCount * (codeFontSize * 0.65) + 10.0 * zoom;
+            double numColW = digitCount * (codeFontSize * 0.65) + 10.0;
 
-            double padLeft = 12.0 * zoom;
-            double padTop = 10.0 * zoom;
-            double padBottom = 10.0 * zoom;
+            double padLeft = 12.0;
+            double padTop = 10.0;
+            double padBottom = 10.0;
             double totalH = padTop + padBottom + lineCount * codeLineH;
 
             Rect codeRect = new Rect(point.X, point.Y, maxWidth, totalH);
-            context.FillRectangle(CodeBgBrush, codeRect, (float)(4.0 * zoom));
-            context.DrawRectangle(null, CodeBorderPen, codeRect, (float)(4.0 * zoom));
+            context.FillRectangle(CodeBgBrush, codeRect, 4.0f);
+            context.DrawRectangle(null, CodeBorderPen, codeRect, 4.0f);
 
             double codeTextX = point.X + padLeft + numColW;
             double codeTextMaxW = Math.Max(1.0, maxWidth - padLeft * 2 - numColW);
@@ -683,7 +683,7 @@ namespace GroveApp.Engine
 
         private static double MeasureListItem(RichTextBlock block, double fontSize, double maxWidth, double maxHeight, double zoom)
         {
-            double textMaxW = Math.Max(1.0, maxWidth - 22.0 * zoom);
+            double textMaxW = Math.Max(1.0, maxWidth - 22.0);
             var ft = CreateFormattedText(block.CleanText, block.Spans, fontSize, Typography.WeightNoteText, FontStyle.Normal, Typography.UiFamily, DefaultForegroundBrush, 1.45, textMaxW, maxHeight);
             return ft.Height;
         }
@@ -700,10 +700,10 @@ namespace GroveApp.Engine
                 fontSize,
                 SignalInteractionBrush
             );
-            context.DrawText(prefixFt, new Point(point.X + 4.0 * zoom, point.Y));
+            context.DrawText(prefixFt, new Point(point.X + 4.0, point.Y));
 
-            double textMaxW = Math.Max(1.0, maxWidth - 22.0 * zoom);
-            Point textPt = new Point(point.X + 22.0 * zoom, point.Y);
+            double textMaxW = Math.Max(1.0, maxWidth - 22.0);
+            Point textPt = new Point(point.X + 22.0, point.Y);
 
             var ft = CreateFormattedText(block.CleanText, block.Spans, fontSize, Typography.WeightNoteText, FontStyle.Normal, Typography.UiFamily, defaultForeground, 1.45, textMaxW, maxHeight);
             RenderSpanHighlightsAndDecorations(context, textPt, ft, block.CleanText, block.Spans);
