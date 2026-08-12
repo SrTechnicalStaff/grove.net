@@ -15,11 +15,23 @@
         <controls:GridCanvasControl x:Name="CanvasControl" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
 
         <!-- PLANE 1: Information Layer Overlays -->
-        <!-- Local Editor Overlay (Anchored beside Note on Grid Plane) -->
-        <controls:LocalEditorOverlay x:Name="LocalEditor" IsVisible="False" VerticalAlignment="Top" Background="Transparent" />
+        <!-- Headerless Fluent Notepad Editor (Plane 1 Information Layer) -->
+        <controls:FluentNotepadEditor x:Name="NotepadEditor" IsVisible="False" VerticalAlignment="Top" Background="Transparent" />
 
-        <!-- Quick Note Overlay (Viewport-Centered Slate) -->
+        <!-- Headerless Quick Note Slate (Plane 1 Information Layer) -->
         <controls:QuickNoteOverlay x:Name="QuickNote" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent" />
+        <controls:DocumentEditorOverlay x:Name="DocumentEditor" IsVisible="False" Background="Transparent" />
+        <controls:ImagePropertyOverlay x:Name="ImageProperties" IsVisible="False" Background="Transparent" />
+
+        <!-- PLANE 2: HUD Plane -->
+        <!-- Spatial Layer Manager Slate (Plane 2 HUD Slate) -->
+        <controls:LayerManagerSlate x:Name="LayerSlate" IsVisible="False" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,40,16,0" />
+
+        <!-- Spatial context menu (Plane 2 HUD; opened from Plane 0 right-click) -->
+        <controls:SpatialContextMenuOverlay x:Name="ContextMenuOverlay" />
+
+        <!-- Active spatial identity and camera watermark (Plane 2 HUD) -->
+        <controls:HudSpatialWatermark x:Name="SpatialWatermark" />
 
         <!-- Minimal Grid Telemetry Strip at Bottom (FluentAvalonia Styled) -->
         <Border HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Height="32"

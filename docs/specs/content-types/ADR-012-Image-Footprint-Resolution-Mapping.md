@@ -1,5 +1,5 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified image footprint and ownership seam"
 ---
 
 # ADR-012: Image Footprint Resolution Mapping, Zero-Crop Rules, and Skia Bitmap Sampling

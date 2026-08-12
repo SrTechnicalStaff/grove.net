@@ -73,6 +73,49 @@ namespace GroveApp.Engine
             RenderContentItems(context, worldToScreen, cellSize, zoom, minCellX, maxCellX, minCellY, maxCellY, notes, selectedNote, hoveredNote);
         }
 
+        /// <summary>
+        /// Renders the inactive-layer presence as a discrete outline only. Inactive
+        /// content must remain discoverable without painting a second, interactive
+        /// copy of the content into the active plane.
+        /// </summary>
+        public void RenderGhostOutline(
+            DrawingContext context,
+            Func<Point, Point> worldToScreen,
+            double cellSize,
+            double zoom,
+            int minCellX,
+            int maxCellX,
+            int minCellY,
+            int maxCellY,
+            GridContentItem item,
+            double opacity)
+        {
+            if (item.CellX + item.CellWidth < minCellX || item.CellX > maxCellX ||
+                item.CellY + item.CellHeight < minCellY || item.CellY > maxCellY)
+            {
+                return;
+            }
+
+            Point startScreen = worldToScreen(new Point(item.CellX * cellSize, item.CellY * cellSize));
+            Point endScreen = worldToScreen(new Point(
+                (item.CellX + item.CellWidth) * cellSize,
+                (item.CellY + item.CellHeight) * cellSize));
+            var rect = new Rect(
+                startScreen.X,
+                startScreen.Y,
+                endScreen.X - startScreen.X,
+                endScreen.Y - startScreen.Y);
+
+            byte alpha = (byte)Math.Clamp((int)Math.Round(opacity * 255.0), 0, 255);
+            var outline = new SolidColorBrush(Color.FromArgb(
+                alpha,
+                Colors.SignalInteraction.R,
+                Colors.SignalInteraction.G,
+                Colors.SignalInteraction.B));
+            var pen = new Pen(outline, Math.Max(1.0, Tokens.StrokeHairline * Math.Max(0.75, zoom)));
+            context.DrawRectangle(null, pen, rect.Deflate(pen.Thickness / 2.0));
+        }
+
         private void RenderNote(
             DrawingContext context,
             Func<Point, Point> worldToScreen,
@@ -127,7 +170,7 @@ namespace GroveApp.Engine
             RenderPageTexture(context, docRect, zoom);
 
             // 3. 1px Inset Edge (--paper-edge)
-            var edgePen = new Pen(new SolidColorBrush(Color.FromArgb(25, 26, 26, 26)), 1.0);
+            var edgePen = new Pen(new SolidColorBrush(Color.FromArgb(25, Colors.CPaperInk.R, Colors.CPaperInk.G, Colors.CPaperInk.B)), 1.0);
             context.DrawRectangle(null, edgePen, docRect.Deflate(0.5));
 
             // 4. Multi-Column Reflow Rendering
@@ -137,7 +180,7 @@ namespace GroveApp.Engine
                 using (context.PushTransform(Matrix.CreateScale(zoom, zoom) * Matrix.CreateTranslation(docRect.X, docRect.Y)))
                 {
                     var textBrush = Colors.PaperInkBrush;
-                    var typeface = new Typeface("Inter", FontStyle.Normal, FontWeight.Regular);
+                    var typeface = new Typeface(Typography.FontFamilyUi, FontStyle.Normal, FontWeight.Regular);
 
                     foreach (var slice in layout.Slices)
                     {
@@ -151,8 +194,8 @@ namespace GroveApp.Engine
                                     heading.Text,
                                     CultureInfo.CurrentCulture,
                                     FlowDirection.LeftToRight,
-                                    new Typeface("Inter", FontStyle.Normal, FontWeight.Bold),
-                                    18.0,
+                                    new Typeface(Typography.FontFamilyUi, FontStyle.Normal, FontWeight.Bold),
+                                    Typography.SizeTitleSmall,
                                     textBrush)
                                 {
                                     MaxTextWidth = slice.Width
@@ -174,7 +217,7 @@ namespace GroveApp.Engine
                                     CultureInfo.CurrentCulture,
                                     FlowDirection.LeftToRight,
                                     typeface,
-                                    15.0,
+                                    Typography.SizeBody,
                                     textBrush)
                                 {
                                     MaxTextWidth = slice.Width,
@@ -186,15 +229,15 @@ namespace GroveApp.Engine
                             }
                             else if (block is CodeBlockNode codeNode)
                             {
-                                var codeBg = new SolidColorBrush(Color.Parse("#1A1A1D"));
-                                var codePen = new Pen(new SolidColorBrush(Color.Parse("#2D2D32")), 1.0);
+                                var codeBg = Colors.SurfaceNestedBrush;
+                                var codePen = new Pen(Colors.HudSlateBorderBrush, 1.0);
                                 var codeFmt = new FormattedText(
                                     codeNode.Code,
                                     CultureInfo.CurrentCulture,
                                     FlowDirection.LeftToRight,
-                                    new Typeface("Consolas", FontStyle.Normal, FontWeight.Regular),
-                                    13.0,
-                                    new SolidColorBrush(Color.Parse("#E8B964")))
+                                    new Typeface(Typography.FontFamilyMono, FontStyle.Normal, FontWeight.Regular),
+                                    Typography.SizeDense,
+                                    Colors.SignalActiveWorkBrush)
                                 {
                                     MaxTextWidth = Math.Max(1.0, slice.Width - 16.0)
                                 };
@@ -215,7 +258,7 @@ namespace GroveApp.Engine
                                         CultureInfo.CurrentCulture,
                                         FlowDirection.LeftToRight,
                                         typeface,
-                                        15.0,
+                                        Typography.SizeBody,
                                         textBrush)
                                     {
                                         MaxTextWidth = slice.Width,
@@ -247,8 +290,8 @@ namespace GroveApp.Engine
 
         private void RenderPageTexture(DrawingContext context, Rect rect, double zoom)
         {
-            var minorPen = new Pen(new SolidColorBrush(Color.FromArgb(13, 26, 26, 26)), 1.0);
-            var majorPen = new Pen(new SolidColorBrush(Color.FromArgb(20, 26, 26, 26)), 1.0);
+            var minorPen = new Pen(new SolidColorBrush(Color.FromArgb(13, Colors.CPaperInk.R, Colors.CPaperInk.G, Colors.CPaperInk.B)), 1.0);
+            var majorPen = new Pen(new SolidColorBrush(Color.FromArgb(20, Colors.CPaperInk.R, Colors.CPaperInk.G, Colors.CPaperInk.B)), 1.0);
 
             for (double x = 44.0 * zoom; x < rect.Width; x += 44.0 * zoom)
             {
@@ -291,42 +334,6 @@ namespace GroveApp.Engine
             // 1px Quiet Edge (--edge-quiet)
             var edgePen = new Pen(Colors.EdgeQuietBrush, 1.0);
             context.DrawRectangle(null, edgePen, imgRect.Deflate(0.5));
-
-            // GIF Badge
-            if (img.IsAnimatedGif)
-            {
-                double badgeX = imgRect.Right - 32.0 * zoom;
-                double badgeY = imgRect.Top + 8.0 * zoom;
-                Rect bgRect = new Rect(badgeX, badgeY, 24 * zoom, 14 * zoom);
-                context.FillRectangle(new SolidColorBrush(Color.FromArgb(200, 14, 14, 16)), bgRect);
-
-                var fmt = new FormattedText(
-                    "GIF",
-                    CultureInfo.CurrentCulture,
-                    FlowDirection.LeftToRight,
-                    new Typeface("JetBrains Mono", FontStyle.Normal, FontWeight.Bold),
-                    Typography.SizeMicro * zoom,
-                    Brushes.White);
-                context.DrawText(fmt, new Point(badgeX + 2 * zoom, badgeY + 1 * zoom));
-            }
-
-            // EffectivePpi Canvas Label on Hover
-            if (isHovered)
-            {
-                string ppiText = $"{Math.Round(img.EffectivePpi)} PPI";
-                double ppiBadgeX = imgRect.Left + 8.0 * zoom;
-                double ppiBadgeY = imgRect.Bottom - 20.0 * zoom;
-                var ppiFmt = new FormattedText(
-                    ppiText,
-                    CultureInfo.CurrentCulture,
-                    FlowDirection.LeftToRight,
-                    new Typeface("Consolas", FontStyle.Normal, FontWeight.Bold),
-                    Typography.SizeMicro * zoom,
-                    Brushes.White);
-                Rect ppiBgRect = new Rect(ppiBadgeX, ppiBadgeY, ppiFmt.Width + 8 * zoom, ppiFmt.Height + 4 * zoom);
-                context.FillRectangle(new SolidColorBrush(Color.FromArgb(200, 14, 14, 16)), ppiBgRect);
-                context.DrawText(ppiFmt, new Point(ppiBadgeX + 4 * zoom, ppiBadgeY + 2 * zoom));
-            }
 
             // Selection Ring & Resize Handle
             if (isSelected)
@@ -510,12 +517,30 @@ namespace GroveApp.Engine
 
             var cornerPen = new Pen(Colors.TextPrimaryBrush, strokeW);
 
-            Point br = new Point(noteRect.X + noteRect.Width - 3.0 * scale, noteRect.Y + noteRect.Height - 3.0 * scale);
-            Point topArm = new Point(br.X, br.Y - armLen);
-            Point leftArm = new Point(br.X - armLen, br.Y);
+            DrawCorner(context, cornerPen,
+                new Point(noteRect.Left + 3.0 * scale, noteRect.Top + 3.0 * scale),
+                new Vector(1, 0), new Vector(0, 1), armLen);
+            DrawCorner(context, cornerPen,
+                new Point(noteRect.Right - 3.0 * scale, noteRect.Top + 3.0 * scale),
+                new Vector(-1, 0), new Vector(0, 1), armLen);
+            DrawCorner(context, cornerPen,
+                new Point(noteRect.Right - 3.0 * scale, noteRect.Bottom - 3.0 * scale),
+                new Vector(-1, 0), new Vector(0, -1), armLen);
+            DrawCorner(context, cornerPen,
+                new Point(noteRect.Left + 3.0 * scale, noteRect.Bottom - 3.0 * scale),
+                new Vector(1, 0), new Vector(0, -1), armLen);
+        }
 
-            context.DrawLine(cornerPen, topArm, br);
-            context.DrawLine(cornerPen, leftArm, br);
+        private static void DrawCorner(
+            DrawingContext context,
+            Pen pen,
+            Point corner,
+            Vector horizontalDirection,
+            Vector verticalDirection,
+            double armLength)
+        {
+            context.DrawLine(pen, corner, corner + horizontalDirection * armLength);
+            context.DrawLine(pen, corner, corner + verticalDirection * armLength);
         }
     }
 }

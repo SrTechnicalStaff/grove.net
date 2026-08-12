@@ -1,12 +1,12 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified implementation with remaining migration gaps"
 ---
 
 # ADR-040: Spatial Layer System Architecture
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
+| **Status** | PARTIAL — verified implementation with remaining migration gaps |
 | **Date** | 2026-08-12 |
 | **Area** | Spatial Layers / Field Physics / Layer Indexing |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp |

@@ -1,12 +1,12 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified anchor ribbon and memory binding seam"
 ---
 
 # ADR-052: Content Anchor System and Memory Binding Architecture
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
+| **Status** | PARTIAL — verified anchor ribbon and memory binding seam |
 | **Date** | 2026-08-12 |
 | **Area** | Spatial Grid Engine / Memory Ledger & Anchoring Subsystem |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp 3.x |

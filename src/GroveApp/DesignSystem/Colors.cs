@@ -11,6 +11,7 @@ namespace GroveApp.DesignSystem
         public const string BaseHex = "#0E0E10";            // --c-base
         public const string GridMinHex = "#161618";         // --c-grid-min
         public const string SurfaceRaisedHex = "#1C1C20";   // --c-surface-raised
+        public const string SurfaceInteractiveHex = "#3A3A40"; // interactive control surface
         public const string GridMajHex = "#242428";         // --c-grid-maj
         public const string InkHex = "#EAEAEA";             // --c-text
         public const string PaperHex = "#F5F5F5";           // --c-paper
@@ -74,10 +75,15 @@ namespace GroveApp.DesignSystem
 
         // Avalonia Color Structs
         public static Color BaseColor => Color.Parse(BaseHex);
+        public static Color GridMaj => Color.Parse(GridMajHex);
         public static Color SurfaceGrid => Color.Parse(SurfaceGridHex);
         public static Color SurfaceChrome => Color.Parse(SurfaceChromeHex);
+        public static Color SurfaceRaised => Color.Parse(SurfaceRaisedHex);
         public static Color SurfaceNested => Color.Parse(SurfaceNestedHex);
+        public static Color SurfaceInteractive => Color.Parse(SurfaceInteractiveHex);
         public static Color SurfacePage => Color.Parse(SurfacePageHex);
+        public static Color Ink => Color.Parse(InkHex);
+        public static Color TitleBarInactiveForeground => Color.FromArgb(0x80, 0xF4, 0xF4, 0xF2);
 
         public static Color NoteViolet => Color.Parse(NoteVioletHex);
         public static Color NoteClay => Color.Parse(NoteClayHex);
@@ -92,6 +98,8 @@ namespace GroveApp.DesignSystem
 
         public static Color KEditBorder => Color.Parse(KEditBorderHex);
         public static Color KEdit => Color.Parse(KEditHex);
+        public static Color LayerFill => Color.Parse(LayerFillHex);
+        public static Color LayerBorder => Color.Parse(LayerBorderHex);
         public static Color KSlateBorder => Color.Parse(KSlateBorderHex);
         public static Color CSlate => Color.Parse(CSlateHex);
         public static Color CPaperInk => Color.Parse(CPaperInkHex);
@@ -127,6 +135,8 @@ namespace GroveApp.DesignSystem
 
         public static IBrush KEditBorderBrush => new SolidColorBrush(KEditBorder);
         public static IBrush KEditBrush => new SolidColorBrush(KEdit);
+        public static IBrush LayerFillBrush => new SolidColorBrush(LayerFill);
+        public static IBrush LayerBorderBrush => new SolidColorBrush(LayerBorder);
         public static IBrush KSlateBorderBrush => new SolidColorBrush(KSlateBorder);
         public static IBrush CSlateBrush => new SolidColorBrush(CSlate);
         public static IBrush CPaperInkBrush => new SolidColorBrush(CPaperInk);

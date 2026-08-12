@@ -1,12 +1,12 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified implementation with remaining integration gaps"
 ---
 
 # ADR-041: Vertical Aura Permeability and Attenuation Physics
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
+| **Status** | PARTIAL — verified implementation with remaining integration gaps |
 | **Date** | 2026-08-12 |
 | **Area** | Aura Physics / Cross-Layer Propagation / Field Computation |
 | **Target Runtime** | C# 13 / .NET 9 / SkiaSharp |

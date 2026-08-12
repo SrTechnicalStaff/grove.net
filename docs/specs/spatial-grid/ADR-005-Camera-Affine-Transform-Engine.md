@@ -1,12 +1,12 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified affine camera seam with remaining inertia gaps"
 ---
 
 # ADR-005: Camera Affine Transform Engine
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
+| **Status** | PARTIAL — verified affine camera seam with remaining inertia gaps |
 | **Date** | 2026-08-12 |
 | **Area** | 2D Camera Engine / Viewport Mathematics |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 CompositionTarget VSync |

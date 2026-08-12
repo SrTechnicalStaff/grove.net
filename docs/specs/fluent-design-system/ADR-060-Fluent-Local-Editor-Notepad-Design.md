@@ -1,12 +1,12 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "SUPERSEDED BY ADR-064 — DO NOT IMPLEMENT"
 ---
 
 # ADR-060: Fluent Local Editor Notepad Design
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
+| **Status** | SUPERSEDED BY ADR-064 — DO NOT IMPLEMENT |
 | **Date** | 2026-08-12 |
 | **Area** | Fluent Design System / Local Editor Windowing & UX |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11 / FluentAvalonia 2.x / WinUI 3 |

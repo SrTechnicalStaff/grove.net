@@ -144,24 +144,24 @@ namespace GroveApp.Engine
     public static class RichTextEngine
     {
         // Styling Brushes & Pens
-        private static readonly IBrush DefaultForegroundBrush = Colors.NoteTextBrush; // #F4F4F2
-        private static readonly IBrush CodeBgBrush = new SolidColorBrush(Color.Parse("#161619"));
-        private static readonly Pen CodeBorderPen = new Pen(new SolidColorBrush(Color.Parse("#2D2D32")), 1.0);
-        private static readonly IBrush InlineCodeBgBrush = new SolidColorBrush(Color.Parse("#1A1A1D"));
-        private static readonly Pen InlineCodeBorderPen = new Pen(new SolidColorBrush(Color.Parse("#2D2D32")), 1.0);
-        private static readonly IBrush InlineCodeInkBrush = new SolidColorBrush(Color.Parse("#E8B964"));
-        private static readonly IBrush SignalInteractionBrush = Colors.SignalInteractionBrush; // #96B6F8
+        private static readonly IBrush DefaultForegroundBrush = Colors.NoteTextBrush;
+        private static readonly IBrush CodeBgBrush = Colors.SurfaceChromeBrush;
+        private static readonly Pen CodeBorderPen = new Pen(Colors.HudSlateBorderBrush, 1.0);
+        private static readonly IBrush InlineCodeBgBrush = Colors.SurfaceNestedBrush;
+        private static readonly Pen InlineCodeBorderPen = new Pen(Colors.HudSlateBorderBrush, 1.0);
+        private static readonly IBrush InlineCodeInkBrush = Colors.SignalActiveWorkBrush;
+        private static readonly IBrush SignalInteractionBrush = Colors.SignalInteractionBrush;
         private static readonly Pen BlockquoteAccentPen = new Pen(Colors.SignalInteractionBrush, 3.0);
-        private static readonly IBrush BlockquoteBgBrush = new SolidColorBrush(Color.FromArgb(20, 150, 182, 248)); // 8% opacity tint
-        private static readonly IBrush MarkBgBrush = new SolidColorBrush(Color.FromArgb(80, 232, 185, 100)); // #E8B964 tint
-        private static readonly IBrush CodeLineNumberBrush = new SolidColorBrush(Color.Parse("#6E6E6A"));
+        private static readonly IBrush BlockquoteBgBrush = new SolidColorBrush(Color.FromArgb(20, Colors.SignalInteraction.R, Colors.SignalInteraction.G, Colors.SignalInteraction.B));
+        private static readonly IBrush MarkBgBrush = new SolidColorBrush(Color.FromArgb(80, Colors.SignalActiveWork.R, Colors.SignalActiveWork.G, Colors.SignalActiveWork.B));
+        private static readonly IBrush CodeLineNumberBrush = Colors.ContainmentEdgeBrush;
 
         // Syntax Highlighting Brushes
-        private static readonly IBrush SyntaxKeywordBrush = new SolidColorBrush(Color.Parse("#96B6F8")); // #96B6F8 Blue
-        private static readonly IBrush SyntaxStringBrush = new SolidColorBrush(Color.Parse("#9E8CEA"));  // #9E8CEA Purple
-        private static readonly IBrush SyntaxNumberBrush = new SolidColorBrush(Color.Parse("#B0524E"));  // #B0524E Red
-        private static readonly IBrush SyntaxCommentBrush = new SolidColorBrush(Color.Parse("#6E6E6A")); // #6E6E6A Grey
-        private static readonly IBrush SyntaxNormalBrush = Colors.NoteTextBrush;                         // #F4F4F2 Text
+        private static readonly IBrush SyntaxKeywordBrush = Colors.SignalInteractionBrush;
+        private static readonly IBrush SyntaxStringBrush = Colors.SignalAuthoredContextBrush;
+        private static readonly IBrush SyntaxNumberBrush = Colors.NoteClayBrush;
+        private static readonly IBrush SyntaxCommentBrush = Colors.ContainmentEdgeBrush;
+        private static readonly IBrush SyntaxNormalBrush = Colors.NoteTextBrush;
 
         private static readonly HashSet<string> Keywords = new(StringComparer.Ordinal)
         {

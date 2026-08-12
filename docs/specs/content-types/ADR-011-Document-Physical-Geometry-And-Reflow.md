@@ -1,5 +1,5 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified document rendering and editor seam"
 ---
 
 # ADR-011: Document Physical Geometry, Page Texture, AST, and Multi-Column Reflow Engine

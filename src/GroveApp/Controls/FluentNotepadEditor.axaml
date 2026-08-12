@@ -1,0 +1,46 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ds="clr-namespace:GroveApp.DesignSystem"
+             x:Class="GroveApp.Controls.FluentNotepadEditor"
+             Background="Transparent">
+
+    <Grid Name="EditorFrame"
+          Width="{x:Static ds:Tokens.MeasureReading}"
+          MinHeight="{x:Static ds:Tokens.NotepadMinHeight}"
+          MaxHeight="{x:Static ds:Tokens.NotepadMaxHeight}"
+          Background="Transparent"
+          RowDefinitions="*, Auto">
+
+        <!-- Headerless Single-Mode Plain Text / Markdown Authoring Canvas -->
+        <TextBox Grid.Row="0"
+                 Name="EditorTextBox"
+                 AcceptsReturn="True"
+                 TextWrapping="Wrap"
+                 Background="Transparent"
+                 BorderThickness="0"
+                 Padding="{x:Static ds:Tokens.ThicknessSm}"
+                 FontFamily="{x:Static ds:Typography.FontFamilyUi}"
+                 FontSize="{x:Static ds:Typography.SizeBody}"
+                 Foreground="{x:Static ds:Colors.TextPrimaryBrush}"
+                 CaretBrush="{x:Static ds:Colors.TextPrimaryBrush}"
+                 MaxWidth="{x:Static ds:Tokens.MeasureReading}"
+                 HorizontalAlignment="Stretch"
+                 VerticalAlignment="Stretch"
+                 RenderOptions.TextRenderingMode="SubpixelAntialias"/>
+
+        <!-- Minimal Telemetry Line (micro size, text meta) -->
+        <Border Grid.Row="1"
+                Height="24"
+                Background="{x:Static ds:Colors.SurfaceGridHex}"
+                BorderBrush="{x:Static ds:Colors.EdgeQuietBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="{x:Static ds:Tokens.TelemetryPadding}">
+            <TextBlock Name="TxtTelemetry"
+                       Text="Ln 1, Col 1 • 100% • UTF-8"
+                       FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                       FontSize="{x:Static ds:Typography.SizeMicro}"
+                       Foreground="{x:Static ds:Colors.TextMetaBrush}"
+                       VerticalAlignment="Center"/>
+        </Border>
+    </Grid>
+</UserControl>

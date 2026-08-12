@@ -59,6 +59,7 @@ namespace GroveApp.DesignSystem
         public const double FieldGain = 0.22;              // --field-gain
         public const double FieldAlphaMin = 0.025;         // --field-alpha-min
         public const double FieldAlphaMax = 0.30;          // --field-alpha-max
+        public const int MaxCullingRadiusCells = 6;        // --field-max-culling-radius-cells
         public const double FieldPerimeterInk = 0.25;      // --field-perimeter-ink
         public const double FieldPerimeterSelected = 0.80; // --field-perimeter-selected
         public const double CursorRing = 2.0;              // --cursor-ring
@@ -81,6 +82,29 @@ namespace GroveApp.DesignSystem
         public const double SpaceMd = 16.0; // --sp-md
         public const double SpaceLg = 24.0; // --sp-lg
         public const double SpaceXl = 32.0; // --sp-xl
+
+        // Named aliases used by component specifications.
+        public const double SpacingXs = SpaceXs; // --sp-xs
+        public const double SpacingSm = SpaceSm; // --sp-sm
+        public const double SpacingMd = SpaceMd; // --sp-md
+        public const double SpacingLg = SpaceLg; // --sp-lg
+
+        // Viewport-fixed authoring surfaces.
+        public const double MeasureReading = 640.0; // --measure-reading, rendered px bound
+        public const double QuickNoteFrameWidth = 640.0;
+        public const double QuickNoteMinHeight = 120.0;
+        public const double QuickNoteMaxHeight = 360.0;
+        public const double QuickNoteCaptureMinHeight = 90.0;
+        public const double QuickNoteCaptureMaxHeight = 200.0;
+        public const double QuickNoteFeedMaxHeight = 300.0;
+        public const double NotepadMinHeight = 360.0;
+        public const double NotepadMaxHeight = 560.0;
+        public const double NotepadDefaultHeight = 400.0;
+
+        public static Thickness QuickNoteHeaderPadding => new(SpaceMd, SpaceSm);
+        public static Thickness QuickNoteActionPadding => new(SpaceMd, SpaceSm);
+        public static Thickness QuickNoteIdentityMargin => new(0, 0, 0, SpaceLg);
+        public static Thickness TelemetryPadding => new(SpaceSm, 0);
 
         public static Thickness ThicknessXs => new(SpaceXs);
         public static Thickness ThicknessSm => new(SpaceSm);

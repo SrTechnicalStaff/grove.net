@@ -1,12 +1,12 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified implementation with remaining interaction gaps"
 ---
 
 # ADR-043: Spatial Layer Manager UI and Controls
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
+| **Status** | PARTIAL — verified implementation with remaining interaction gaps |
 | **Date** | 2026-08-12 |
 | **Area** | HUD Slate Plane / Layer Control UI / Avalonia Controls |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 |

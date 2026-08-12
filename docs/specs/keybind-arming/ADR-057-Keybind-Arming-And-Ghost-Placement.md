@@ -1,12 +1,12 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified arming and placement feedback"
 ---
 
 # ADR-057: Keybind Arming State Machine and Ghost Placement Preview
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
+| **Status** | PARTIAL — verified arming and placement feedback |
 | **Date** | 2026-08-12 |
 | **Area** | Spatial Grid Engine / Input & Arming Subsystem |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp 3.x |

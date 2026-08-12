@@ -1,12 +1,12 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified visual stacking with remaining compositor routing gaps"
 ---
 
 # ADR-004: Three-Plane Visual Hierarchy
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
+| **Status** | PARTIAL — verified visual stacking with remaining compositor routing gaps |
 | **Date** | 2026-08-12 |
 | **Area** | Visual Architecture / Compositor & Input Pipeline |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 TopLevel Compositor |

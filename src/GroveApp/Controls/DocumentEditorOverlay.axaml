@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ds="clr-namespace:GroveApp.DesignSystem"
+             x:Class="GroveApp.Controls.DocumentEditorOverlay"
+             IsVisible="False"
+             Background="Transparent">
+    <Grid Width="640" MaxHeight="620" RowDefinitions="Auto,*,Auto">
+        <TextBox Name="TitleBox"
+                 Grid.Row="0"
+                 Watermark="Document title"
+                 Background="Transparent"
+                 BorderThickness="0,0,0,1"
+                 BorderBrush="{x:Static ds:Colors.EdgeQuietBrush}"
+                 Foreground="{x:Static ds:Colors.TextPrimaryBrush}"
+                 FontFamily="{x:Static ds:Typography.FontFamilyUi}"
+                 FontSize="16"
+                 Padding="8,4" />
+        <TextBox Name="BodyBox"
+                 Grid.Row="1"
+                 AcceptsReturn="True"
+                 TextWrapping="Wrap"
+                 Background="Transparent"
+                 BorderThickness="0"
+                 Foreground="{x:Static ds:Colors.TextPrimaryBrush}"
+                 FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                 FontSize="14"
+                 Padding="8"
+                 RenderOptions.TextRenderingMode="SubpixelAntialias" />
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="6" Margin="8">
+            <Button Name="CancelButton" Content="Cancel" Padding="8,4" />
+            <Button Name="SaveButton" Content="Save" Padding="8,4" />
+        </StackPanel>
+    </Grid>
+</UserControl>

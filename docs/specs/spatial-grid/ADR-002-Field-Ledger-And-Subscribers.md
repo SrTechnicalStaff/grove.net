@@ -1,12 +1,12 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified discrete field ledger and subscriber seams"
 ---
 
 # ADR-002: Field Ledger and Subscribers
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
+| **Status** | PARTIAL — verified discrete field ledger and subscriber seams |
 | **Date** | 2026-08-12 |
 | **Area** | Field Ledger System / Multi-Layer Energy Topology |
 | **Target Runtime** | C# 13 / .NET 9 / High-Performance Span & Memory Primitives |

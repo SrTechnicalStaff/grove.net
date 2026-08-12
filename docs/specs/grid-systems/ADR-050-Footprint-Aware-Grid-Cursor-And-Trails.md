@@ -1,12 +1,12 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified footprint cursor and trail behavior"
 ---
 
 # ADR-050: Footprint-Aware Grid Cursor and Spent-Cell Trail Decay System
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
+| **Status** | PARTIAL — verified footprint cursor and trail behavior |
 | **Date** | 2026-08-12 |
 | **Area** | Spatial Grid Engine / Cursor Interaction & Render Subsystem |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp 3.x |

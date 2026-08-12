@@ -1,38 +1,34 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:ui="using:FluentAvalonia.UI.Controls"
              xmlns:ds="clr-namespace:GroveApp.DesignSystem"
              x:Class="GroveApp.Controls.QuickNoteOverlay"
              Background="Transparent">
 
+    <!-- Quick Note is a viewport capture slate. It is intentionally separate
+         from FluentNotepadEditor, which edits an existing grid placement. -->
     <Border Name="FrameBorder"
-            Width="540"
-            MaxWidth="600"
+            Width="{x:Static ds:Tokens.QuickNoteFrameWidth}"
+            MaxWidth="{x:Static ds:Tokens.QuickNoteFrameWidth}"
+            MinHeight="{x:Static ds:Tokens.QuickNoteMinHeight}"
+            MaxHeight="{x:Static ds:Tokens.QuickNoteMaxHeight}"
             Background="{x:Static ds:Colors.SurfaceChromeHex}"
             BorderBrush="{x:Static ds:Colors.KSlateBorderHex}"
             BorderThickness="1"
             CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
-            Padding="24"
-            BoxShadow="0 8 24 0 #66000000"
+            Padding="{x:Static ds:Tokens.ThicknessLg}"
+            BoxShadow="{x:Static ds:Tokens.ShadowLocal}"
             HorizontalAlignment="Center"
             VerticalAlignment="Center">
 
-        <StackPanel Spacing="16">
-            <!-- Header Row -->
-            <Grid ColumnDefinitions="*, Auto" Margin="0,0,0,8">
-                <!-- Identity Line -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <ui:SymbolIcon Symbol="Edit" FontSize="16" Foreground="{x:Static ds:Colors.CSlateBrush}" />
-                    <TextBlock Text="QUICK NOTE"
-                               FontFamily="{x:Static ds:Typography.FontFamilyUi}"
-                               FontSize="{x:Static ds:Typography.SizeTitleSmall}"
-                               FontWeight="Medium"
-                               Foreground="{x:Static ds:Colors.CSlateBrush}"
-                               LetterSpacing="1.2"
-                               VerticalAlignment="Center" />
-                </StackPanel>
-
-                <!-- Close Header Control -->
+        <StackPanel Spacing="{x:Static ds:Tokens.SpaceMd}">
+            <Grid ColumnDefinitions="*,Auto" Margin="{x:Static ds:Tokens.QuickNoteIdentityMargin}">
+                <TextBlock Grid.Column="0"
+                           Text="QUICK NOTE"
+                           FontFamily="{x:Static ds:Typography.FontFamilyDisplay}"
+                           FontSize="{x:Static ds:Typography.SizeTitleSmall}"
+                           FontWeight="{x:Static ds:Typography.WeightDisplay}"
+                           Foreground="{x:Static ds:Colors.CSlateBrush}"
+                           LetterSpacing="{x:Static ds:Typography.TrackingLabel}" />
                 <Button Name="BtnHeaderClose"
                         Grid.Column="1"
                         Click="BtnHeaderClose_Click"
@@ -43,171 +39,52 @@
                         Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
                         FontFamily="{x:Static ds:Typography.FontFamilyUi}"
                         FontSize="{x:Static ds:Typography.SizeCaption}"
-                        Padding="12,6">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <ui:SymbolIcon Symbol="Dismiss" FontSize="12" Foreground="{x:Static ds:Colors.TextSecondaryBrush}" />
-                        <TextBlock Text="Close" />
-                    </StackPanel>
-                </Button>
+                        Padding="{x:Static ds:Tokens.QuickNoteHeaderPadding}">Close</Button>
             </Grid>
 
-            <!-- Inline Confirm Row (Unsaved Text on Overlay Close) -->
-            <Border Name="UnsavedConfirmRow"
-                    IsVisible="False"
-                    Background="{x:Static ds:Colors.SurfaceNestedHex}"
-                    BorderBrush="{x:Static ds:Colors.EdgeHairlineBrush}"
-                    BorderThickness="1"
-                    CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
-                    Padding="16,8">
-                <Grid ColumnDefinitions="*, Auto, Auto">
-                    <TextBlock Grid.Column="0"
-                               Text="Discard unsaved changes?"
-                               FontFamily="{x:Static ds:Typography.FontFamilyUi}"
-                               FontSize="{x:Static ds:Typography.SizeCaption}"
-                               Foreground="{x:Static ds:Colors.TextPrimaryBrush}"
-                               VerticalAlignment="Center" />
-                    <Button Name="BtnKeepEditingUnsaved"
-                            Grid.Column="1"
-                            Click="BtnKeepEditingUnsaved_Click"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
-                            FontSize="{x:Static ds:Typography.SizeCaption}"
-                            Margin="0,0,12,0"
-                            Padding="0">Keep editing</Button>
-                    <Button Name="BtnDiscardUnsaved"
-                            Grid.Column="2"
-                            Click="BtnDiscardUnsaved_Click"
-                            Background="{x:Static ds:Colors.SignalRefusalBrush}"
-                            BorderThickness="0"
-                            CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
-                            Foreground="#FFFFFF"
-                            FontSize="{x:Static ds:Typography.SizeCaption}"
-                            Padding="8,4">
-                        <StackPanel Orientation="Horizontal" Spacing="4">
-                            <ui:SymbolIcon Symbol="Delete" FontSize="12" Foreground="#FFFFFF" />
-                            <TextBlock Text="Discard" />
-                        </StackPanel>
-                    </Button>
-                </Grid>
-            </Border>
-
-            <!-- Refusal Row (Save Failed) -->
-            <Border Name="RefusalRow"
-                    IsVisible="False"
-                    Background="{x:Static ds:Colors.SurfaceNestedHex}"
-                    BorderBrush="{x:Static ds:Colors.SignalRefusalBrush}"
-                    BorderThickness="1"
-                    CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
-                    Padding="16,8">
-                <Grid ColumnDefinitions="*, Auto, Auto">
-                    <TextBlock Grid.Column="0"
-                               Text="This Note is not saved."
-                               FontFamily="{x:Static ds:Typography.FontFamilyUi}"
-                               FontSize="{x:Static ds:Typography.SizeCaption}"
-                               Foreground="{x:Static ds:Colors.TextPrimaryBrush}"
-                               VerticalAlignment="Center" />
-                    <Button Name="BtnRefusalDismiss"
-                            Grid.Column="1"
-                            Click="BtnRefusalDismiss_Click"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
-                            FontSize="{x:Static ds:Typography.SizeCaption}"
-                            Margin="0,0,12,0"
-                            Padding="0">Keep editing</Button>
-                    <Button Name="BtnRefusalRetry"
-                            Grid.Column="2"
-                            Click="BtnRefusalRetry_Click"
-                            Background="{x:Static ds:Colors.SignalInteractionBrush}"
-                            BorderThickness="0"
-                            CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
-                            Foreground="{x:Static ds:Colors.CPaperInkBrush}"
-                            FontSize="{x:Static ds:Typography.SizeCaption}"
-                            Padding="8,4">
-                        <StackPanel Orientation="Horizontal" Spacing="4">
-                            <ui:SymbolIcon Symbol="Refresh" FontSize="12" Foreground="{x:Static ds:Colors.CPaperInkBrush}" />
-                            <TextBlock Text="Try again" />
-                        </StackPanel>
-                    </Button>
-                </Grid>
-            </Border>
-
-            <!-- Capture Field Container -->
             <Border Name="CaptureFieldBorder"
                     Background="{x:Static ds:Colors.SurfaceNestedHex}"
                     BorderBrush="{x:Static ds:Colors.EdgeQuietBrush}"
                     BorderThickness="1"
                     CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
-                    Padding="16">
+                    Padding="{x:Static ds:Tokens.ThicknessMd}">
                 <TextBox Name="TxtCapture"
                          AcceptsReturn="True"
                          TextWrapping="Wrap"
-                         MinHeight="90"
-                         MaxHeight="200"
+                         MinHeight="{x:Static ds:Tokens.QuickNoteCaptureMinHeight}"
+                         MaxHeight="{x:Static ds:Tokens.QuickNoteCaptureMaxHeight}"
                          Background="Transparent"
                          Foreground="{x:Static ds:Colors.TextPrimaryBrush}"
+                         CaretBrush="{x:Static ds:Colors.SignalInteractionBrush}"
                          BorderThickness="0"
                          CornerRadius="0"
                          Padding="0"
                          FontFamily="{x:Static ds:Typography.FontFamilyUi}"
-                         FontSize="{x:Static ds:Typography.SizeLead}" />
+                         FontSize="{x:Static ds:Typography.SizeLead}"
+                         HorizontalAlignment="Stretch"
+                         RenderOptions.TextRenderingMode="SubpixelAntialias" />
             </Border>
 
-            <!-- Hint Line -->
-            <StackPanel Name="HintLine" Orientation="Horizontal" Spacing="16" Margin="0,-4,0,0">
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Text="ENTER" FontFamily="{x:Static ds:Typography.FontFamilyMono}" FontSize="{x:Static ds:Typography.SizeLabel}" Foreground="{x:Static ds:Colors.TextMetaBrush}" />
-                    <TextBlock Text="Line break" FontFamily="{x:Static ds:Typography.FontFamilyMono}" FontSize="{x:Static ds:Typography.SizeLabel}" Foreground="{x:Static ds:Colors.TextMetaBrush}" />
-                </StackPanel>
+            <StackPanel Name="HintLine" Orientation="Horizontal" Spacing="{x:Static ds:Tokens.SpacingMd}">
+                <TextBlock Text="ENTER  line break"
+                           FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                           FontSize="{x:Static ds:Typography.SizeLabel}"
+                           Foreground="{x:Static ds:Colors.TextMetaBrush}" />
                 <TextBlock Text="•" Foreground="{x:Static ds:Colors.TextMetaBrush}" />
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Text="SHIFT+ENTER" FontFamily="{x:Static ds:Typography.FontFamilyMono}" FontSize="{x:Static ds:Typography.SizeLabel}" Foreground="{x:Static ds:Colors.TextMetaBrush}" />
-                    <TextBlock Text="Save &amp; next Note" FontFamily="{x:Static ds:Typography.FontFamilyMono}" FontSize="{x:Static ds:Typography.SizeLabel}" Foreground="{x:Static ds:Colors.TextMetaBrush}" />
-                </StackPanel>
+                <TextBlock Text="SHIFT+ENTER  save &amp; next Note"
+                           FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                           FontSize="{x:Static ds:Typography.SizeLabel}"
+                           Foreground="{x:Static ds:Colors.TextMetaBrush}" />
                 <TextBlock Text="•" Foreground="{x:Static ds:Colors.TextMetaBrush}" />
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Text="CTRL+ENTER" FontFamily="{x:Static ds:Typography.FontFamilyMono}" FontSize="{x:Static ds:Typography.SizeLabel}" Foreground="{x:Static ds:Colors.TextMetaBrush}" />
-                    <TextBlock Text="Save &amp; place" FontFamily="{x:Static ds:Typography.FontFamilyMono}" FontSize="{x:Static ds:Typography.SizeLabel}" Foreground="{x:Static ds:Colors.TextMetaBrush}" />
-                </StackPanel>
+                <TextBlock Text="CTRL+ENTER  save &amp; place"
+                           FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                           FontSize="{x:Static ds:Typography.SizeLabel}"
+                           Foreground="{x:Static ds:Colors.TextMetaBrush}" />
             </StackPanel>
 
-            <!-- Composer Action Row (Present during feed item editing) -->
-            <StackPanel Name="ComposerActionRow"
-                        Orientation="Horizontal"
-                        HorizontalAlignment="Right"
-                        Spacing="12"
-                        IsVisible="False"
-                        Margin="0,4,0,0">
-                <Button Name="BtnStopEditing"
-                        Click="BtnStopEditing_Click"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        Foreground="{x:Static ds:Colors.TextPrimaryBrush}"
-                        FontFamily="{x:Static ds:Typography.FontFamilyUi}"
-                        FontSize="{x:Static ds:Typography.SizeCaption}"
-                        Padding="8,4">Stop editing</Button>
-                <Button Name="BtnSaveComposer"
-                        Click="BtnSaveComposer_Click"
-                        Background="{x:Static ds:Colors.SignalInteractionBrush}"
-                        BorderThickness="0"
-                        CornerRadius="{x:Static ds:Tokens.CornerRadiusSm}"
-                        Foreground="{x:Static ds:Colors.CPaperInkBrush}"
-                        FontFamily="{x:Static ds:Typography.FontFamilyUi}"
-                        FontSize="{x:Static ds:Typography.SizeCaption}"
-                        FontWeight="Medium"
-                        Padding="16,4">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <ui:SymbolIcon Symbol="Save" FontSize="12" Foreground="{x:Static ds:Colors.CPaperInkBrush}" />
-                        <TextBlock Text="Save" />
-                    </StackPanel>
-                </Button>
-            </StackPanel>
-
-            <!-- Feed List Container (Captured Notes, newest first) -->
-            <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
-                <StackPanel Name="FeedContainer" Spacing="8" />
-            </ScrollViewer>
+            <StackPanel Name="FeedContainer"
+                        Spacing="{x:Static ds:Tokens.SpaceSm}"
+                        IsVisible="False" />
         </StackPanel>
     </Border>
 </UserControl>

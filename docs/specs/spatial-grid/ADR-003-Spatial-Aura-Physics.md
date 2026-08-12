@@ -1,12 +1,12 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified aura physics and discrete rendering"
 ---
 
 # ADR-003: Spatial Aura Physics
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
+| **Status** | PARTIAL — verified aura physics and discrete rendering |
 | **Date** | 2026-08-12 |
 | **Area** | Aura Field Dynamics / Spatial Physics Engine |
 | **Target Runtime** | C# 13 / .NET 9 / SkiaSharp |

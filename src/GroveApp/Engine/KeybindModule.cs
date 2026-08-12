@@ -3,78 +3,75 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Input;
-using GroveApp.Controls;
 using GroveApp.Models;
 
 namespace GroveApp.Engine
 {
     /// <summary>
     /// Deep engine module for context-aware keybindings across Grove v9 Spatial Desktop.
-    /// Handles Spacebar (open/multi-select queue), Ctrl+C (Copy), Ctrl+V (Paste),
-    /// Ctrl+Enter (commit), Ctrl+E (WYSIWYG toggle), Tab/Ctrl+Tab (tab cycle),
-    /// N (Quick Note), A (Toggle Anchor), Del/Backspace (Delete), Esc (Dismiss/Deselect).
+    /// Handles Spacebar (open Notepad Editor), Ctrl+C (Copy), Ctrl+V (Paste),
+    /// N/Shift+N/D (tool arming), A (Toggle Anchor), Del/Backspace (Delete),
+    /// Esc (Dismiss/Deselect), bracket layer navigation, and layer management keybindings.
     /// </summary>
     public class KeybindModule
     {
         public bool ProcessKeyDown(
             KeyEventArgs e,
-            GridCanvasControl canvas,
-            LocalEditorOverlay localEditor,
-            QuickNoteOverlay quickNote)
+            IKeybindHost host)
         {
-            // 1. Local Editor Active Key Handler
-            if (localEditor.IsVisible)
+            // 1. Fluent Notepad Editor Active Key Handler
+            if (host.IsNotepadVisible)
             {
-                return ProcessLocalEditorKey(e, localEditor);
+                return ProcessNotepadEditorKey(e, host);
             }
 
             // 2. Quick Note Active Key Handler
-            if (quickNote.IsVisible)
+            if (host.IsQuickNoteVisible)
             {
-                return ProcessQuickNoteKey(e, quickNote);
+                return ProcessQuickNoteKey(e, host);
             }
 
-            // 3. Spatial Grid Canvas Active Key Handler
-            return ProcessCanvasKey(e, canvas, localEditor, quickNote);
+            // 3. Layer Manager Slate Active Key Handler
+            if (host.IsLayerSlateVisible && host.ProcessLayerKeyDown(e))
+            {
+                return true;
+            }
+
+            // 4. Spatial Grid Canvas Active Key Handler
+            return ProcessCanvasKey(e, host);
         }
 
-        private bool ProcessLocalEditorKey(KeyEventArgs e, LocalEditorOverlay localEditor)
+        public bool ProcessRoutedCombination(KeyCombination combination, IKeybindHost host)
         {
-            // Ctrl + Enter: Commit Save
-            if (e.Key == Key.Enter && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+            if (combination.Key == Key.N && combination.Modifiers == KeyModifiers.None)
             {
-                localEditor.CommitSave();
-                e.Handled = true;
+                return host.ArmTool(ArmableContentType.Note);
+            }
+
+            if (combination.Key == Key.N && combination.Modifiers == KeyModifiers.Shift)
+            {
+                return host.ArmTool(ArmableContentType.QuickNote);
+            }
+
+            if (combination.Key == Key.D && combination.Modifiers == KeyModifiers.None)
+            {
+                return host.ArmTool(ArmableContentType.Document);
+            }
+
+            if (combination.Key == Key.Escape && host.IsToolArmed)
+            {
+                host.DisarmTool();
                 return true;
             }
 
-            // Ctrl + E: Toggle WYSIWYG vs RAW Mode
-            if (e.Key == Key.E && e.KeyModifiers.HasFlag(KeyModifiers.Control))
-            {
-                localEditor.ToggleWysiwygMode();
-                e.Handled = true;
-                return true;
-            }
+            return false;
+        }
 
-            // Tab / Ctrl+Tab: Cycle through queued tabs in Local Editor
-            if (e.Key == Key.Tab)
+        private bool ProcessNotepadEditorKey(KeyEventArgs e, IKeybindHost host)
+        {
+            if (e.Key == Key.Escape || (e.Key == Key.Enter && e.KeyModifiers.HasFlag(KeyModifiers.Control)))
             {
-                if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
-                {
-                    localEditor.SelectPreviousTab();
-                }
-                else
-                {
-                    localEditor.SelectNextTab();
-                }
-                e.Handled = true;
-                return true;
-            }
-
-            // Esc: Dismiss / Cancel Editor
-            if (e.Key == Key.Escape)
-            {
-                localEditor.HandleEscape();
+                host.CommitNotepadSave();
                 e.Handled = true;
                 return true;
             }
@@ -82,11 +79,11 @@ namespace GroveApp.Engine
             return false;
         }
 
-        private bool ProcessQuickNoteKey(KeyEventArgs e, QuickNoteOverlay quickNote)
+        private bool ProcessQuickNoteKey(KeyEventArgs e, IKeybindHost host)
         {
             if (e.Key == Key.Escape)
             {
-                quickNote.Close();
+                host.CloseQuickNote();
                 e.Handled = true;
                 return true;
             }
@@ -95,17 +92,15 @@ namespace GroveApp.Engine
 
         private bool ProcessCanvasKey(
             KeyEventArgs e,
-            GridCanvasControl canvas,
-            LocalEditorOverlay localEditor,
-            QuickNoteOverlay quickNote)
+            IKeybindHost host)
         {
             // Ctrl + C: Copy selected items to native clipboard (ADR-014)
             if (e.Key == Key.C && e.KeyModifiers.HasFlag(KeyModifiers.Control))
             {
-                var selectedItems = canvas.GetSelectedItems();
+                var selectedItems = host.GetSelectedItems();
                 if (selectedItems.Count > 0)
                 {
-                    _ = canvas.ClipboardService.CopyItemsAsync(selectedItems);
+                    _ = host.CopyItemsAsync(selectedItems);
                     e.Handled = true;
                     return true;
                 }
@@ -114,68 +109,64 @@ namespace GroveApp.Engine
             // Ctrl + V: Paste items from native clipboard at cell cursor (ADR-014)
             if (e.Key == Key.V && e.KeyModifiers.HasFlag(KeyModifiers.Control))
             {
-                _ = Task.Run(async () =>
-                {
-                    var pasted = await canvas.ClipboardService.PasteItemsAsync(new CellCoordinate(canvas.CursorCellX, canvas.CursorCellY));
-                    if (pasted.Count > 0)
-                    {
-                        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                        {
-                            canvas.DeselectAllItems();
-                            foreach (var item in pasted)
-                            {
-                                canvas.Items.Add(item);
-                                item.IsSelected = true;
-                            }
-                            canvas.SelectedItem = pasted[^1];
-                            canvas.InvalidateVisual();
-                        });
-                    }
-                });
+                _ = host.PasteItemsAtCursorAsync();
                 e.Handled = true;
                 return true;
             }
 
-            // Spacebar: Open Local Editor on selected Note(s) or note under cursor
+            // Spacebar: Open Fluent Notepad Editor on selected Note(s) or note under cursor
             if (e.Key == Key.Space)
             {
-                var selectedNotes = canvas.GetSelectedNotes();
+                var selectedNotes = host.GetSelectedNotes();
                 if (selectedNotes.Count >= 2)
                 {
-                    Rect primaryBounds = canvas.GetNoteScreenBounds(selectedNotes[0]);
-                    localEditor.OpenForNotes(selectedNotes, primaryBounds, canvas.Bounds.Size);
+                    host.OpenNotepadForNotes(selectedNotes, host.GetNoteScreenBounds(selectedNotes[0]));
                     e.Handled = true;
                     return true;
                 }
                 else if (selectedNotes.Count == 1)
                 {
-                    Rect bounds = canvas.GetNoteScreenBounds(selectedNotes[0]);
-                    localEditor.OpenForNote(selectedNotes[0], bounds, canvas.Bounds.Size);
+                    host.OpenNotepadForNote(selectedNotes[0], host.GetNoteScreenBounds(selectedNotes[0]));
                     e.Handled = true;
                     return true;
                 }
                 else
                 {
-                    GridNote? cursorNote = canvas.FindNoteAtCell(canvas.CursorCellX, canvas.CursorCellY);
+                    GridNote? cursorNote = host.FindNoteAtCursor();
                     if (cursorNote != null)
                     {
-                        canvas.DeselectAllItems();
-                        cursorNote.IsSelected = true;
-                        canvas.SelectedItem = cursorNote;
-                        canvas.InvalidateVisual();
-
-                        Rect bounds = canvas.GetNoteScreenBounds(cursorNote);
-                        localEditor.OpenForNote(cursorNote, bounds, canvas.Bounds.Size);
+                        host.SelectOnly(cursorNote);
+                        host.OpenNotepadForNote(cursorNote, host.GetNoteScreenBounds(cursorNote));
                         e.Handled = true;
                         return true;
                     }
                 }
             }
 
-            // N: Quick Note
-            if (e.Key == Key.N)
+            // Spatial arming keys
+            if (e.Key is Key.N or Key.D)
             {
-                quickNote.Open();
+                if (ProcessRoutedCombination(KeyCombination.From(e), host))
+                {
+                    e.Handled = true;
+                    return true;
+                }
+            }
+
+            // L: Toggle the HUD layer manager slate.
+            if (e.Key == Key.L &&
+                (e.KeyModifiers == KeyModifiers.None ||
+                 (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.KeyModifiers.HasFlag(KeyModifiers.Shift))))
+            {
+                host.ToggleLayerSlate();
+                e.Handled = true;
+                return true;
+            }
+
+            // Ctrl+I: isolate the active layer and suppress inactive presence.
+            if (e.Key == Key.I && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+            {
+                host.ToggleLayerIsolation();
                 e.Handled = true;
                 return true;
             }
@@ -183,14 +174,10 @@ namespace GroveApp.Engine
             // A: Toggle Anchor
             if (e.Key == Key.A)
             {
-                var selectedItems = canvas.GetSelectedItems();
+                var selectedItems = host.GetSelectedItems();
                 if (selectedItems.Count > 0)
                 {
-                    foreach (var item in selectedItems)
-                    {
-                        item.IsAnchored = !item.IsAnchored;
-                    }
-                    canvas.InvalidateVisual();
+                    host.ToggleAnchorOnSelection();
                     e.Handled = true;
                     return true;
                 }
@@ -199,15 +186,10 @@ namespace GroveApp.Engine
             // Del / Backspace: Delete selected item(s)
             if (e.Key == Key.Delete || e.Key == Key.Back)
             {
-                var selectedItems = canvas.GetSelectedItems();
+                var selectedItems = host.GetSelectedItems();
                 if (selectedItems.Count > 0)
                 {
-                    foreach (var item in selectedItems)
-                    {
-                        canvas.Items.Remove(item);
-                    }
-                    canvas.SelectedItem = null;
-                    canvas.InvalidateVisual();
+                    host.DeleteSelectedItems();
                     e.Handled = true;
                     return true;
                 }
@@ -216,32 +198,97 @@ namespace GroveApp.Engine
             // Esc: Clear selection
             if (e.Key == Key.Escape)
             {
-                var selectedItems = canvas.GetSelectedItems();
-                if (selectedItems.Count > 0 || canvas.SelectedItem != null)
+                if (ProcessRoutedCombination(KeyCombination.From(e), host))
                 {
-                    canvas.DeselectAllItems();
-                    canvas.InvalidateVisual();
+                    e.Handled = true;
+                    return true;
+                }
+
+                var selectedItems = host.GetSelectedItems();
+                if (selectedItems.Count > 0)
+                {
+                    host.DeselectAllItems();
+                    host.RefreshVisuals();
                     e.Handled = true;
                     return true;
                 }
             }
 
+            // Layer Management Keybindings:
+            // Shift+[ / Shift+] (Jump Bottom / Top)
+            if (e.Key == Key.OemOpenBrackets && e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+            {
+                host.JumpToBottomLayer();
+                e.Handled = true;
+                return true;
+            }
+            if (e.Key == Key.OemCloseBrackets && e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+            {
+                host.JumpToTopLayer();
+                e.Handled = true;
+                return true;
+            }
+
+            // [ / ] (Navigate Down / Up)
+            if (e.Key == Key.OemOpenBrackets && e.KeyModifiers == KeyModifiers.None)
+            {
+                host.NavigateLayer(-1);
+                e.Handled = true;
+                return true;
+            }
+            if (e.Key == Key.OemCloseBrackets && e.KeyModifiers.HasFlag(KeyModifiers.None))
+            {
+                host.NavigateLayer(1);
+                e.Handled = true;
+                return true;
+            }
+
+            // Ctrl+Shift+N (Insert Layer Above)
+            if (e.Key == Key.N && e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && !e.KeyModifiers.HasFlag(KeyModifiers.Alt))
+            {
+                host.InsertLayerAboveActive();
+                e.Handled = true;
+                return true;
+            }
+
+            // Ctrl+Alt+Shift+N (Insert Layer Below)
+            if (e.Key == Key.N && e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.KeyModifiers.HasFlag(KeyModifiers.Alt))
+            {
+                host.InsertLayerBelowActive();
+                e.Handled = true;
+                return true;
+            }
+
+            // Alt+Up / Alt+Down (Reorder Swap Up / Down)
+            if (e.Key == Key.Up && e.KeyModifiers.HasFlag(KeyModifiers.Alt))
+            {
+                host.ReorderActiveLayer(1);
+                e.Handled = true;
+                return true;
+            }
+            if (e.Key == Key.Down && e.KeyModifiers.HasFlag(KeyModifiers.Alt))
+            {
+                host.ReorderActiveLayer(-1);
+                e.Handled = true;
+                return true;
+            }
+
             // Color Swatches: Keys 2, 3, 4
             if (e.Key == Key.D2 || e.Key == Key.NumPad2)
             {
-                SetSelectedColor(canvas, NoteColor.Violet);
+                host.SetSelectedColor(NoteColor.Violet);
                 e.Handled = true;
                 return true;
             }
             if (e.Key == Key.D3 || e.Key == Key.NumPad3)
             {
-                SetSelectedColor(canvas, NoteColor.Clay);
+                host.SetSelectedColor(NoteColor.Clay);
                 e.Handled = true;
                 return true;
             }
             if (e.Key == Key.D4 || e.Key == Key.NumPad4)
             {
-                SetSelectedColor(canvas, NoteColor.SlateBlue);
+                host.SetSelectedColor(NoteColor.SlateBlue);
                 e.Handled = true;
                 return true;
             }
@@ -249,14 +296,5 @@ namespace GroveApp.Engine
             return false;
         }
 
-        private static void SetSelectedColor(GridCanvasControl canvas, NoteColor color)
-        {
-            var selectedNotes = canvas.GetSelectedNotes();
-            foreach (var note in selectedNotes)
-            {
-                note.Color = color;
-            }
-            canvas.InvalidateVisual();
-        }
     }
 }

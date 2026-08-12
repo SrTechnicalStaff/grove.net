@@ -4,13 +4,13 @@ namespace GroveApp.Models
     {
         public int CellX { get; set; }
         public int CellY { get; set; }
-        public double Energy { get; set; } = 1.0; // Decays from 1.0 down to 0.0
+        public double Energy { get; set; } = 0.60; // ADR-050 E0; decays with Tokens.CursorTrailDecay
 
         public SpentCell(int cellX, int cellY)
         {
             CellX = cellX;
             CellY = cellY;
-            Energy = 1.0;
+            Energy = 0.60;
         }
     }
 }

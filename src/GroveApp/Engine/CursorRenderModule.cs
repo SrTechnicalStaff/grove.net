@@ -10,8 +10,8 @@ using Colors = GroveApp.DesignSystem.Colors;
 namespace GroveApp.Engine
 {
     /// <summary>
-    /// Engine module for grid cursor rendering with inset 2px ring in #F4F4F2, 13.2% fill,
-    /// footprint expansion over multi-cell notes, and 18-step spent cell trail decay.
+    /// Engine module for grid cursor rendering with inset 2px ring in #F4F4F2, 22% fill,
+    /// footprint expansion over all content types, and 18-step spent cell trail decay.
     /// </summary>
     public class CursorRenderModule
     {
@@ -73,8 +73,8 @@ namespace GroveApp.Engine
         }
 
         /// <summary>
-        /// Renders the primary grid cursor with inset 2px ring in #F4F4F2, 13.2% fill,
-        /// and footprint expansion over target notes.
+        /// Renders the primary grid cursor with inset 2px ring in #F4F4F2, 22% fill,
+        /// and footprint expansion over the target content footprint.
         /// </summary>
         public void RenderGridCursor(
             DrawingContext context,
@@ -83,14 +83,17 @@ namespace GroveApp.Engine
             double zoom,
             int cursorCellX,
             int cursorCellY,
-            GridNote? targetNote)
+            GridContentItem? targetItem)
         {
-            int startCellX = targetNote?.CellX ?? cursorCellX;
-            int startCellY = targetNote?.CellY ?? cursorCellY;
-            int spanCells = targetNote?.SizeCells ?? 1;
+            int startCellX = targetItem?.CellX ?? cursorCellX;
+            int startCellY = targetItem?.CellY ?? cursorCellY;
+            int spanWidth = targetItem?.CellWidth ?? 1;
+            int spanHeight = targetItem?.CellHeight ?? 1;
 
             Point startWorld = new Point(startCellX * cellSize, startCellY * cellSize);
-            Point endWorld = new Point((startCellX + spanCells) * cellSize, (startCellY + spanCells) * cellSize);
+            Point endWorld = new Point(
+                (startCellX + spanWidth) * cellSize,
+                (startCellY + spanHeight) * cellSize);
 
             Point startScreen = worldToScreen(startWorld);
             Point endScreen = worldToScreen(endWorld);
@@ -99,7 +102,7 @@ namespace GroveApp.Engine
             double curH = endScreen.Y - startScreen.Y;
             Rect cursorRect = new Rect(startScreen.X, startScreen.Y, curW, curH);
 
-            // 13.2% fill (#F4F4F2 ink with Tokens.CursorFillGain 0.132 alpha)
+            // 22% fill (#F4F4F2 ink with Tokens.CursorFillGain 0.22 alpha)
             byte fillAlpha = (byte)(255 * Tokens.CursorFillGain);
             var headFillBrush = new SolidColorBrush(Color.FromArgb(fillAlpha, Colors.NoteText.R, Colors.NoteText.G, Colors.NoteText.B));
             context.FillRectangle(headFillBrush, cursorRect);

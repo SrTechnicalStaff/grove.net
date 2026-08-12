@@ -1,12 +1,12 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "CONFLICTING — REFUSED BY ADR-002 PRESENCE CONTRACT"
 ---
 
 # ADR-061: Aura Field Fluid Gradient Rendering
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
+| **Status** | CONFLICTING — REFUSED BY ADR-002 PRESENCE CONTRACT |
 | **Date** | 2026-08-12 |
 | **Area** | Spatial Physics Engine / SkiaSharp Rendering Compositor |
 | **Target Runtime** | C# 13 / .NET 9 / SkiaSharp / Vulkan / Direct3D 11 |

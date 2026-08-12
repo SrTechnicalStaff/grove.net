@@ -1,12 +1,12 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified tunnel seam with remaining coverage gaps"
 ---
 
 # ADR-058: Global Keybind Focus Precedence Router Architecture
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
+| **Status** | PARTIAL — verified tunnel seam with remaining coverage gaps |
 | **Date** | 2026-08-12 |
 | **Area** | Spatial Grid Engine / Input Routing Subsystem |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp 3.x |

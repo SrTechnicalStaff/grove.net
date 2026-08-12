@@ -1,12 +1,12 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified watermark and rename seam"
 ---
 
 # ADR-070: HUD Spatial Watermark and Active Layer Identity
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
+| **Status** | PARTIAL — verified watermark and rename seam |
 | **Date** | 2026-08-12 |
 | **Area** | HUD System / Visual Architecture / Layer Management |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp 3.x |

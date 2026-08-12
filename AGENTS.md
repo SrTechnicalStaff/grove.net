@@ -69,7 +69,7 @@ Grove v9 organizes the user experience across three strict, non-overlapping visu
 - **Dynamic Fading**: Continuous 3-tier grid line fading spanning zoom scales from 1% to 1000%.
 
 #### Layer 1 — Information Layer
-- **Implementation**: [LocalEditorOverlay.axaml](file:///C:/dev/grove-v9/src/GroveApp/Controls/LocalEditorOverlay.axaml) (content-anchored local editors) and [QuickNoteOverlay.axaml](file:///C:/dev/grove-v9/src/GroveApp/Controls/QuickNoteOverlay.axaml) (viewport-centered capture slates).
+- **Implementation**: [FluentNotepadEditor.axaml](file:///C:/dev/grove-v9/src/GroveApp/Controls/FluentNotepadEditor.axaml) (content-anchored local editors) and [QuickNoteOverlay.axaml](file:///C:/dev/grove-v9/src/GroveApp/Controls/QuickNoteOverlay.axaml) (viewport-centered capture/placement slates). These are separate flows: the local editor edits an existing placement; Quick Note captures or commits a new note.
 - **Surface Styling**: Surface chrome `--surface-chrome` (`#161618`) framed with role border `--k-edit-b` (`#7A3F3A`).
 - **Anchoring**: Dynamically anchored to spatial grid coordinates while handling focused text input and live preview rendering.
 

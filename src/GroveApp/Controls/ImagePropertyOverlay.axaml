@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ds="clr-namespace:GroveApp.DesignSystem"
+             x:Class="GroveApp.Controls.ImagePropertyOverlay"
+             IsVisible="False"
+             Background="Transparent">
+    <Border Width="300"
+            Background="{x:Static ds:Colors.SurfaceChromeHex}"
+            BorderBrush="{x:Static ds:Colors.EdgeQuietBrush}"
+            BorderThickness="1"
+            CornerRadius="{x:Static ds:Tokens.CornerRadiusNone}"
+            Padding="8">
+        <Grid RowDefinitions="Auto,*,Auto">
+            <TextBlock Name="TitleText" Grid.Row="0" Foreground="{x:Static ds:Colors.TextPrimaryBrush}" FontFamily="{x:Static ds:Typography.FontFamilyUi}" FontWeight="Bold" />
+            <StackPanel Grid.Row="1" Name="PropertiesPanel" Spacing="4" Margin="0,8" />
+            <Button Grid.Row="2" Name="CloseButton" Content="Close" HorizontalAlignment="Right" Padding="8,4" />
+        </Grid>
+    </Border>
+</UserControl>

@@ -1,12 +1,12 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified implementation with remaining activation gaps"
 ---
 
 # ADR-042: Spatial Layer State and Activation
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
+| **Status** | PARTIAL — verified implementation with remaining activation gaps |
 | **Date** | 2026-08-12 |
 | **Area** | Visual Pipeline / Layer Activation / Render Rules / Keyboard Map |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp |

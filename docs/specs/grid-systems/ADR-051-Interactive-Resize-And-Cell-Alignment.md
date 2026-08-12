@@ -1,12 +1,12 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified multi-type resize seam"
 ---
 
 # ADR-051: Interactive Resize Engine and Cell Alignment System
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
+| **Status** | PARTIAL — verified multi-type resize seam |
 | **Date** | 2026-08-12 |
 | **Area** | Spatial Grid Engine / Transform & Resize Subsystem |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp 3.x |

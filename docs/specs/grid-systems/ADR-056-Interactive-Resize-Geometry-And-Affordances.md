@@ -1,12 +1,12 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified type-specific resize solvers"
 ---
 
 # ADR-056: Interactive Resize Geometry, Type-Specific Footprint Solvers, and Affordance Rendering Engine
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
+| **Status** | PARTIAL — verified type-specific resize solvers |
 | **Date** | 2026-08-12 |
 | **Area** | Spatial Grid Engine / Interactive Resize & Affordances Subsystem |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp 3.x |

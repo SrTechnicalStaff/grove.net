@@ -1,12 +1,12 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified selection and clipboard contracts"
 ---
 
 # ADR-053: Spatial CRUD Operations, Selection State Machine, and Marquee Sweep
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
+| **Status** | PARTIAL — verified selection and clipboard contracts |
 | **Date** | 2026-08-12 |
 | **Area** | Spatial Grid Engine / Operations & Selection Subsystem |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp 3.x |

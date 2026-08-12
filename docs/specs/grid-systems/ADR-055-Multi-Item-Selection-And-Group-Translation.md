@@ -1,12 +1,12 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified rigid group translation and trail emission"
 ---
 
 # ADR-055: Multi-Item Selection Model, Cell-Aligned Marquee Sweep, and Multi-Type Group Translation Engine
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
+| **Status** | PARTIAL — verified rigid group translation and trail emission |
 | **Date** | 2026-08-12 |
 | **Area** | Spatial Grid Engine / Selection & Group Translation Subsystem |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp 3.x |

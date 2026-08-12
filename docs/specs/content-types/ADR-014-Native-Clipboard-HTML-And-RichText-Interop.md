@@ -1,5 +1,5 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified clipboard placement seam"
 ---
 
 # ADR-014: Native Clipboard HTML and RichText Interoperability Specification

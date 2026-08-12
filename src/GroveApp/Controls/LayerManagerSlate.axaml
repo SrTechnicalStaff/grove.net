@@ -1,0 +1,66 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:ds="clr-namespace:GroveApp.DesignSystem"
+             x:Class="GroveApp.Controls.LayerManagerSlate"
+             Background="Transparent">
+
+    <Border Name="SlateBorder"
+            Width="320"
+            Background="{x:Static ds:Colors.SurfaceChromeHex}"
+            BorderBrush="{x:Static ds:Colors.EdgeQuietBrush}"
+            BorderThickness="1"
+            CornerRadius="{x:Static ds:Tokens.CornerRadiusNone}"
+            Padding="8">
+
+        <Grid RowDefinitions="Auto, Auto, *">
+            <!-- Header: LAYERS Title and Close button -->
+            <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,4">
+                <TextBlock Name="TxtLayerCount"
+                           Text="LAYERS"
+                           FontFamily="{x:Static ds:Typography.FontFamilyMono}"
+                           FontSize="{x:Static ds:Typography.SizeCaption}"
+                           FontWeight="Bold"
+                           Foreground="{x:Static ds:Colors.TextPrimaryBrush}"
+                           VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                    <Button Name="BtnNewLayer"
+                            Content="+"
+                            Padding="4,2"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Foreground="{x:Static ds:Colors.SignalInteractionBrush}"
+                            FontSize="14"
+                            Cursor="Hand" />
+                    <Button Name="BtnClose"
+                        Content="✕"
+                        Padding="4,2"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Foreground="{x:Static ds:Colors.TextSecondaryBrush}"
+                        FontSize="11"
+                         Cursor="Hand"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- Search / Filter Input -->
+            <TextBox Grid.Row="1"
+                     Name="TxtFilter"
+                     Watermark="Find layer..."
+                     Margin="0,4,0,8"
+                     Padding="6,4"
+                     Background="{x:Static ds:Colors.SurfaceGridHex}"
+                     BorderBrush="{x:Static ds:Colors.EdgeQuietBrush}"
+                     BorderThickness="1"
+                     CornerRadius="{x:Static ds:Tokens.CornerRadiusNone}"
+                     FontSize="{x:Static ds:Typography.SizeCaption}"
+                     FontFamily="{x:Static ds:Typography.FontFamilyUi}"
+                     Foreground="{x:Static ds:Colors.TextPrimaryBrush}"/>
+
+            <!-- Layer Items Column -->
+            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                <StackPanel Name="LayerItemsPanel" Spacing="2" />
+            </ScrollViewer>
+        </Grid>
+    </Border>
+</UserControl>

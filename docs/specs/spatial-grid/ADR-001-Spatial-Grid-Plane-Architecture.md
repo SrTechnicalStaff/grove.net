@@ -1,12 +1,12 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified grid implementation with remaining compositor gaps"
 ---
 
 # ADR-001: Spatial Grid Plane Architecture
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
+| **Status** | PARTIAL — verified grid implementation with remaining compositor gaps |
 | **Date** | 2026-08-12 |
 | **Area** | Spatial Grid Engine / Skia Rendering Pipeline |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp |

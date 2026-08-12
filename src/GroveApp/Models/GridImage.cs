@@ -8,7 +8,7 @@ namespace GroveApp.Models
     /// Represents a Picture/Image placement on the spatial Grid (ADR-012).
     /// Maps intrinsic pixel resolution to discrete cell footprint (Nw x Nh) without cropping or letterboxing.
     /// </summary>
-    public class GridImage : GridContentItem
+    public sealed class GridImage : GridContentItem, IDisposable
     {
         public override ContentKind Kind => ContentKind.Image;
         public override float Mass => 4.0f;
@@ -19,7 +19,30 @@ namespace GroveApp.Models
         public int IntrinsicHeightPx { get; set; }
         public ImageFootprint Footprint { get; private set; }
         public bool IsAnimatedGif { get; set; }
-        public Bitmap? LoadedBitmap { get; set; }
+        private Bitmap? _loadedBitmap;
+        private bool _disposed;
+
+        /// <summary>
+        /// Gets or sets the decoded bitmap owned by this placement.
+        /// Assigning a bitmap transfers ownership to the placement; replacing it
+        /// releases the previous native image resource.
+        /// </summary>
+        public Bitmap? LoadedBitmap
+        {
+            get => _loadedBitmap;
+            set
+            {
+                ObjectDisposedException.ThrowIf(_disposed, this);
+
+                if (ReferenceEquals(_loadedBitmap, value))
+                {
+                    return;
+                }
+
+                _loadedBitmap?.Dispose();
+                _loadedBitmap = value;
+            }
+        }
 
         public GridImage(int cellX, int cellY, string filePath, int widthPx, int heightPx, bool isAnchored = false, int layerId = 0)
             : base(cellX, cellY, 1, 1, isAnchored, layerId)
@@ -42,5 +65,18 @@ namespace GroveApp.Models
         }
 
         public double EffectivePpi => ImageFootprintResolver.CalculateEffectivePpi(IntrinsicWidthPx, IntrinsicHeightPx, CellWidth, CellHeight);
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            _loadedBitmap?.Dispose();
+            _loadedBitmap = null;
+            GC.SuppressFinalize(this);
+        }
     }
 }

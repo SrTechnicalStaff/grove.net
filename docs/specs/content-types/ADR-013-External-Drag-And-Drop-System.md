@@ -1,5 +1,5 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified drop placement and preview seam"
 ---
 
 # ADR-013: External Drag-and-Drop System, ScreenToCell Coordinate Resolution, and Content Auto-Creation

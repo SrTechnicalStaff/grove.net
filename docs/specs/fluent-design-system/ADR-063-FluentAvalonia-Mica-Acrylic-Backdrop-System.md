@@ -1,12 +1,12 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified Fluent hints and native dark-mode adapter"
 ---
 
 # ADR-063: FluentAvalonia Mica and Acrylic Backdrop System
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
+| **Status** | PARTIAL — verified Fluent hints and native dark-mode adapter |
 | **Date** | 2026-08-12 |
 | **Area** | UI Architecture / Visual Shell & Windowing / FluentAvalonia Backdrops |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11 / FluentAvalonia 2.x / Windows 11 DWM |

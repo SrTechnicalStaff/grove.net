@@ -5,7 +5,7 @@
              x:Class="GroveApp.App"
              RequestedThemeVariant="Dark">
     <Application.Styles>
-        <sty:FluentAvaloniaTheme CustomAccentColor="#96B6F8" PreferUserAccentColor="False" />
+        <sty:FluentAvaloniaTheme CustomAccentColor="{x:Static ds:Colors.SelectHex}" PreferUserAccentColor="False" />
     </Application.Styles>
     <Application.Resources>
         <ResourceDictionary>

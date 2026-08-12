@@ -1,5 +1,5 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified note geometry and rendering"
 ---
 
 # ADR-010: Note Physical Geometry, Authored Fills, and Grid Placement

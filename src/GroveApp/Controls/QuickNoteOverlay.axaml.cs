@@ -1,12 +1,9 @@
 using System;
-using System.Collections.Generic;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Media;
 using GroveApp.DesignSystem;
-using Colors = GroveApp.DesignSystem.Colors;
+using GroveApp.Models;
 
 namespace GroveApp.Controls
 {
@@ -21,458 +18,161 @@ namespace GroveApp.Controls
 
     public partial class QuickNoteOverlay : UserControl
     {
-        private readonly List<QuickNoteItem> _feed = new();
-        private QuickNoteItem? _editingItem;
-        private string? _pendingDiscardItemId;
-
         public event Action<QuickNoteItem>? SaveAndPlaceRequested;
         public event Action<QuickNoteItem>? NoteSaved;
+        public event Action<GridNote, string>? PlacedNoteTextCommitted;
         public event Action? Closed;
 
-        public IReadOnlyList<QuickNoteItem> Feed => _feed;
+        private GridNote? _placedNote;
 
         public QuickNoteOverlay()
         {
             InitializeComponent();
 
-            TxtCapture.GotFocus += (s, e) => CaptureFieldBorder.BorderBrush = Colors.SignalInteractionBrush;
-            TxtCapture.LostFocus += (s, e) => CaptureFieldBorder.BorderBrush = Colors.EdgeQuietBrush;
-
             KeyDown += OnQuickNoteKeyDown;
+            TxtCapture.LostFocus += OnLostFocus;
         }
 
         public void Open()
         {
-            UnsavedConfirmRow.IsVisible = false;
-            RefusalRow.IsVisible = false;
+            _placedNote = null;
             IsVisible = true;
+            TxtCapture.Text = string.Empty;
+            FeedContainer.Children.Clear();
+            FeedContainer.IsVisible = false;
 
-            TxtCapture.Focus();
-            if (!string.IsNullOrEmpty(TxtCapture.Text))
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
-                TxtCapture.SelectionStart = TxtCapture.Text.Length;
-                TxtCapture.SelectionEnd = TxtCapture.Text.Length;
-            }
+                TxtCapture.Focus();
+            });
+        }
+
+        public void OpenForPlacedNote(GridNote note)
+        {
+            ArgumentNullException.ThrowIfNull(note);
+            _placedNote = note;
+            IsVisible = true;
+            TxtCapture.Text = note.Text;
+
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                TxtCapture.Focus();
+                TxtCapture.CaretIndex = TxtCapture.Text?.Length ?? 0;
+            });
         }
 
         public void Close()
         {
-            HandleEscape();
+            if (!IsVisible) return;
+            IsVisible = false;
+            TxtCapture.Text = string.Empty;
+            _placedNote = null;
+            FeedContainer.Children.Clear();
+            FeedContainer.IsVisible = false;
+            Closed?.Invoke();
+        }
+
+        private void BtnHeaderClose_Click(object? sender, RoutedEventArgs e)
+        {
+            Close();
+            e.Handled = true;
+        }
+
+        private void OnLostFocus(object? sender, RoutedEventArgs e)
+        {
+            if (IsVisible)
+            {
+                Close();
+            }
         }
 
         private void OnQuickNoteKeyDown(object? sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Enter)
+            if (e.Key == Key.Enter && e.KeyModifiers.HasFlag(KeyModifiers.Control))
             {
-                if (e.KeyModifiers.HasFlag(KeyModifiers.Control))
+                SaveCurrentAndPlace();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Enter && e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+            {
+                if (_placedNote is null)
                 {
-                    SaveCurrentAndPlace();
-                    e.Handled = true;
-                }
-                else if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
-                {
-                    SaveCurrentAndNext();
+                    SaveCurrentAndContinue();
                     e.Handled = true;
                 }
             }
             else if (e.Key == Key.Escape)
             {
-                HandleEscape();
+                Close();
                 e.Handled = true;
             }
-        }
-
-        private void SaveCurrentAndNext()
-        {
-            string text = TxtCapture.Text?.Trim() ?? string.Empty;
-            if (string.IsNullOrEmpty(text)) return;
-
-            if (_editingItem != null)
-            {
-                _editingItem.Text = text;
-                _editingItem = null;
-                ComposerActionRow.IsVisible = false;
-            }
-            else
-            {
-                var newItem = new QuickNoteItem
-                {
-                    Text = text,
-                    Timestamp = DateTime.Now
-                };
-                _feed.Insert(0, newItem);
-                NoteSaved?.Invoke(newItem);
-            }
-
-            TxtCapture.Text = string.Empty;
-            RebuildFeedUi();
-            TxtCapture.Focus();
         }
 
         private void SaveCurrentAndPlace()
         {
             string text = TxtCapture.Text?.Trim() ?? string.Empty;
-            QuickNoteItem? targetItem = _editingItem;
-
             if (!string.IsNullOrEmpty(text))
             {
-                if (targetItem != null)
+                if (_placedNote != null)
                 {
-                    targetItem.Text = text;
-                    _editingItem = null;
-                    ComposerActionRow.IsVisible = false;
+                    PlacedNoteTextCommitted?.Invoke(_placedNote, text);
                 }
                 else
                 {
-                    targetItem = new QuickNoteItem
+                    var item = new QuickNoteItem
                     {
                         Text = text,
                         Timestamp = DateTime.Now
                     };
-                    _feed.Insert(0, targetItem);
-                    NoteSaved?.Invoke(targetItem);
+                    AppendSavedNoteToFeed(item);
+                    NoteSaved?.Invoke(item);
+                    SaveAndPlaceRequested?.Invoke(item);
                 }
-
-                TxtCapture.Text = string.Empty;
-                RebuildFeedUi();
-                SaveAndPlaceRequested?.Invoke(targetItem);
-                CloseSelf();
             }
-            else if (_feed.Count > 0)
-            {
-                // If capture field is empty, place top item in feed
-                SaveAndPlaceRequested?.Invoke(_feed[0]);
-                CloseSelf();
-            }
+            Close();
         }
 
-        private void HandleEscape()
+        private void SaveCurrentAndContinue()
         {
-            if (UnsavedConfirmRow.IsVisible)
+            string text = TxtCapture.Text?.Trim() ?? string.Empty;
+            if (string.IsNullOrEmpty(text))
             {
-                UnsavedConfirmRow.IsVisible = false;
+                return;
             }
-            else if (RefusalRow.IsVisible)
-            {
-                RefusalRow.IsVisible = false;
-            }
-            else if (_pendingDiscardItemId != null)
-            {
-                _pendingDiscardItemId = null;
-                RebuildFeedUi();
-            }
-            else if (_editingItem != null)
-            {
-                StopEditing();
-            }
-            else if (!string.IsNullOrWhiteSpace(TxtCapture.Text))
-            {
-                UnsavedConfirmRow.IsVisible = true;
-            }
-            else
-            {
-                CloseSelf();
-            }
-        }
 
-        private void StopEditing()
-        {
-            _editingItem = null;
+            var item = new QuickNoteItem
+            {
+                Text = text,
+                Timestamp = DateTime.Now
+            };
+            AppendSavedNoteToFeed(item);
+            NoteSaved?.Invoke(item);
             TxtCapture.Text = string.Empty;
-            ComposerActionRow.IsVisible = false;
-            RebuildFeedUi();
-        }
-
-        private void StartEditingItem(QuickNoteItem item)
-        {
-            _editingItem = item;
-            TxtCapture.Text = item.Text;
-            ComposerActionRow.IsVisible = true;
-            RebuildFeedUi();
             TxtCapture.Focus();
-            TxtCapture.SelectionStart = TxtCapture.Text?.Length ?? 0;
         }
 
-        private void ConfirmDiscardItem(QuickNoteItem item)
+        private void AppendSavedNoteToFeed(QuickNoteItem item)
         {
-            _pendingDiscardItemId = item.Id;
-            RebuildFeedUi();
-        }
-
-        private void ExecuteDiscardItem(QuickNoteItem item)
-        {
-            _feed.Remove(item);
-            if (_pendingDiscardItemId == item.Id) _pendingDiscardItemId = null;
-            if (_editingItem == item) StopEditing();
-            else RebuildFeedUi();
-        }
-
-        private void RebuildFeedUi()
-        {
-            FeedContainer.Children.Clear();
-
-            foreach (var item in _feed)
+            var itemBorder = new Border
             {
-                bool isItemInConfirm = _pendingDiscardItemId == item.Id;
-                bool isEditingActive = _editingItem != null;
+                Background = Colors.SurfaceNestedBrush,
+                BorderBrush = Colors.EdgeHairlineBrush,
+                BorderThickness = new Avalonia.Thickness(1),
+                CornerRadius = Tokens.CornerRadiusSm,
+                Padding = Tokens.QuickNoteActionPadding
+            };
 
-                var itemCard = new Border
-                {
-                    Background = Colors.SurfaceNestedBrush,
-                    BorderBrush = Colors.EdgeHairlineBrush,
-                    BorderThickness = new Thickness(1),
-                    CornerRadius = Tokens.CornerRadiusSm,
-                    Padding = new Thickness(16, 10)
-                };
-
-                var itemContentStack = new StackPanel { Spacing = 6 };
-
-                if (isItemInConfirm)
-                {
-                    // Discard confirm view inside item card
-                    var confirmGrid = new Grid
-                    {
-                        ColumnDefinitions = new ColumnDefinitions("*, Auto, Auto")
-                    };
-
-                    var promptText = new TextBlock
-                    {
-                        Text = "Discard this Note?",
-                        FontFamily = Typography.UiFamily,
-                        FontSize = Typography.SizeCaption,
-                        Foreground = Colors.TextPrimaryBrush,
-                        VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
-                    };
-                    Grid.SetColumn(promptText, 0);
-
-                    var btnKeep = new Button
-                    {
-                        Content = "Keep it",
-                        Background = Brushes.Transparent,
-                        BorderThickness = new Thickness(0),
-                        Foreground = Colors.TextSecondaryBrush,
-                        FontSize = Typography.SizeCaption,
-                        Margin = new Thickness(0, 0, 12, 0),
-                        Padding = new Thickness(0)
-                    };
-                    btnKeep.Click += (s, e) => { _pendingDiscardItemId = null; RebuildFeedUi(); };
-                    Grid.SetColumn(btnKeep, 1);
-
-                    var btnConfirmDiscard = new Button
-                    {
-                        Content = "Discard",
-                        Background = Colors.SignalRefusalBrush,
-                        BorderThickness = new Thickness(0),
-                        CornerRadius = Tokens.CornerRadiusSm,
-                        Foreground = Brushes.White,
-                        FontSize = Typography.SizeCaption,
-                        Padding = new Thickness(8, 4)
-                    };
-                    btnConfirmDiscard.Click += (s, e) => ExecuteDiscardItem(item);
-                    Grid.SetColumn(btnConfirmDiscard, 2);
-
-                    confirmGrid.Children.Add(promptText);
-                    confirmGrid.Children.Add(btnKeep);
-                    confirmGrid.Children.Add(btnConfirmDiscard);
-
-                    itemContentStack.Children.Add(confirmGrid);
-                }
-                else
-                {
-                    // Item top header row (Timestamp + Actions)
-                    var topRow = new Grid
-                    {
-                        ColumnDefinitions = new ColumnDefinitions("Auto, *, Auto")
-                    };
-
-                    var leftHeaderStack = new StackPanel
-                    {
-                        Orientation = Avalonia.Layout.Orientation.Horizontal,
-                        Spacing = 8
-                    };
-
-                    // Anchor diamond mark
-                    if (item.IsAnchored)
-                    {
-                        var diamondContainer = new Canvas { Width = 12, Height = 12, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center };
-                        var diamondPoly = new Avalonia.Controls.Shapes.Polygon
-                        {
-                            Points = new Points { new Point(6, 1), new Point(11, 6), new Point(6, 11), new Point(1, 6) },
-                            Fill = Colors.SignalAuthoredContextBrush
-                        };
-                        diamondContainer.Children.Add(diamondPoly);
-                        leftHeaderStack.Children.Add(diamondContainer);
-                    }
-
-                    var timeTxt = new TextBlock
-                    {
-                        Text = item.FormattedTime,
-                        FontFamily = Typography.MonoFamily,
-                        FontSize = Typography.SizeLabel,
-                        Foreground = Colors.TextMetaBrush,
-                        VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
-                    };
-                    leftHeaderStack.Children.Add(timeTxt);
-                    Grid.SetColumn(leftHeaderStack, 0);
-
-                    // Actions: Edit / Discard
-                    var actionsStack = new StackPanel
-                    {
-                        Orientation = Avalonia.Layout.Orientation.Horizontal,
-                        Spacing = 16
-                    };
-
-                    var editStack = new StackPanel
-                    {
-                        Orientation = Avalonia.Layout.Orientation.Horizontal,
-                        Spacing = 4
-                    };
-                    editStack.Children.Add(new FluentAvalonia.UI.Controls.SymbolIcon
-                    {
-                        Symbol = FluentAvalonia.UI.Controls.Symbol.Edit,
-                        FontSize = 11,
-                        Foreground = isEditingActive ? Colors.TextUnavailableBrush : Colors.TextSecondaryBrush
-                    });
-                    editStack.Children.Add(new TextBlock { Text = "Edit" });
-
-                    var btnEdit = new Button
-                    {
-                        Content = editStack,
-                        Background = Brushes.Transparent,
-                        BorderThickness = new Thickness(0),
-                        Foreground = isEditingActive ? Colors.TextUnavailableBrush : Colors.TextSecondaryBrush,
-                        FontSize = Typography.SizeCaption,
-                        Padding = new Thickness(0),
-                        IsEnabled = !isEditingActive
-                    };
-                    btnEdit.Click += (s, e) => StartEditingItem(item);
-
-                    var discardStack = new StackPanel
-                    {
-                        Orientation = Avalonia.Layout.Orientation.Horizontal,
-                        Spacing = 4
-                    };
-                    discardStack.Children.Add(new FluentAvalonia.UI.Controls.SymbolIcon
-                    {
-                        Symbol = FluentAvalonia.UI.Controls.Symbol.Delete,
-                        FontSize = 11,
-                        Foreground = isEditingActive ? Colors.TextUnavailableBrush : Colors.TextSecondaryBrush
-                    });
-                    discardStack.Children.Add(new TextBlock { Text = "Discard" });
-
-                    var btnDiscard = new Button
-                    {
-                        Content = discardStack,
-                        Background = Brushes.Transparent,
-                        BorderThickness = new Thickness(0),
-                        Foreground = isEditingActive ? Colors.TextUnavailableBrush : Colors.TextSecondaryBrush,
-                        FontSize = Typography.SizeCaption,
-                        Padding = new Thickness(0),
-                        IsEnabled = !isEditingActive
-                    };
-                    btnDiscard.Click += (s, e) => ConfirmDiscardItem(item);
-
-                    actionsStack.Children.Add(btnEdit);
-                    actionsStack.Children.Add(btnDiscard);
-                    Grid.SetColumn(actionsStack, 2);
-
-                    topRow.Children.Add(leftHeaderStack);
-                    topRow.Children.Add(actionsStack);
-
-                    // Item text
-                    var textBlock = new TextBlock
-                    {
-                        Text = item.Text,
-                        FontFamily = Typography.UiFamily,
-                        FontSize = Typography.SizeDense,
-                        Foreground = Colors.TextPrimaryBrush,
-                        TextWrapping = TextWrapping.Wrap
-                    };
-
-                    itemContentStack.Children.Add(topRow);
-                    itemContentStack.Children.Add(textBlock);
-                }
-
-                itemCard.Child = itemContentStack;
-                FeedContainer.Children.Add(itemCard);
-            }
-        }
-
-        private void CloseSelf()
-        {
-            IsVisible = false;
-            UnsavedConfirmRow.IsVisible = false;
-            RefusalRow.IsVisible = false;
-            _pendingDiscardItemId = null;
-            Closed?.Invoke();
-        }
-
-        public void ShowRefusal()
-        {
-            RefusalRow.IsVisible = true;
-        }
-
-        private void BtnHeaderClose_Click(object? sender, RoutedEventArgs e) => HandleEscape();
-        private void BtnKeepEditingUnsaved_Click(object? sender, RoutedEventArgs e) => UnsavedConfirmRow.IsVisible = false;
-        private void BtnDiscardUnsaved_Click(object? sender, RoutedEventArgs e) => CloseSelf();
-        private void BtnStopEditing_Click(object? sender, RoutedEventArgs e) => StopEditing();
-        private void BtnSaveComposer_Click(object? sender, RoutedEventArgs e) => SaveCurrentAndNext();
-        private void BtnRefusalDismiss_Click(object? sender, RoutedEventArgs e) => RefusalRow.IsVisible = false;
-        private void BtnRefusalRetry_Click(object? sender, RoutedEventArgs e) => SaveCurrentAndNext();
-
-        private bool IsOutsideFrame(Point pt)
-        {
-            Point borderPt = this.TranslatePoint(pt, FrameBorder) ?? pt;
-            return borderPt.X < 0 || borderPt.Y < 0 || borderPt.X > FrameBorder.Bounds.Width || borderPt.Y > FrameBorder.Bounds.Height;
-        }
-
-        private void PassToCanvas(PointerEventArgs e)
-        {
-            var canvas = (VisualRoot as MainWindow)?.CanvasControl;
-            if (canvas != null)
+            var itemText = new TextBlock
             {
-                canvas.RaiseEvent(e);
-            }
-        }
-
-        protected override void OnPointerPressed(PointerPressedEventArgs e)
-        {
-            if (IsOutsideFrame(e.GetPosition(this)))
-            {
-                PassToCanvas(e);
-                return;
-            }
-            base.OnPointerPressed(e);
-        }
-
-        protected override void OnPointerMoved(PointerEventArgs e)
-        {
-            if (IsOutsideFrame(e.GetPosition(this)))
-            {
-                PassToCanvas(e);
-                return;
-            }
-            base.OnPointerMoved(e);
-        }
-
-        protected override void OnPointerReleased(PointerReleasedEventArgs e)
-        {
-            if (IsOutsideFrame(e.GetPosition(this)))
-            {
-                PassToCanvas(e);
-                return;
-            }
-            base.OnPointerReleased(e);
-        }
-
-        protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
-        {
-            if (IsOutsideFrame(e.GetPosition(this)))
-            {
-                PassToCanvas(e);
-                return;
-            }
-            base.OnPointerWheelChanged(e);
+                Text = $"{item.FormattedTime}  {item.Text}",
+                FontFamily = Typography.FontFamilyUi,
+                FontSize = Typography.SizeDense,
+                Foreground = Colors.TextPrimaryBrush,
+                TextWrapping = Avalonia.Media.TextWrapping.Wrap
+            };
+            itemBorder.Child = itemText;
+            FeedContainer.Children.Insert(0, itemBorder);
+            FeedContainer.IsVisible = true;
         }
     }
 }

@@ -1,12 +1,13 @@
 ---
-status: "IMPLEMENTED - AWAITING USER REVIEW"
+status: "PARTIAL — verified discrete insertion feedback seam"
+verification: "PARTIAL — FlashSweepDrawOperation and Plane 2 row animation are not implemented; discrete cell feedback is the current intentional implementation."
 ---
 
 # ADR-071: Layer Creation and Insertion Feedback Effects
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | IMPLEMENTED - AWAITING USER REVIEW |
+| **Status** | PARTIAL — verified discrete insertion feedback seam |
 | **Date** | 2026-08-12 |
 | **Area** | Motion Engineering / Visual Feedback / Layer Operations |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp 3.x |
@@ -376,5 +377,5 @@ public sealed class LayerFeedbackAnimationController
 - [x] **Motion Architecture Compliance**: Adheres to `docs/design-system/00-foundations/Motion.md` three jobs (confirm an action, carry an object, settle a surface).
 - [x] **Exact Motion Token Usage**: Uses `--d-sweep` (`480ms`), `--d-place` (`280ms`), `--d-fade` (`120ms`), `--ease`, and `--overshoot`. Zero custom/raw duration drift.
 - [x] **Mathematical Rigor**: Defines expansion radius $R(t)$, opacity decay $A(t)$, and radial energy wave equations $E(r,t)$.
-- [x] **Skia & Avalonia Dual-Plane Integration**: Complete C# 13 source in `Motion.cs` with `FlashSweepDrawOperation` for Plane 0 and Avalonia `Animation` for Plane 2.
+- [ ] **Skia & Avalonia Dual-Plane Integration**: `FlashSweepDrawOperation` and the Plane 2 row animation remain specified but are not implemented; the current runtime uses the discrete `LayerFeedbackAnimationController` seam.
 - [x] **Accessibility Integration**: Enforces `prefers-reduced-motion` zero-duration fallback policy across all transitions.

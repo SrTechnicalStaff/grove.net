@@ -1,0 +1,16 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ds="clr-namespace:GroveApp.DesignSystem"
+             x:Class="GroveApp.Controls.SpatialContextMenuOverlay"
+             IsVisible="False"
+             IsHitTestVisible="False"
+             Background="Transparent">
+    <Border Name="MenuBorder"
+            Background="{x:Static ds:Colors.SurfaceChromeHex}"
+            BorderBrush="{x:Static ds:Colors.KSlateBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="{x:Static ds:Tokens.CornerRadiusNone}"
+            Padding="4">
+        <StackPanel Name="CommandsPanel" Spacing="1" />
+    </Border>
+</UserControl>
