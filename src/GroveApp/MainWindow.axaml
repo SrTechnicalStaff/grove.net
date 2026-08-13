@@ -6,7 +6,8 @@
         Title="Grove"
         Width="1280" Height="800"
         WindowStartupLocation="CenterScreen"
-        Background="{x:Static ds:Colors.SurfaceGridHex}">
+        TransparencyLevelHint="Mica"
+        Background="Transparent">
 
     <controls:ThreePlaneVisualCompositorContainer x:Name="PlaneCompositor">
         <!-- PLANE 0: Infinite Spatial Grid Canvas -->
