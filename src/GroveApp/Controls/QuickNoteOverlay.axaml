@@ -60,8 +60,7 @@
                          Padding="0"
                          FontFamily="{x:Static ds:Typography.FontFamilyUi}"
                          FontSize="{x:Static ds:Typography.SizeLead}"
-                         HorizontalAlignment="Stretch"
-                         TextOptions.TextRenderingMode="SubpixelAntialias" />
+                         HorizontalAlignment="Stretch" />
             </Border>
 
             <StackPanel Name="HintLine" Orientation="Horizontal" Spacing="{x:Static ds:Tokens.SpacingMd}">

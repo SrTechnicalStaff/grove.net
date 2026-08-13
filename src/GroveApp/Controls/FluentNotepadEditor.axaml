@@ -25,8 +25,7 @@
                  CaretBrush="{x:Static ds:Colors.TextPrimaryBrush}"
                  MaxWidth="{x:Static ds:Tokens.MeasureReading}"
                  HorizontalAlignment="Stretch"
-                 VerticalAlignment="Stretch"
-                 TextOptions.TextRenderingMode="SubpixelAntialias"/>
+                 VerticalAlignment="Stretch"/>
 
         <!-- Minimal Telemetry Line (micro size, text meta) -->
         <Border Grid.Row="1"

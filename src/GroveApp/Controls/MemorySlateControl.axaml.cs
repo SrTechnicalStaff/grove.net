@@ -11,6 +11,7 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using FluentAvalonia.UI.Controls;
 using GroveApp.DesignSystem;
 using GroveApp.Engine.Memory;
 using GroveApp.Models.Memory;
@@ -49,6 +50,7 @@ public partial class MemorySlateControl : UserControl
         SearchBox.Text = string.Empty;
         _searchQuery = string.Empty;
         _filterCategory = "All";
+        MainNav.SelectedItem = MainNav.MenuItems.Cast<NavigationViewItem>().FirstOrDefault();
 
         LightboxOverlay.IsVisible = false;
         _activeMemory = null;
@@ -100,9 +102,9 @@ public partial class MemorySlateControl : UserControl
         RefreshGallery();
     }
 
-    private void OnNavCategoryClicked(object? sender, RoutedEventArgs e)
+    private void OnNavItemInvoked(object? sender, NavigationViewItemInvokedEventArgs e)
     {
-        if (sender is RadioButton button && button.Tag is string tag)
+        if (e.InvokedItemContainer is NavigationViewItem item && item.Tag is string tag)
         {
             _filterCategory = tag;
             RefreshGallery();
@@ -197,11 +199,10 @@ public partial class MemorySlateControl : UserControl
 
         if (isFav)
         {
-            var favIcon = new PathIcon
+            var favIcon = new SymbolIcon
             {
-                Data = Geometry.Parse("M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"),
-                Width = 12,
-                Height = 12,
+                Symbol = Symbol.Bookmark,
+                FontSize = 12,
                 Foreground = Colors.SignalInteractionBrush,
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(6, 0, 0, 0)

@@ -45,7 +45,7 @@
             <!-- Search / Filter Input -->
             <TextBox Grid.Row="1"
                      Name="TxtFilter"
-                     PlaceholderText="Find a Layer"
+                     Watermark="Find a Layer"
                      Margin="0,4,0,8"
                      Padding="6,4"
                      Background="{x:Static ds:Colors.SurfaceGridHex}"

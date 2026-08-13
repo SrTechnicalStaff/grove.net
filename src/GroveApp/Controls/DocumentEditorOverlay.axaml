@@ -7,7 +7,7 @@
     <Grid Width="640" MaxHeight="620" RowDefinitions="Auto,*,Auto">
         <TextBox Name="TitleBox"
                  Grid.Row="0"
-                 PlaceholderText="Document title"
+                 Watermark="Document title"
                  Background="Transparent"
                  BorderThickness="0,0,0,1"
                  BorderBrush="{x:Static ds:Colors.EdgeQuietBrush}"
@@ -24,8 +24,7 @@
                  Foreground="{x:Static ds:Colors.TextPrimaryBrush}"
                  FontFamily="{x:Static ds:Typography.FontFamilyMono}"
                  FontSize="14"
-                 Padding="8"
-                 TextOptions.TextRenderingMode="SubpixelAntialias" />
+                 Padding="8" />
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="6" Margin="8">
             <Button Name="CancelButton" Content="Cancel" Padding="8,4" />
             <Button Name="SaveButton" Content="Save" Padding="8,4" />
