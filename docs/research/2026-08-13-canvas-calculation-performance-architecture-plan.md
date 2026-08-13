@@ -200,7 +200,7 @@ Exit gate: after warm-up, stationary rendering allocates zero managed bytes; dra
 
 Exit gate: repainting an unchanged scene performs no parsing, layout, reflow, image decode, or representation allocation.
 
-### Slice 6 — Apply the same calculation discipline to HUD Plane Slates
+### Slice 6 — Apply the same calculation discipline to HUD Plane Slates, search, and hydration
 
 1. Make Memory Slate masonry/river layout incremental and keyed by Memory revision and viewport width.
 2. Use a spatial interval/indexed realization model for river items while keeping Memory records and layout truth independent of scroll position.
@@ -208,8 +208,12 @@ Exit gate: repainting an unchanged scene performs no parsing, layout, reflow, im
 4. Make search indexing incremental by Memory revision rather than rebuilding on every keystroke.
 5. Cache Writing Slate document layout and pagination by document/editor revision.
 6. Keep UI virtualization a materialization optimization only; it cannot alter Memory, result ordering, layout geometry, or scroll extent.
+7. Bulk-load persisted Content placements into `SpatialWorld` once at startup, build the spatial and occupancy indexes from that batch, and derive one coherent Aura revision before the Grid becomes interactive.
+8. Keep Memory hydration independent of Content placement hydration. Rebuilding Grid-derived state cannot create, delete, or alter a Memory record.
+9. Move file reads, image probing/decoding, and persistence writes off the UI thread. Publish their results through typed revisioned mutations and schedule the resulting frame directly.
+10. Coalesce persistence writes by committed world revision without delaying the in-memory world commit or its visible frame.
 
-Exit gate: opening, resizing, scrolling, searching, and returning to a Slate never shows stale results or requires a second action to populate content.
+Exit gate: application launch, opening, resizing, scrolling, searching, returning to a Slate, and reopening a persisted Grid never show stale results or require a second action to populate content.
 
 ### Slice 7 — Delete the old architecture and verify the release journey
 
@@ -288,4 +292,3 @@ Acceptance evidence must include:
 - Avalonia explicitly advises keeping `Render` fast and allocation-light, reusing pens/brushes/formatted text, invalidating only when data changes, and using `ICustomDrawOperation` for complex Skia scenes: [Avalonia custom rendering](https://docs.avaloniaui.net/docs/graphics-animation/custom-rendering) and [`ICustomDrawOperation`](https://docs.avaloniaui.net/api/avalonia/rendering/scenegraph/icustomdrawoperation).
 - .NET provides contiguous-buffer and reuse mechanisms appropriate for the field hot path: [`Span<T>`/`Memory<T>` usage guidance](https://learn.microsoft.com/en-us/dotnet/standard/memory-and-spans/memory-t-usage-guidelines), [`ArrayPool<T>`](https://learn.microsoft.com/en-us/dotnet/api/system.buffers.arraypool-1?view=net-9.0), and [SIMD/hardware intrinsics](https://learn.microsoft.com/en-us/dotnet/standard/simd). SIMD is admitted only after benchmarks prove a gain.
 - Hot-path instrumentation must itself be cheap and measured: [.NET metrics instrumentation](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/metrics-instrumentation).
-
