@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:GroveApp.Controls"
              xmlns:ds="clr-namespace:GroveApp.DesignSystem"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
              x:Class="GroveApp.Controls.MemorySlateControl"
              AutomationProperties.AutomationId="MemorySlate"
              AutomationProperties.Name="Memories"
@@ -11,9 +12,231 @@
              HorizontalAlignment="Stretch"
              VerticalAlignment="Stretch"
              Background="{x:Static ds:Colors.SurfaceGridHex}">
-    <ScrollViewer x:Name="MemoryRiver"
-                  HorizontalScrollBarVisibility="Disabled"
-                  VerticalScrollBarVisibility="Auto">
-        <controls:MasonryGalleryPanel x:Name="MemoryWall" />
-    </ScrollViewer>
+
+    <UserControl.Styles>
+        <Style Selector="Border.MemoryCard">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Background" Value="{x:Static ds:Colors.SurfaceChromeBrush}" />
+            <Setter Property="BorderBrush" Value="{x:Static ds:Colors.EdgeQuietBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="ClipToBounds" Value="True" />
+            <Setter Property="Margin" Value="8" />
+            <Setter Property="Width" Value="240" />
+            <Setter Property="Height" Value="280" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut" />
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.MemoryCard:pointerover">
+            <Setter Property="RenderTransform" Value="scale(1.02)" />
+            <Setter Property="BorderBrush" Value="{x:Static ds:Colors.SignalInteractionBrush}" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- TOP WINDOW / SLATE TITLE & COMMAND BAR -->
+        <Border Grid.Row="0"
+                Background="{x:Static ds:Colors.SurfaceChromeBrush}"
+                BorderBrush="{x:Static ds:Colors.EdgeHairlineBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="16,10">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <!-- App Title & Badge -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <ui:SymbolIcon Symbol="Pictures" FontSize="20" Foreground="{x:Static ds:Colors.SignalInteractionBrush}" />
+                    <TextBlock Text="Memories"
+                               FontFamily="{x:Static ds:Typography.FontFamilyUi}"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="{x:Static ds:Colors.TextPrimaryBrush}"
+                               VerticalAlignment="Center" />
+                    <Border Background="{x:Static ds:Colors.SurfaceNestedBrush}"
+                            CornerRadius="12"
+                            Padding="10,3"
+                            VerticalAlignment="Center">
+                        <TextBlock x:Name="MemoryCountBadge"
+                                   Text="0 items"
+                                   FontSize="12"
+                                   Foreground="{x:Static ds:Colors.TextSecondaryBrush}" />
+                    </Border>
+                </StackPanel>
+
+                <!-- Search & Filters -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
+                    <TextBox x:Name="SearchBox"
+                             Width="340"
+                             PlaceholderText="Search memories..."
+                             TextChanged="OnSearchTextChanged" />
+                </StackPanel>
+
+                <!-- Actions & Close -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Button x:Name="SlideshowButton"
+                            Click="OnSlideshowClicked"
+                            ToolTip.Tip="Start Slideshow"
+                            Padding="12,6">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <ui:SymbolIcon Symbol="Play" FontSize="14" />
+                            <TextBlock Text="Slideshow" FontSize="13" />
+                        </StackPanel>
+                    </Button>
+                    <Button Click="OnCloseClicked"
+                            ToolTip.Tip="Close Slate (Esc)"
+                            Padding="8,6">
+                        <ui:SymbolIcon Symbol="Dismiss" FontSize="14" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- MAIN BODY WITH NAVIGATION VIEW -->
+        <ui:NavigationView Grid.Row="1"
+                           x:Name="MainNav"
+                           PaneDisplayMode="Left"
+                           IsSettingsVisible="False"
+                           IsBackEnabled="False"
+                           ItemInvoked="OnNavItemInvoked">
+            <ui:NavigationView.MenuItems>
+                <ui:NavigationViewItem Content="All Memories" Tag="All" IsSelected="True">
+                    <ui:NavigationViewItem.IconSource>
+                        <ui:SymbolIconSource Symbol="AllApps" />
+                    </ui:NavigationViewItem.IconSource>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="Photos &amp; Images" Tag="BinaryImage">
+                    <ui:NavigationViewItem.IconSource>
+                        <ui:SymbolIconSource Symbol="Image" />
+                    </ui:NavigationViewItem.IconSource>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="Documents &amp; Notes" Tag="TextDoc">
+                    <ui:NavigationViewItem.IconSource>
+                        <ui:SymbolIconSource Symbol="Document" />
+                    </ui:NavigationViewItem.IconSource>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="Favorites" Tag="Favorites">
+                    <ui:NavigationViewItem.IconSource>
+                        <ui:SymbolIconSource Symbol="Bookmark" />
+                    </ui:NavigationViewItem.IconSource>
+                </ui:NavigationViewItem>
+            </ui:NavigationView.MenuItems>
+
+            <ui:NavigationView.Content>
+                <Grid>
+                    <!-- GALLERY GRID VIEW -->
+                    <ScrollViewer x:Name="GalleryScrollViewer"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  VerticalScrollBarVisibility="Auto"
+                                  Padding="24">
+                        <WrapPanel x:Name="MemoryWall" Orientation="Horizontal" HorizontalAlignment="Left" />
+                    </ScrollViewer>
+
+                    <!-- LIGHTBOX / DETAILED VIEWER OVERLAY -->
+                    <Grid x:Name="LightboxOverlay"
+                          IsVisible="False"
+                          Background="#F20E0E10"
+                          RowDefinitions="Auto,*,Auto">
+                        <!-- Lightbox Header Bar -->
+                        <Border Grid.Row="0"
+                                Background="{x:Static ds:Colors.SurfaceChromeBrush}"
+                                BorderBrush="{x:Static ds:Colors.EdgeHairlineBrush}"
+                                BorderThickness="0,0,0,1"
+                                Padding="16,8">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <Button Grid.Column="0" Click="OnCloseLightboxClicked" Padding="10,6">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <ui:SymbolIcon Symbol="Back" FontSize="14" />
+                                        <TextBlock Text="Back to Gallery" FontSize="13" />
+                                    </StackPanel>
+                                </Button>
+                                <TextBlock Grid.Column="1"
+                                           x:Name="LightboxTitle"
+                                           Text="Memory Detail"
+                                           FontWeight="SemiBold"
+                                           FontSize="15"
+                                           Foreground="{x:Static ds:Colors.TextPrimaryBrush}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" />
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                                    <Button x:Name="FavoriteButton" Click="OnToggleFavoriteClicked" ToolTip.Tip="Toggle Favorite" Padding="8,6">
+                                        <ui:SymbolIcon x:Name="FavoriteIcon" Symbol="Bookmark" FontSize="14" />
+                                    </Button>
+                                    <Button Click="OnToggleInfoClicked" ToolTip.Tip="Toggle Info Panel" Padding="8,6">
+                                        <ui:SymbolIcon Symbol="Help" FontSize="14" />
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Lightbox Content Viewport + Info Drawer -->
+                        <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
+                            <!-- Main Viewport -->
+                            <ScrollViewer Grid.Column="0"
+                                          HorizontalScrollBarVisibility="Auto"
+                                          VerticalScrollBarVisibility="Auto">
+                                <Border x:Name="LightboxContainer"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Padding="32" />
+                            </ScrollViewer>
+
+                            <!-- Collapsible Metadata Panel -->
+                            <Border Grid.Column="1"
+                                    x:Name="InfoDrawer"
+                                    Width="320"
+                                    IsVisible="True"
+                                    Background="{x:Static ds:Colors.SurfaceChromeBrush}"
+                                    BorderBrush="{x:Static ds:Colors.EdgeHairlineBrush}"
+                                    BorderThickness="1,0,0,0"
+                                    Padding="20">
+                                <StackPanel Spacing="16">
+                                    <TextBlock Text="Memory Info" FontWeight="Bold" FontSize="16" Foreground="{x:Static ds:Colors.TextPrimaryBrush}" />
+                                    <Rectangle Height="1" Fill="{x:Static ds:Colors.EdgeQuietBrush}" />
+                                    
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="TITLE" FontSize="11" Foreground="{x:Static ds:Colors.TextMetaBrush}" FontWeight="SemiBold" />
+                                        <TextBlock x:Name="InfoTitleText" Text="-" TextWrapping="Wrap" Foreground="{x:Static ds:Colors.TextPrimaryBrush}" />
+                                    </StackPanel>
+
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="TYPE" FontSize="11" Foreground="{x:Static ds:Colors.TextMetaBrush}" FontWeight="SemiBold" />
+                                        <TextBlock x:Name="InfoTypeText" Text="-" Foreground="{x:Static ds:Colors.TextSecondaryBrush}" />
+                                    </StackPanel>
+
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="MEMORY ID" FontSize="11" Foreground="{x:Static ds:Colors.TextMetaBrush}" FontWeight="SemiBold" />
+                                        <TextBlock x:Name="InfoIdText" Text="-" FontFamily="{x:Static ds:Typography.FontFamilyMono}" FontSize="11" TextWrapping="Wrap" Foreground="{x:Static ds:Colors.TextSecondaryBrush}" />
+                                    </StackPanel>
+
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="FINGERPRINT (HASH)" FontSize="11" Foreground="{x:Static ds:Colors.TextMetaBrush}" FontWeight="SemiBold" />
+                                        <TextBlock x:Name="InfoHashText" Text="-" FontFamily="{x:Static ds:Typography.FontFamilyMono}" FontSize="10" TextWrapping="Wrap" Foreground="{x:Static ds:Colors.TextMetaBrush}" />
+                                    </StackPanel>
+
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="CREATED" FontSize="11" Foreground="{x:Static ds:Colors.TextMetaBrush}" FontWeight="SemiBold" />
+                                        <TextBlock x:Name="InfoCreatedText" Text="-" Foreground="{x:Static ds:Colors.TextSecondaryBrush}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <!-- Bottom Filmstrip Thumbnail Carousel -->
+                        <Border Grid.Row="2"
+                                Height="96"
+                                Background="{x:Static ds:Colors.SurfaceChromeBrush}"
+                                BorderBrush="{x:Static ds:Colors.EdgeHairlineBrush}"
+                                BorderThickness="0,1,0,0"
+                                Padding="16,8">
+                            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                                <StackPanel x:Name="FilmstripStack" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" />
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </ui:NavigationView.Content>
+        </ui:NavigationView>
+    </Grid>
 </UserControl>

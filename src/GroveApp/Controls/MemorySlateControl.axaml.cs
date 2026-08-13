@@ -2,12 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Automation.Peers;
+using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using FluentAvalonia.UI.Controls;
 using GroveApp.DesignSystem;
 using GroveApp.Engine.Memory;
 using GroveApp.Models.Memory;
@@ -18,6 +21,11 @@ namespace GroveApp.Controls;
 public partial class MemorySlateControl : UserControl
 {
     private readonly List<Bitmap> _bitmaps = new();
+    private readonly HashSet<Guid> _favorites = new();
+    private IReadOnlyList<MemoryRecord> _allMemories = Array.Empty<MemoryRecord>();
+    private MemoryRecord? _activeMemory;
+    private string _filterCategory = "All";
+    private string _searchQuery = string.Empty;
 
     public MemorySlateControl()
     {
@@ -34,13 +42,19 @@ public partial class MemorySlateControl : UserControl
     {
         ArgumentNullException.ThrowIfNull(ledger);
         DisposeBitmaps();
-        MemoryWall.Children.Clear();
 
         var catalogue = new MemorySlateCatalogue(ledger);
-        foreach (MemoryRecord memory in catalogue.Snapshot())
-        {
-            MemoryWall.Children.Add(CreateMemoryView(memory));
-        }
+        _allMemories = catalogue.Snapshot();
+        
+        SearchBox.Text = string.Empty;
+        _searchQuery = string.Empty;
+        _filterCategory = "All";
+        MainNav.SelectedItem = MainNav.MenuItems.Cast<NavigationViewItem>().FirstOrDefault();
+
+        LightboxOverlay.IsVisible = false;
+        _activeMemory = null;
+
+        RefreshGallery();
 
         IsVisible = true;
         Focus();
@@ -55,46 +69,200 @@ public partial class MemorySlateControl : UserControl
 
         IsVisible = false;
         MemoryWall.Children.Clear();
+        FilmstripStack.Children.Clear();
+        LightboxContainer.Child = null;
         DisposeBitmaps();
+        _allMemories = Array.Empty<MemoryRecord>();
+        _activeMemory = null;
         Closed?.Invoke();
     }
 
-    private Control CreateMemoryView(MemoryRecord memory) => memory.PayloadKind switch
+    protected override void OnKeyDown(KeyEventArgs e)
     {
-        MemoryPayloadKind.BinaryImage => CreatePicture(memory),
-        MemoryPayloadKind.PDFDocument => CreateDocument(memory),
-        MemoryPayloadKind.PlainText or MemoryPayloadKind.RichTextMarkdown => CreateText(memory),
-        _ => CreateText(memory)
+        base.OnKeyDown(e);
+        if (e.Key == Key.Escape)
+        {
+            if (LightboxOverlay.IsVisible)
+            {
+                CloseLightbox();
+                e.Handled = true;
+            }
+            else
+            {
+                Close();
+                e.Handled = true;
+            }
+        }
+    }
+
+    private void OnSearchTextChanged(object? sender, TextChangedEventArgs args)
+    {
+        _searchQuery = SearchBox.Text?.Trim() ?? string.Empty;
+        RefreshGallery();
+    }
+
+    private void OnNavItemInvoked(object? sender, NavigationViewItemInvokedEventArgs e)
+    {
+        if (e.InvokedItemContainer is NavigationViewItem item && item.Tag is string tag)
+        {
+            _filterCategory = tag;
+            RefreshGallery();
+        }
+    }
+
+    private IEnumerable<MemoryRecord> GetFilteredMemories()
+    {
+        IEnumerable<MemoryRecord> result = _allMemories;
+
+        // Category filter
+        result = _filterCategory switch
+        {
+            "BinaryImage" => result.Where(m => m.PayloadKind == MemoryPayloadKind.BinaryImage),
+            "TextDoc" => result.Where(m => m.PayloadKind != MemoryPayloadKind.BinaryImage),
+            "Favorites" => result.Where(m => _favorites.Contains(m.MemoryId)),
+            _ => result
+        };
+
+        // Text search filter
+        if (!string.IsNullOrWhiteSpace(_searchQuery))
+        {
+            result = result.Where(m =>
+                m.Title.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                (m.HasTextPayload && m.GetUtf8Payload().Contains(_searchQuery, StringComparison.OrdinalIgnoreCase)) ||
+                m.MemoryId.ToString().Contains(_searchQuery, StringComparison.OrdinalIgnoreCase));
+        }
+
+        return result;
+    }
+
+    private void RefreshGallery()
+    {
+        DisposeBitmaps();
+        MemoryWall.Children.Clear();
+
+        List<MemoryRecord> filtered = GetFilteredMemories().ToList();
+        MemoryCountBadge.Text = $"{filtered.Count} item{(filtered.Count == 1 ? "" : "s")}";
+
+        foreach (MemoryRecord memory in filtered)
+        {
+            MemoryWall.Children.Add(CreateMemoryCard(memory));
+        }
+
+        if (LightboxOverlay.IsVisible && _activeMemory != null)
+        {
+            PopulateFilmstrip(filtered);
+        }
+    }
+
+    private Control CreateMemoryCard(MemoryRecord memory)
+    {
+        bool isFav = _favorites.Contains(memory.MemoryId);
+
+        var card = new Border
+        {
+            Classes = { "MemoryCard" }
+        };
+
+        var mainLayout = new Grid
+        {
+            RowDefinitions = new RowDefinitions("*,Auto")
+        };
+
+        // Top Preview Surface
+        Control previewContent = CreateMemoryPreview(memory, thumbnailMode: true);
+        Grid.SetRow(previewContent, 0);
+        mainLayout.Children.Add(previewContent);
+
+        // Bottom Title & Meta Strip
+        var footer = new Border
+        {
+            Background = Colors.SurfaceChromeBrush,
+            Padding = new Thickness(12, 8),
+            BorderBrush = Colors.EdgeHairlineBrush,
+            BorderThickness = new Thickness(0, 1, 0, 0)
+        };
+        Grid.SetRow(footer, 1);
+
+        var footerLayout = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,Auto")
+        };
+
+        var titleBlock = new TextBlock
+        {
+            Text = string.IsNullOrWhiteSpace(memory.Title) ? GetDefaultTitle(memory) : memory.Title,
+            FontWeight = FontWeight.SemiBold,
+            FontSize = 13,
+            Foreground = Colors.TextPrimaryBrush,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        Grid.SetColumn(titleBlock, 0);
+        footerLayout.Children.Add(titleBlock);
+
+        if (isFav)
+        {
+            var favBadge = new SymbolIcon
+            {
+                Symbol = Symbol.Bookmark,
+                FontSize = 12,
+                Foreground = Colors.SignalInteractionBrush,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(6, 0, 0, 0)
+            };
+            Grid.SetColumn(favBadge, 1);
+            footerLayout.Children.Add(favBadge);
+        }
+
+        footer.Child = footerLayout;
+        mainLayout.Children.Add(footer);
+
+        card.Child = mainLayout;
+
+        // Pointer press to open Lightbox
+        card.PointerPressed += (_, e) =>
+        {
+            if (e.GetCurrentPoint(card).Properties.IsLeftButtonPressed)
+            {
+                OpenLightbox(memory);
+                e.Handled = true;
+            }
+        };
+
+        return card;
+    }
+
+    private Control CreateMemoryPreview(MemoryRecord memory, bool thumbnailMode) => memory.PayloadKind switch
+    {
+        MemoryPayloadKind.BinaryImage => CreatePicturePreview(memory, thumbnailMode),
+        MemoryPayloadKind.PDFDocument => CreateDocumentPreview(memory),
+        _ => CreateTextPreview(memory)
     };
 
-    private Control CreatePicture(MemoryRecord memory)
+    private Control CreatePicturePreview(MemoryRecord memory, bool thumbnailMode)
     {
         try
         {
             var bitmap = new Bitmap(new MemoryStream(memory.GetPayloadCopy()));
             _bitmaps.Add(bitmap);
-            return new Viewbox
+
+            return new Image
             {
-                Stretch = Stretch.Uniform,
-                StretchDirection = StretchDirection.DownOnly,
-                Child = new Image
-                {
-                    Source = bitmap,
-                    Width = bitmap.PixelSize.Width,
-                    Height = bitmap.PixelSize.Height,
-                    Stretch = Stretch.Uniform
-                }
+                Source = bitmap,
+                Stretch = thumbnailMode ? Stretch.UniformToFill : Stretch.Uniform,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch
             };
         }
         catch (Exception exception) when (exception is ArgumentException or InvalidDataException)
         {
-            Trace.TraceError($"Memory {memory.MemoryId} could not be rendered: {exception}");
+            Trace.TraceError($"Memory {memory.MemoryId} thumbnail render failed: {exception}");
             MemoryRenderFailed?.Invoke(memory, exception);
             return CreateTextSurface(memory.Title, Colors.SurfaceNestedBrush, Colors.TextPrimaryBrush);
         }
     }
 
-    private static Control CreateDocument(MemoryRecord memory)
+    private static Control CreateDocumentPreview(MemoryRecord memory)
     {
         string content = memory.GetUtf8Payload();
         if (string.IsNullOrWhiteSpace(content))
@@ -105,7 +273,7 @@ public partial class MemorySlateControl : UserControl
         return CreateTextSurface(content, Colors.SurfacePageBrush, Colors.PaperInkBrush);
     }
 
-    private static Control CreateText(MemoryRecord memory) => CreateTextSurface(
+    private static Control CreateTextPreview(MemoryRecord memory) => CreateTextSurface(
         memory.GetUtf8Payload(),
         ResolveTextSurface(memory.MemoryId),
         Colors.NoteTextBrush);
@@ -113,18 +281,141 @@ public partial class MemorySlateControl : UserControl
     private static Control CreateTextSurface(string content, IBrush background, IBrush foreground) => new Border
     {
         Background = background,
-        Padding = new Thickness(16),
+        Padding = new Thickness(14),
+        HorizontalAlignment = HorizontalAlignment.Stretch,
+        VerticalAlignment = VerticalAlignment.Stretch,
         Child = new TextBlock
         {
             Text = content,
             Foreground = foreground,
             FontFamily = Typography.UiFamily,
-            FontSize = Typography.SizeBody,
-            FontWeight = Typography.WeightUiDefault,
-            LineHeight = Typography.SizeBody * Typography.LineHeightSnug,
+            FontSize = 13,
+            LineHeight = 13 * Typography.LineHeightSnug,
             TextWrapping = TextWrapping.Wrap,
-            HorizontalAlignment = HorizontalAlignment.Stretch
+            TextTrimming = TextTrimming.WordEllipsis
         }
+    };
+
+    private void OpenLightbox(MemoryRecord memory)
+    {
+        _activeMemory = memory;
+        LightboxTitle.Text = string.IsNullOrWhiteSpace(memory.Title) ? GetDefaultTitle(memory) : memory.Title;
+        
+        UpdateFavoriteButtonState();
+
+        // Viewport content
+        LightboxContainer.Child = CreateMemoryPreview(memory, thumbnailMode: false);
+
+        // Populate info panel
+        InfoTitleText.Text = string.IsNullOrWhiteSpace(memory.Title) ? GetDefaultTitle(memory) : memory.Title;
+        InfoTypeText.Text = memory.PayloadKind.ToString();
+        InfoIdText.Text = memory.MemoryId.ToString();
+        InfoHashText.Text = memory.Hash.ToString();
+        InfoCreatedText.Text = new DateTime(memory.CreatedAtTicks, DateTimeKind.Utc).ToLocalTime().ToString("g");
+
+        // Filmstrip
+        PopulateFilmstrip(GetFilteredMemories().ToList());
+
+        LightboxOverlay.IsVisible = true;
+    }
+
+    private void CloseLightbox()
+    {
+        LightboxOverlay.IsVisible = false;
+        _activeMemory = null;
+        LightboxContainer.Child = null;
+        FilmstripStack.Children.Clear();
+    }
+
+    private void PopulateFilmstrip(List<MemoryRecord> memories)
+    {
+        FilmstripStack.Children.Clear();
+
+        foreach (MemoryRecord item in memories)
+        {
+            bool isActive = _activeMemory?.MemoryId == item.MemoryId;
+
+            var thumb = new Border
+            {
+                Width = 70,
+                Height = 70,
+                CornerRadius = new CornerRadius(6),
+                ClipToBounds = true,
+                BorderBrush = isActive ? Colors.SignalInteractionBrush : Colors.EdgeQuietBrush,
+                BorderThickness = new Thickness(isActive ? 2 : 1),
+                Background = Colors.SurfaceNestedBrush,
+                Cursor = new Cursor(StandardCursorType.Hand)
+            };
+
+            thumb.Child = CreateMemoryPreview(item, thumbnailMode: true);
+
+            thumb.PointerPressed += (_, e) =>
+            {
+                if (e.GetCurrentPoint(thumb).Properties.IsLeftButtonPressed)
+                {
+                    OpenLightbox(item);
+                    e.Handled = true;
+                }
+            };
+
+            FilmstripStack.Children.Add(thumb);
+        }
+    }
+
+    private void OnCloseLightboxClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => CloseLightbox();
+
+    private void OnCloseClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => Close();
+
+    private void OnToggleFavoriteClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (_activeMemory == null)
+        {
+            return;
+        }
+
+        if (_favorites.Contains(_activeMemory.MemoryId))
+        {
+            _favorites.Remove(_activeMemory.MemoryId);
+        }
+        else
+        {
+            _favorites.Add(_activeMemory.MemoryId);
+        }
+
+        UpdateFavoriteButtonState();
+        RefreshGallery();
+    }
+
+    private void OnToggleInfoClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        InfoDrawer.IsVisible = !InfoDrawer.IsVisible;
+    }
+
+    private void OnSlideshowClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        List<MemoryRecord> filtered = GetFilteredMemories().ToList();
+        if (filtered.Count > 0)
+        {
+            OpenLightbox(filtered[0]);
+        }
+    }
+
+    private void UpdateFavoriteButtonState()
+    {
+        if (_activeMemory == null)
+        {
+            return;
+        }
+
+        bool isFav = _favorites.Contains(_activeMemory.MemoryId);
+        FavoriteIcon.Foreground = isFav ? Colors.SignalInteractionBrush : Colors.TextPrimaryBrush;
+    }
+
+    private static string GetDefaultTitle(MemoryRecord memory) => memory.PayloadKind switch
+    {
+        MemoryPayloadKind.BinaryImage => "Image Memory",
+        MemoryPayloadKind.PDFDocument => "Document Memory",
+        _ => "Text Note Memory"
     };
 
     private static IBrush ResolveTextSurface(Guid memoryId) => ((uint)memoryId.GetHashCode() % 3) switch
