@@ -1,0 +1,54 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ds="clr-namespace:GroveApp.DesignSystem"
+             x:Class="GroveApp.Controls.WritingSlateControl"
+             AutomationProperties.AutomationId="WritingSlate"
+             AutomationProperties.Name="Writing"
+             IsVisible="False"
+             IsHitTestVisible="True"
+             Focusable="True"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch"
+             Background="{x:Static ds:Colors.SurfaceChromeHex}">
+    <Grid RowDefinitions="Auto,*">
+        <Border Grid.Row="0"
+                Padding="{x:Static ds:Tokens.ThicknessLg}">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="WRITING"
+                           Foreground="{x:Static ds:Colors.CSlateBrush}"
+                           FontFamily="{x:Static ds:Typography.FontFamilyDisplay}"
+                           FontSize="{x:Static ds:Typography.SizeTitleSmall}"
+                           FontWeight="Medium" />
+                <Button x:Name="CloseButton"
+                        Grid.Column="1"
+                        Content="Close"
+                        Padding="{x:Static ds:Tokens.ThicknessSm}"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Foreground="{x:Static ds:Colors.TextSecondaryBrush}" />
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="1"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+            <Border Width="{x:Static ds:Tokens.MeasureReading}"
+                    MinHeight="{x:Static ds:Tokens.NotepadMaxHeight}"
+                    Margin="{x:Static ds:Tokens.ThicknessXl}"
+                    Padding="{x:Static ds:Tokens.ThicknessXl}"
+                    HorizontalAlignment="Center"
+                    Background="{x:Static ds:Colors.SurfacePageBrush}"
+                    BorderBrush="{x:Static ds:Colors.EdgeOnPageBrush}"
+                    BorderThickness="1">
+                <TextBox x:Name="WritingEditor"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         Background="Transparent"
+                         Foreground="{x:Static ds:Colors.PaperInkBrush}"
+                         BorderThickness="0"
+                         FontFamily="{x:Static ds:Typography.FontFamilyUi}"
+                         FontSize="{x:Static ds:Typography.SizeBody}" />
+            </Border>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

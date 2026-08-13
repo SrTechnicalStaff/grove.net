@@ -37,7 +37,7 @@ tags: [grove, product-definition, slate, viewport-overlay, writing-slate]
 5. **Instant Dismissal & Return**: Closing a Slate restores instant full focus to the exact spatial camera view and selected Grid Layer occupied prior to opening.
 
 ### Data & State Schema
-- **State Ownership**: Viewport Overlay Subsystem (`SlateHostOverlay`).
+- **State Ownership**: Dedicated HUD Plane controls (`WritingSlateControl`, `MemorySlateControl`, and `GallerySlateControl`). No shared mode-switched Slate host exists.
 - **Named Slate Instance Attributes**:
   - `slate_id`: Unique session identifier.
   - `slate_type`: Enum (`writing_slate`, `memory_slate`, `gallery_slate`).

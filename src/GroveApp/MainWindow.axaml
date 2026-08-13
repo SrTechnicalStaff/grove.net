@@ -1,13 +1,12 @@
-<fa:AppWindow xmlns="https://github.com/avaloniaui"
-              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-              xmlns:fa="using:FluentAvalonia.UI.Windowing"
-              xmlns:controls="clr-namespace:GroveApp.Controls"
-              xmlns:ds="clr-namespace:GroveApp.DesignSystem"
-              x:Class="GroveApp.MainWindow"
-              Title="Grove v9 — Spatial Grid Desktop Engine"
-              Width="1280" Height="800"
-              WindowStartupLocation="CenterScreen"
-              Background="{x:Static ds:Colors.SurfaceGridHex}">
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:GroveApp.Controls"
+        xmlns:ds="clr-namespace:GroveApp.DesignSystem"
+        x:Class="GroveApp.MainWindow"
+        Title="Grove"
+        Width="1280" Height="800"
+        WindowStartupLocation="CenterScreen"
+        Background="{x:Static ds:Colors.SurfaceGridHex}">
 
     <controls:ThreePlaneVisualCompositorContainer x:Name="PlaneCompositor">
         <!-- PLANE 0: Infinite Spatial Grid Canvas -->
@@ -38,9 +37,8 @@
                                         VerticalAlignment="Top"
                                         Margin="16" />
 
-        <!-- Viewport-fixed host for Writing, Memory, or Gallery. -->
-        <controls:SlateHostOverlay x:Name="SlateHost" />
-
+        <controls:WritingSlateControl x:Name="WritingSlate" />
+        <controls:GallerySlateControl x:Name="GallerySlate" />
         <controls:MemorySlateControl x:Name="MemorySlate" />
     </controls:ThreePlaneVisualCompositorContainer>
-</fa:AppWindow>
+</Window>

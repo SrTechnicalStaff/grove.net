@@ -178,26 +178,6 @@ namespace GroveApp.Engine
         }
     }
 
-    public static class ClipboardExtensions
-    {
-        public static async Task<Avalonia.Media.Imaging.Bitmap?> GetBitmapAsync(this IClipboard clipboard)
-        {
-            if (clipboard is null) return null;
-            try
-            {
-                object? data = await clipboard.GetDataAsync("PNG") ?? await clipboard.GetDataAsync("Bitmap");
-                if (data is Avalonia.Media.Imaging.Bitmap b) return b;
-                if (data is byte[] bytes)
-                {
-                    using var ms = new System.IO.MemoryStream(bytes);
-                    return new Avalonia.Media.Imaging.Bitmap(ms);
-                }
-            }
-            catch { }
-            return null;
-        }
-    }
-
     /// <summary>
     /// Implements ADR-014 Native System Clipboard Interop Service.
     /// Provides copy/paste operations supporting CF_HTML and plain text AST deserialization.
@@ -205,6 +185,10 @@ namespace GroveApp.Engine
     public sealed class NativeClipboardService
     {
         private const string SpatialClipboardFormat = "Grove.SpatialClipboard.v1";
+        private static readonly DataFormat<string> SpatialClipboardDataFormat =
+            DataFormat.CreateStringApplicationFormat(SpatialClipboardFormat);
+        private static readonly DataFormat<string> HtmlClipboardDataFormat =
+            DataFormat.CreateStringPlatformFormat("HTML Format");
         private readonly Func<IClipboard?> _getClipboardFunc;
 
         public NativeClipboardService(Func<IClipboard?> getClipboardFunc)
@@ -225,12 +209,14 @@ namespace GroveApp.Engine
             string spatialContainer = JsonSerializer.Serialize(
                 SpatialClipboardContainer.FromItems(sourceItems, copiedAtUtc: DateTime.UtcNow));
 
-            DataObject dataObject = new DataObject();
-            dataObject.Set(DataFormats.Text, plainText);
-            dataObject.Set("HTML Format", cfHtml);
-            dataObject.Set(SpatialClipboardFormat, spatialContainer);
+            var item = new DataTransferItem();
+            item.SetText(plainText);
+            item.Set(HtmlClipboardDataFormat, cfHtml);
+            item.Set(SpatialClipboardDataFormat, spatialContainer);
+            var transfer = new DataTransfer();
+            transfer.Add(item);
 
-            await clipboard.SetDataObjectAsync(dataObject);
+            await clipboard.SetDataAsync(transfer);
         }
 
         public async Task<List<GridContentItem>> PasteItemsAsync(CellCoordinate dropOrigin)
@@ -239,61 +225,48 @@ namespace GroveApp.Engine
             var results = new List<GridContentItem>();
             if (clipboard is null) return results;
 
-            try
+            string? serialized = await clipboard.TryGetValueAsync(SpatialClipboardDataFormat);
+            if (!string.IsNullOrWhiteSpace(serialized))
             {
-                object? structuredData = await clipboard.GetDataAsync(SpatialClipboardFormat);
-                if (structuredData is string serialized &&
-                    JsonSerializer.Deserialize<SpatialClipboardContainer>(serialized) is SpatialClipboardContainer container)
+                try
                 {
-                    foreach (SpatialClipboardPlacement placement in container.PlaceAt(
-                                 new GroveApp.Models.Interaction.CellCoordinate(dropOrigin.X, dropOrigin.Y)))
+                    if (JsonSerializer.Deserialize<SpatialClipboardContainer>(serialized) is SpatialClipboardContainer container)
                     {
-                        results.Add(CreateSpatialItem(placement));
-                    }
+                        foreach (SpatialClipboardPlacement placement in container.PlaceAt(
+                                     new GroveApp.Models.Interaction.CellCoordinate(dropOrigin.X, dropOrigin.Y)))
+                        {
+                            results.Add(CreateSpatialItem(placement));
+                        }
 
-                    return results;
+                        return results;
+                    }
                 }
-            }
-            catch (JsonException)
-            {
+                catch (JsonException)
+                {
+                }
             }
 
             // 1. Direct Bitmap Image Clipboard Paste (ADR-014)
-            try
+            var bitmap = await clipboard.TryGetBitmapAsync();
+            if (bitmap != null)
             {
-                var bitmap = await clipboard.GetBitmapAsync();
-                if (bitmap != null)
-                {
-                    int w = (int)bitmap.Size.Width;
-                    int h = (int)bitmap.Size.Height;
-                    string tempPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"pasted_img_{Guid.NewGuid():N}.png");
-                    bitmap.Save(tempPath);
-                    var img = new GridImage(dropOrigin.X, dropOrigin.Y, tempPath, w, h);
-                    img.LoadedBitmap = bitmap;
-                    img.UpdateFootprint(w, h);
-                    results.Add(img);
-                    return results;
-                }
+                int w = (int)bitmap.Size.Width;
+                int h = (int)bitmap.Size.Height;
+                string tempPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"pasted_img_{Guid.NewGuid():N}.png");
+                bitmap.Save(tempPath, Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
+                var img = new GridImage(dropOrigin.X, dropOrigin.Y, tempPath, w, h);
+                img.LoadedBitmap = bitmap;
+                img.UpdateFootprint(w, h);
+                results.Add(img);
+                return results;
             }
-            catch { }
 
-            string? html = null;
-            try
-            {
-                object? htmlData = await clipboard.GetDataAsync("HTML Format");
-                if (htmlData is string rawHtml && !string.IsNullOrWhiteSpace(rawHtml))
-                {
-                    html = CfHtmlSerializer.ExtractFragment(rawHtml);
-                }
-            }
-            catch { }
+            string? rawHtml = await clipboard.TryGetValueAsync(HtmlClipboardDataFormat);
+            string? html = string.IsNullOrWhiteSpace(rawHtml)
+                ? null
+                : CfHtmlSerializer.ExtractFragment(rawHtml);
 
-            string? text = null;
-            try
-            {
-                text = await clipboard.GetTextAsync();
-            }
-            catch { }
+            string? text = await clipboard.TryGetTextAsync();
 
             string contentToUse = !string.IsNullOrWhiteSpace(text) ? text : (html ?? "");
             if (string.IsNullOrWhiteSpace(contentToUse)) return results;

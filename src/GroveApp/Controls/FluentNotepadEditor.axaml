@@ -26,7 +26,7 @@
                  MaxWidth="{x:Static ds:Tokens.MeasureReading}"
                  HorizontalAlignment="Stretch"
                  VerticalAlignment="Stretch"
-                 RenderOptions.TextRenderingMode="SubpixelAntialias"/>
+                 TextOptions.TextRenderingMode="SubpixelAntialias"/>
 
         <!-- Minimal Telemetry Line (micro size, text meta) -->
         <Border Grid.Row="1"

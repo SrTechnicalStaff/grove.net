@@ -52,7 +52,7 @@ namespace GroveApp.Engine
 
         public void OnDragOver(object? sender, DragEventArgs e)
         {
-            if (!e.Data.Contains(DataFormats.Files))
+            if (!e.DataTransfer.Contains(DataFormat.File))
             {
                 e.DragEffects = DragDropEffects.None;
                 ClearPreview();
@@ -67,7 +67,7 @@ namespace GroveApp.Engine
             }
 
             Point screenPos = e.GetPosition(visual);
-            var files = e.Data.GetFiles()?.Select(f => f.Path.LocalPath).ToList();
+            var files = e.DataTransfer.TryGetFiles()?.Select(file => file.Path.LocalPath).ToList();
             (int reqW, int reqH)? requestedFootprint;
             try
             {
@@ -102,13 +102,13 @@ namespace GroveApp.Engine
 
         public async Task OnDropAsync(object? sender, DragEventArgs e)
         {
-            if (!e.Data.Contains(DataFormats.Files))
+            if (!e.DataTransfer.Contains(DataFormat.File))
             {
                 ClearPreview();
                 return;
             }
 
-            var files = e.Data.GetFiles()?.Select(f => f.Path.LocalPath).ToList();
+            var files = e.DataTransfer.TryGetFiles()?.Select(file => file.Path.LocalPath).ToList();
             if (files is null || files.Count == 0)
             {
                 ClearPreview();

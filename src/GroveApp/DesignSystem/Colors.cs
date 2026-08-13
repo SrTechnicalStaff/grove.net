@@ -151,6 +151,8 @@ namespace GroveApp.DesignSystem
         public static IBrush TextSecondaryBrush => new SolidColorBrush(InkSecondary);
         public static IBrush TextMetaBrush => new SolidColorBrush(InkTertiary);
         public static IBrush TextUnavailableBrush => new SolidColorBrush(InkFaint);
+        public static IBrush WatermarkNumeralBrush => new SolidColorBrush(
+            Color.FromArgb((byte)(255 * Tokens.InkWhisper), 234, 234, 234));
 
         public static IBrush EdgeHairlineBrush => new SolidColorBrush(InkHairline);
         public static IBrush EdgeQuietBrush => new SolidColorBrush(InkEdge);

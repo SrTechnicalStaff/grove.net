@@ -102,6 +102,9 @@ namespace GroveApp.DesignSystem
         public const double MeasureReading = 640.0; // --measure-reading, rendered px bound
         public const double MasonryColumnMin = 280.0;
         public const double MasonryGutter = SpacingSm;
+        public const double WatermarkNumeralSize = 208.0;
+        public const double WatermarkLineHeight = 0.76;
+        public const double WatermarkNameOpticalInset = 3.0;
         public const double QuickNoteFrameWidth = 640.0;
         public const double QuickNoteMinHeight = 120.0;
         public const double QuickNoteMaxHeight = 360.0;

@@ -47,7 +47,7 @@ public sealed class PublishedApplicationTests
 
 internal sealed class PublishedApplicationSession : IDisposable
 {
-    internal const string MainWindowTitle = "Grove v9 — Spatial Grid Desktop Engine";
+    internal const string MainWindowTitle = "Grove";
 
     private readonly Application _application;
     private readonly UIA3Automation _automation;

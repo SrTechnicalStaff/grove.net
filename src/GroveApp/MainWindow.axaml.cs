@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -9,7 +8,6 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
-using FluentAvalonia.UI.Windowing;
 using GroveApp.Controls;
 using GroveApp.DesignSystem;
 using GroveApp.Engine;
@@ -22,13 +20,13 @@ using EngineCellCoordinate = GroveApp.Engine.CellCoordinate;
 
 namespace GroveApp
 {
-    public partial class MainWindow : AppWindow, IKeybindHost
+    public partial class MainWindow : Window, IKeybindHost
     {
         private readonly MemoryRepository _memoryRepository;
         private readonly KeybindModule _keybindModule = new();
         private readonly GlobalFocusPrecedenceRouter _focusRouter;
         private readonly SpatialContextMenuService _contextMenuService = new();
-        private readonly FluentWindowBackdropManager _backdropManager = new();
+        private readonly WindowBackdropManager _backdropManager = new();
         private readonly DispatcherTimer _contextLongPressTimer;
         private Point _contextPressPoint;
         private bool _contextPressActive;
@@ -52,7 +50,7 @@ namespace GroveApp
                 PlaneCompositor.RegisterPlaneView(new ThreePlaneVisualCompositorContainer.ControlPlaneView(
                     view, VisualPlaneType.Plane1_InformationPlane, ThreePlaneVisualCompositorContainer.Plane1ZIndex));
             }
-            foreach (Control view in new Control[] { LayerManagerOverlay, ContextMenuOverlay, SpatialWatermark, PerformanceTracker, SlateHost, MemorySlate })
+            foreach (Control view in new Control[] { LayerManagerOverlay, ContextMenuOverlay, SpatialWatermark, PerformanceTracker, WritingSlate, GallerySlate, MemorySlate })
             {
                 PlaneCompositor.RegisterPlaneView(new ThreePlaneVisualCompositorContainer.ControlPlaneView(
                     view, VisualPlaneType.Plane2_HUDPlane, ThreePlaneVisualCompositorContainer.Plane2ZIndex));
@@ -74,7 +72,7 @@ namespace GroveApp
             ContextMenuOverlay.BindService(_contextMenuService);
             ContextMenuOverlay.CommandRequested += OnContextMenuCommandRequested;
             _contextMenuService.ContextMenuStateChanged += OnContextMenuStateChanged;
-            _watermarkBinding = new HudBindingAdapter(CanvasControl, CanvasControl.LayerStack);
+            _watermarkBinding = new HudBindingAdapter(CanvasControl.LayerStack);
             SpatialWatermark.Bind(_watermarkBinding);
 
             _focusRouter = new GlobalFocusPrecedenceRouter(
@@ -85,6 +83,8 @@ namespace GroveApp
             Closed += async (_, _) =>
             {
                 _focusRouter.Dispose();
+                WritingSlate.Close();
+                GallerySlate.Close();
                 MemorySlate.Close();
                 SpatialWatermark.Dispose();
                 _watermarkBinding?.Dispose();
@@ -99,21 +99,6 @@ namespace GroveApp
                 WindowTransparencyLevel.Blur,
                 WindowTransparencyLevel.None
             };
-
-            TitleBar.ExtendsContentIntoTitleBar = false;
-            TitleBar.Height = 40;
-            TitleBar.BackgroundColor = Colors.SurfaceChrome;
-            TitleBar.ForegroundColor = Colors.NoteText;
-            TitleBar.InactiveBackgroundColor = Colors.SurfaceChrome;
-            TitleBar.InactiveForegroundColor = Colors.TitleBarInactiveForeground;
-            TitleBar.ButtonBackgroundColor = Colors.SurfaceChrome;
-            TitleBar.ButtonForegroundColor = Colors.NoteText;
-            TitleBar.ButtonHoverBackgroundColor = Colors.GridMaj;
-            TitleBar.ButtonHoverForegroundColor = Colors.NoteText;
-            TitleBar.ButtonPressedBackgroundColor = Colors.SurfaceRaised;
-            TitleBar.ButtonPressedForegroundColor = Colors.NoteText;
-            TitleBar.ButtonInactiveBackgroundColor = Colors.SurfaceChrome;
-            TitleBar.ButtonInactiveForegroundColor = Colors.TitleBarInactiveForeground;
 
             CanvasControl.NoteSelected += OnNoteSelected;
             CanvasControl.NoteDoubleClicked += OnNoteDoubleClicked;
@@ -142,8 +127,9 @@ namespace GroveApp
             ImageProperties.Closed += OnOverlayClosed;
 
             LayerManagerOverlay.Closed += OnOverlayClosed;
-            SlateHost.Closed += OnOverlayClosed;
-            SlateHost.DocumentSaveRequested += OnSlateDocumentSaveRequested;
+            WritingSlate.Closed += OnOverlayClosed;
+            WritingSlate.SaveRequested += OnWritingSlateSaveRequested;
+            GallerySlate.Closed += OnOverlayClosed;
             MemorySlate.Closed += OnOverlayClosed;
 
             SizeChanged += (s, e) => UpdateNotepadEditorPosition();
@@ -158,7 +144,7 @@ namespace GroveApp
         private bool IsAnyOverlayVisible =>
             NotepadEditor.IsVisible || QuickNote.IsVisible || DocumentEditor.IsVisible ||
             ImageProperties.IsVisible || LayerManagerOverlay.IsVisible ||
-            ContextMenuOverlay.IsVisible || SlateHost.IsVisible || MemorySlate.IsVisible;
+            ContextMenuOverlay.IsVisible || WritingSlate.IsVisible || GallerySlate.IsVisible || MemorySlate.IsVisible;
 
         private void OnCanvasPointerPressed(object? sender, PointerPressedEventArgs e)
         {
@@ -302,11 +288,11 @@ namespace GroveApp
         {
             if (item is GridDocument document)
             {
-                SlateHost.OpenForDocument(document);
+                WritingSlate.Open(document);
             }
             else if (item is GridImage image)
             {
-                SlateHost.OpenGallery(new[] { image });
+                GallerySlate.Open(new[] { image });
             }
         }
 
@@ -345,7 +331,7 @@ namespace GroveApp
             CanvasControl.Focus();
         }
 
-        private void OnSlateDocumentSaveRequested(GridDocument document, string title, string rawText)
+        private void OnWritingSlateSaveRequested(GridDocument document, string title, string rawText)
         {
             document.UpdateText(title, rawText);
             CanvasControl.UpdateMemoryForItem(document);
@@ -417,10 +403,10 @@ namespace GroveApp
                     OpenNotepadEditorForNote(note);
                     break;
                 case "open" when target is GridDocument document:
-                    SlateHost.OpenForDocument(document);
+                    WritingSlate.Open(document);
                     break;
                 case "open" when target is GridImage image:
-                    SlateHost.OpenGallery(new[] { image });
+                    GallerySlate.Open(new[] { image });
                     break;
                 case "anchor" when target != null:
                     IReadOnlyList<GridContentItem> anchorTargets = CanvasControl.GetSelectedItems();
@@ -535,11 +521,21 @@ namespace GroveApp
                 return;
             }
 
-            if (SlateHost.IsVisible)
+            if (WritingSlate.IsVisible)
             {
                 if (e.Key == Key.Escape)
                 {
-                    SlateHost.Close();
+                    WritingSlate.Close();
+                    e.Handled = true;
+                }
+                return;
+            }
+
+            if (GallerySlate.IsVisible)
+            {
+                if (e.Key == Key.Escape)
+                {
+                    GallerySlate.Close();
                     e.Handled = true;
                 }
                 return;
@@ -715,59 +711,24 @@ namespace GroveApp
 
         private sealed class HudBindingAdapter : IHudSpatialWatermarkBinding, IDisposable
         {
-            private readonly GridCanvasControl _canvas;
             private readonly ISpatialLayerStateService _layers;
 
-            public HudBindingAdapter(GridCanvasControl canvas, ISpatialLayerStateService layers)
+            public HudBindingAdapter(ISpatialLayerStateService layers)
             {
-                _canvas = canvas;
                 _layers = layers;
-                _canvas.CameraChanged += OnCameraChanged;
                 _layers.SelectedGridLayerChanged += OnSelectedGridLayerChanged;
                 _layers.LayerStackChanged += OnLayerStackChanged;
             }
 
-            public HudCameraState CameraState => new(_canvas.Zoom);
+            public HudGridLayerIdentity SelectedGridLayer => ToIdentity(_layers.SelectedGridLayer);
 
-            public HudLayerIdentity SelectedGridLayer => ToIdentity(_layers.SelectedGridLayer);
-
-            public event Action<HudCameraState>? CameraStateChanged;
-            public event Action<HudLayerIdentity>? SelectedGridLayerChanged;
-
-            public ValueTask<HudLayerRenameValidation> CommitLayerRenameAsync(
-                HudLayerRenameRequest request,
-                CancellationToken cancellationToken = default)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                int? layerZIndex = null;
-                foreach (SpatialLayerModel candidate in _layers.Layers)
-                {
-                    if (string.Equals(candidate.Label, request.LayerId, StringComparison.Ordinal))
-                    {
-                        layerZIndex = candidate.ZIndex;
-                        break;
-                    }
-                }
-
-                if (layerZIndex is null)
-                {
-                    return ValueTask.FromResult(HudLayerRenameValidation.Refused("The selected Grid Layer no longer exists."));
-                }
-
-                bool renamed = _layers.RenameLayer(layerZIndex.Value, request.ProposedName, out string error);
-                return ValueTask.FromResult(renamed
-                    ? HudLayerRenameValidation.Accepted(request.ProposedName.Trim())
-                    : HudLayerRenameValidation.Refused(error));
-            }
+            public event Action<HudGridLayerIdentity>? SelectedGridLayerChanged;
 
             public void Dispose()
             {
-                _canvas.CameraChanged -= OnCameraChanged;
                 _layers.SelectedGridLayerChanged -= OnSelectedGridLayerChanged;
                 _layers.LayerStackChanged -= OnLayerStackChanged;
             }
-
-            private void OnCameraChanged() => CameraStateChanged?.Invoke(CameraState);
 
             private void OnSelectedGridLayerChanged(SpatialLayerModel model) =>
                 SelectedGridLayerChanged?.Invoke(ToIdentity(model));
@@ -775,8 +736,8 @@ namespace GroveApp
             private void OnLayerStackChanged() =>
                 SelectedGridLayerChanged?.Invoke(SelectedGridLayer);
 
-            private static HudLayerIdentity ToIdentity(SpatialLayerModel model) =>
-                new(model.Label, model.Label, model.DisplayName, model.IsLocked);
+            private static HudGridLayerIdentity ToIdentity(SpatialLayerModel model) =>
+                new(model.Label, model.Label, model.DisplayName);
         }
     }
 }

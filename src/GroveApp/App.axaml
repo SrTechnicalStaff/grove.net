@@ -5,11 +5,11 @@
              x:Class="GroveApp.App"
              RequestedThemeVariant="Dark">
     <Application.Styles>
-        <sty:FluentAvaloniaTheme CustomAccentColor="{x:Static ds:Colors.SelectHex}" PreferUserAccentColor="False" />
+        <sty:FluentAvaloniaTheme CustomAccentColor="#96B6F8" />
     </Application.Styles>
     <Application.Resources>
         <ResourceDictionary>
-            <!-- Mapping FluentAvalonia theme brushes & Grove Design System tokens -->
+            <!-- Mapping Avalonia theme brushes and Grove Design System tokens. -->
             <SolidColorBrush x:Key="SurfaceGridBrush" Color="{x:Static ds:Colors.SurfaceGrid}" />
             <SolidColorBrush x:Key="SurfaceChromeBrush" Color="{x:Static ds:Colors.SurfaceChrome}" />
             <SolidColorBrush x:Key="SurfaceNestedBrush" Color="{x:Static ds:Colors.SurfaceNested}" />

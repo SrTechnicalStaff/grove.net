@@ -61,7 +61,7 @@
                          FontFamily="{x:Static ds:Typography.FontFamilyUi}"
                          FontSize="{x:Static ds:Typography.SizeLead}"
                          HorizontalAlignment="Stretch"
-                         RenderOptions.TextRenderingMode="SubpixelAntialias" />
+                         TextOptions.TextRenderingMode="SubpixelAntialias" />
             </Border>
 
             <StackPanel Name="HintLine" Orientation="Horizontal" Spacing="{x:Static ds:Tokens.SpacingMd}">

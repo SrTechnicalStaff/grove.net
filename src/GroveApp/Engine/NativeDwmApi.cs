@@ -39,7 +39,7 @@ public static class NativeDwmApi
         int valueSize);
 }
 
-public sealed class FluentWindowBackdropManager
+public sealed class WindowBackdropManager
 {
     public bool Apply(Window window) => NativeDwmApi.TryApplyDarkMode(window);
 }

@@ -9,7 +9,7 @@ status: "Accepted"
 | **Status** | Accepted |
 | **Date** | 2026-08-12 |
 | **Area** | HUD System / Slate Window Architecture / Component Specifications |
-| **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 |
+| **Target Runtime** | C# 13 / .NET 9 / Avalonia 12.1.1 |
 | **Authors** | Chief Product Definition Architect |
 
 ---
@@ -35,14 +35,10 @@ As specified in `docs/design-system/20-planes/HUD-plane.md` and `docs/design-sys
 
 ```text
 +-----------------------------------------------------------------------------------+
-| NAMED-SLATE HEADER: [IDENTITY: MEMORIES / GALLERY / WRITING] [CLOSE (Esc)]      |
-| (1px Border: #2D2D2A | Chrome Fill: #161618 | Identity Ink: #E6E6E6)              |
+| DEDICATED SLATE SURFACE: MEMORY / GALLERY / WRITING                               |
+| (each product concept owns one control and one interaction contract)              |
 +-----------------------------------------------------------------------------------+
-| SLATE CONTROLS / FILTERS / SEARCH ROW                                             |
-| [Search Input Field: #101012 Fill | 1px #2D2D2A Border]                           |
-| [Filter: ALL (On)] [Filter: NOTES] [Filter: DOCUMENTS] [Filter: IMAGES]           |
-+-----------------------------------------------------------------------------------+
-| MASONRY / CONTENT BODY (Opaque Pane: #161618 or #101012)                          |
+| DIRECT CONTENT BODY                                                               |
 |                                                                                   |
 |  +--------------------+  +--------------------+  +--------------------+           |
 |  | Card A (Note)      |  | Card B (Picture)   |  | Card C (Document)  |           |
@@ -86,10 +82,8 @@ The **Memory Slate** provides universal archive access for every Memory record,
 including records with zero Content instances. It is not a gallery of Content
 representatives.
 
-- **Header Identity**: Displays `Memories` (uppercase, `--t-title-small`, ink `#E6E6E6`).
-- **Search & Filter Controls**:
-  - Full-width search field: Fill `--surface-nested` (`#101012`), 1px border `#2D2D2A`, `--r-sm`, placeholder `Find a Memory`.
-  - Filter row: `All` (default resting ON with 1px underline), `Notes`, `Documents`, `Images`.
+- **Direct River**: The resting surface is only Memory payloads in masonry flow. It has no persistent title, header, footer, filter row, query field, instructional prompt, or outer padding.
+- **Memory Lookup**: Lookup is an intentional interaction within Memory Slate. Its controls exist only while that interaction is invoked; no fixed search overlay or placeholder is present at rest. Grid lookup is Content lookup and never opens or returns Memory records.
 - **Masonry Layout Algorithm**: Executed dynamically based on content width $W$:
 
 $$\text{Column Count } n = \max\left(1, \left\lfloor \frac{W + g}{220 + g} \right\rfloor\right) \quad \text{where } g = 12\text{px } (\text{--sp-sm})$$
@@ -111,10 +105,10 @@ The **Gallery Slate** displays every picture imported into Grove in intrinsic pr
 
 ## 4. Tabbed Docking & Window Management Mechanics
 
-Slates are hosted within a unified Slate host that supports Full, Left, and Right
-viewport compositions. A Slate never hovers over the viewport as a movable
-window. The Layer Manager is hosted by the HUD overlay container, not by the
-Slate host.
+Writing, Memory, and Gallery are separate controls composed by the HUD Plane.
+There is no unified mode-switched Slate host. Each control supports Full, Left,
+and Right viewport compositions without becoming a movable or hovering window.
+The Grid Layer Manager remains a separate HUD overlay.
 
 ```
        [FULL VIEWPORT DOCK]                [SPLIT LEFT / RIGHT DOCK]
