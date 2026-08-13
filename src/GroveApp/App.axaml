@@ -1,11 +1,10 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:sty="using:FluentAvalonia.Styling"
              xmlns:ds="clr-namespace:GroveApp.DesignSystem"
              x:Class="GroveApp.App"
              RequestedThemeVariant="Dark">
     <Application.Styles>
-        <sty:FluentAvaloniaTheme CustomAccentColor="#96B6F8" />
+        <FluentTheme />
     </Application.Styles>
     <Application.Resources>
         <ResourceDictionary>

@@ -7,10 +7,10 @@ using Avalonia;
 using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
-using FluentAvalonia.UI.Controls;
 using GroveApp.DesignSystem;
 using GroveApp.Engine.Memory;
 using GroveApp.Models.Memory;
@@ -45,11 +45,10 @@ public partial class MemorySlateControl : UserControl
 
         var catalogue = new MemorySlateCatalogue(ledger);
         _allMemories = catalogue.Snapshot();
-        
+
         SearchBox.Text = string.Empty;
         _searchQuery = string.Empty;
         _filterCategory = "All";
-        MainNav.SelectedItem = MainNav.MenuItems.Cast<NavigationViewItem>().FirstOrDefault();
 
         LightboxOverlay.IsVisible = false;
         _activeMemory = null;
@@ -101,9 +100,9 @@ public partial class MemorySlateControl : UserControl
         RefreshGallery();
     }
 
-    private void OnNavItemInvoked(object? sender, NavigationViewItemInvokedEventArgs e)
+    private void OnNavCategoryClicked(object? sender, RoutedEventArgs e)
     {
-        if (e.InvokedItemContainer is NavigationViewItem item && item.Tag is string tag)
+        if (sender is RadioButton button && button.Tag is string tag)
         {
             _filterCategory = tag;
             RefreshGallery();
@@ -114,7 +113,6 @@ public partial class MemorySlateControl : UserControl
     {
         IEnumerable<MemoryRecord> result = _allMemories;
 
-        // Category filter
         result = _filterCategory switch
         {
             "BinaryImage" => result.Where(m => m.PayloadKind == MemoryPayloadKind.BinaryImage),
@@ -123,7 +121,6 @@ public partial class MemorySlateControl : UserControl
             _ => result
         };
 
-        // Text search filter
         if (!string.IsNullOrWhiteSpace(_searchQuery))
         {
             result = result.Where(m =>
@@ -168,12 +165,10 @@ public partial class MemorySlateControl : UserControl
             RowDefinitions = new RowDefinitions("*,Auto")
         };
 
-        // Top Preview Surface
         Control previewContent = CreateMemoryPreview(memory, thumbnailMode: true);
         Grid.SetRow(previewContent, 0);
         mainLayout.Children.Add(previewContent);
 
-        // Bottom Title & Meta Strip
         var footer = new Border
         {
             Background = Colors.SurfaceChromeBrush,
@@ -202,16 +197,17 @@ public partial class MemorySlateControl : UserControl
 
         if (isFav)
         {
-            var favBadge = new SymbolIcon
+            var favIcon = new PathIcon
             {
-                Symbol = Symbol.Bookmark,
-                FontSize = 12,
+                Data = Geometry.Parse("M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"),
+                Width = 12,
+                Height = 12,
                 Foreground = Colors.SignalInteractionBrush,
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(6, 0, 0, 0)
             };
-            Grid.SetColumn(favBadge, 1);
-            footerLayout.Children.Add(favBadge);
+            Grid.SetColumn(favIcon, 1);
+            footerLayout.Children.Add(favIcon);
         }
 
         footer.Child = footerLayout;
@@ -219,7 +215,6 @@ public partial class MemorySlateControl : UserControl
 
         card.Child = mainLayout;
 
-        // Pointer press to open Lightbox
         card.PointerPressed += (_, e) =>
         {
             if (e.GetCurrentPoint(card).Properties.IsLeftButtonPressed)
@@ -300,20 +295,17 @@ public partial class MemorySlateControl : UserControl
     {
         _activeMemory = memory;
         LightboxTitle.Text = string.IsNullOrWhiteSpace(memory.Title) ? GetDefaultTitle(memory) : memory.Title;
-        
+
         UpdateFavoriteButtonState();
 
-        // Viewport content
         LightboxContainer.Child = CreateMemoryPreview(memory, thumbnailMode: false);
 
-        // Populate info panel
         InfoTitleText.Text = string.IsNullOrWhiteSpace(memory.Title) ? GetDefaultTitle(memory) : memory.Title;
         InfoTypeText.Text = memory.PayloadKind.ToString();
         InfoIdText.Text = memory.MemoryId.ToString();
         InfoHashText.Text = memory.Hash.ToString();
         InfoCreatedText.Text = new DateTime(memory.CreatedAtTicks, DateTimeKind.Utc).ToLocalTime().ToString("g");
 
-        // Filmstrip
         PopulateFilmstrip(GetFilteredMemories().ToList());
 
         LightboxOverlay.IsVisible = true;
@@ -362,11 +354,11 @@ public partial class MemorySlateControl : UserControl
         }
     }
 
-    private void OnCloseLightboxClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => CloseLightbox();
+    private void OnCloseLightboxClicked(object? sender, RoutedEventArgs e) => CloseLightbox();
 
-    private void OnCloseClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => Close();
+    private void OnCloseClicked(object? sender, RoutedEventArgs e) => Close();
 
-    private void OnToggleFavoriteClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void OnToggleFavoriteClicked(object? sender, RoutedEventArgs e)
     {
         if (_activeMemory == null)
         {
@@ -386,12 +378,12 @@ public partial class MemorySlateControl : UserControl
         RefreshGallery();
     }
 
-    private void OnToggleInfoClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void OnToggleInfoClicked(object? sender, RoutedEventArgs e)
     {
         InfoDrawer.IsVisible = !InfoDrawer.IsVisible;
     }
 
-    private void OnSlideshowClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void OnSlideshowClicked(object? sender, RoutedEventArgs e)
     {
         List<MemoryRecord> filtered = GetFilteredMemories().ToList();
         if (filtered.Count > 0)
