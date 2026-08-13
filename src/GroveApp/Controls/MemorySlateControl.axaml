@@ -22,7 +22,7 @@
     </UserControl.Resources>
 
     <UserControl.Styles>
-        <!-- WinUI 3 Solid Media Card Surface (Grove SurfaceNested / SurfaceInteractive) -->
+        <!-- WinUI 3 Solid Media Card Surface -->
         <Style Selector="Border.FluentMediaCard">
             <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Background" Value="{x:Static ds:Colors.SurfaceNestedBrush}" />
@@ -64,7 +64,7 @@
     </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,*">
-        <!-- TOP WINUI COMMAND BAR (Solid SurfaceChrome Fill) -->
+        <!-- TOP WINUI COMMAND BAR -->
         <Border Grid.Row="0"
                 Background="{x:Static ds:Colors.SurfaceChromeBrush}"
                 BorderBrush="{x:Static ds:Colors.EdgeHairlineBrush}"
@@ -122,7 +122,7 @@
             </Grid>
         </Border>
 
-        <!-- MAIN BODY WITH FLUENTAVALONIA NAVIGATION VIEW (Solid SurfaceGrid Content Fill) -->
+        <!-- MAIN BODY WITH NAVIGATION VIEW -->
         <ui:NavigationView Grid.Row="1"
                            x:Name="MainNav"
                            PaneDisplayMode="Left"
@@ -162,7 +162,7 @@
                         <StackPanel x:Name="GalleryTimelineContainer" Spacing="24" HorizontalAlignment="Left" />
                     </ScrollViewer>
 
-                    <!-- LIGHTBOX DETAILED VIEWER OVERLAY (Solid SurfaceGrid Background) -->
+                    <!-- HIGH-PERFORMANCE LIGHTBOX DETAILED VIEWER OVERLAY -->
                     <Grid x:Name="LightboxOverlay"
                           IsVisible="False"
                           Background="{x:Static ds:Colors.SurfaceGridBrush}"
@@ -192,6 +192,9 @@
                                     <Button x:Name="FavoriteButton" Click="OnToggleFavoriteClicked" ToolTip.Tip="Toggle Favorite" CornerRadius="6" Padding="8,6">
                                         <ui:SymbolIcon x:Name="FavoriteIcon" Symbol="Bookmark" FontSize="14" />
                                     </Button>
+                                    <Button Click="OnToggleFilmstripClicked" ToolTip.Tip="Toggle Thumbnails" CornerRadius="6" Padding="8,6">
+                                        <ui:SymbolIcon Symbol="Bullets" FontSize="14" />
+                                    </Button>
                                     <Button Click="OnToggleInfoClicked" ToolTip.Tip="Toggle Info Panel" CornerRadius="6" Padding="8,6">
                                         <ui:SymbolIcon Symbol="Help" FontSize="14" />
                                     </Button>
@@ -199,23 +202,23 @@
                             </Grid>
                         </Border>
 
-                        <!-- Viewport & Info Drawer -->
+                        <!-- Optimized Direct Viewport & Collapsible Info Drawer -->
                         <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
-                            <!-- Main Viewport -->
-                            <ScrollViewer Grid.Column="0"
-                                          HorizontalScrollBarVisibility="Auto"
-                                          VerticalScrollBarVisibility="Auto">
+                            <!-- Direct Image Viewport (Smooth Scaling, Zero Scroll Lag) -->
+                            <Grid Grid.Column="0"
+                                  HorizontalAlignment="Stretch"
+                                  VerticalAlignment="Stretch">
                                 <Border x:Name="LightboxContainer"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"
-                                        Padding="32" />
-                            </ScrollViewer>
+                                        HorizontalAlignment="Stretch"
+                                        VerticalAlignment="Stretch"
+                                        Padding="24" />
+                            </Grid>
 
-                            <!-- Solid Metadata Panel -->
+                            <!-- Metadata Panel (CLOSED BY DEFAULT) -->
                             <Border Grid.Column="1"
                                     x:Name="InfoDrawer"
                                     Width="320"
-                                    IsVisible="True"
+                                    IsVisible="False"
                                     Background="{x:Static ds:Colors.SurfaceChromeBrush}"
                                     BorderBrush="{x:Static ds:Colors.EdgeHairlineBrush}"
                                     BorderThickness="1,0,0,0"
@@ -252,9 +255,11 @@
                             </Border>
                         </Grid>
 
-                        <!-- Solid Bottom Filmstrip Carousel -->
+                        <!-- Bottom Filmstrip Carousel (CLOSED BY DEFAULT) -->
                         <Border Grid.Row="2"
+                                x:Name="FilmstripRow"
                                 Height="96"
+                                IsVisible="False"
                                 Background="{x:Static ds:Colors.SurfaceChromeBrush}"
                                 BorderBrush="{x:Static ds:Colors.EdgeHairlineBrush}"
                                 BorderThickness="0,1,0,0"

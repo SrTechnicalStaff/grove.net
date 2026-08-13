@@ -341,6 +341,10 @@ public partial class MemorySlateControl : UserControl
         InfoHashText.Text = memory.Hash.ToString();
         InfoCreatedText.Text = new DateTime(memory.CreatedAtTicks, DateTimeKind.Utc).ToLocalTime().ToString("g");
 
+        // Info panel and filmstrip row start closed by default (clean viewport focus)
+        InfoDrawer.IsVisible = false;
+        FilmstripRow.IsVisible = false;
+
         PopulateFilmstrip(GetFilteredMemories().ToList());
 
         LightboxOverlay.IsVisible = true;
@@ -416,6 +420,11 @@ public partial class MemorySlateControl : UserControl
     private void OnToggleInfoClicked(object? sender, RoutedEventArgs e)
     {
         InfoDrawer.IsVisible = !InfoDrawer.IsVisible;
+    }
+
+    private void OnToggleFilmstripClicked(object? sender, RoutedEventArgs e)
+    {
+        FilmstripRow.IsVisible = !FilmstripRow.IsVisible;
     }
 
     private void OnSlideshowClicked(object? sender, RoutedEventArgs e)
