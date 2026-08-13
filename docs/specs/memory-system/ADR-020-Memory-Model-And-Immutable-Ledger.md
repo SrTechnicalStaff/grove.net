@@ -1,12 +1,19 @@
 ---
-status: "Normative / Accepted"
+status: "Superseded by ADR-023 and docs/domain/"
 ---
 
 # ADR-020: Memory Model and Immutable Ledger Architecture
 
+> **Superseded.** This document is retained as historical design material. Its
+> Memory payload and lineage discussion may inform implementation, but its
+> Memory-owned Anchor collection, spatial-anchor schema, and placed-Memory
+> language are not product contracts. The canonical model is split into the
+> individual concept documents under [`docs/domain/`](../../domain/README.md)
+> and integrated by [ADR-023](ADR-023-Memory-Content-Anchor-Relationship.md).
+
 | Property | Value |
 | :--- | :--- |
-| **Status** | Normative / Accepted |
+| **Status** | Superseded by ADR-023 and `docs/domain/` |
 | **Date** | 2026-08-12 |
 | **Architectural Scope** | Core Memory Subsystem / Immutable Ledger & Payload Store |
 | **Target Runtime** | .NET 9.0 / C# 13 / Avalonia UI 11.2.5 |
@@ -22,8 +29,8 @@ In Grove v9, a **Memory** is the foundational semantic record and substrate of h
 1. **Semantic Singularity**: Decouple raw semantic information from spatial location. A Memory retains identity across space and time without forcing data duplication when instantiated across multiple layers.
 2. **Payload Immutability**: Memory payloads are append-only and strictly immutable once created. Any modification produces a new version node within the memory lineage tree (see [ADR-021](../memory-system/ADR-021-Memory-Lineage-And-Version-Tree.md)).
 3. **Cryptographic Identity & Content Addressability**: Utilize time-ordered UUIDv7 identifiers for monotonic indexing and SHA-256 content digests for payload integrity verification and deduplication.
-4. **Anchor Multiplicity**: A single Memory record can bind to $N \ge 0$ spatial anchors across multiple layers ($M \ge 1$), enabling cross-layer Tracing (`Trace of` / `Traces`) with layer-specific contextual metadata.
-5. **Disk Provenance Synchronization**: Local storage on disk (Markdown files with YAML frontmatter or media sidecar files) must synchronously reflect identity, SHA-256 payload hash, and anchor metadata without corrupting underlying semantic content.
+4. **Content Multiplicity**: A single Memory record may be referenced by $N \ge 0$ Content instances. Spatial state and authored context belong to those Content instances, not to the Memory.
+5. **Disk Provenance Synchronization**: Local storage on disk (Markdown files with YAML frontmatter or media sidecar files) must synchronously reflect Memory identity and payload integrity without making spatial state part of the semantic record.
 
 ---
 
@@ -52,7 +59,12 @@ The content hash guarantees:
 
 ---
 
-## 3. Anchor Multiplicity & Spatial Placement Mapping
+## 3. Historical Spatial Mapping (Superseded)
+
+The material in this section and the implementation sketches below preserve an
+earlier design for traceability. They must not be copied into domain contracts:
+the spatial record is Content, and an Anchor is authored context attached to
+Content. A Memory is never placed, and does not own a collection of either.
 
 A single `MemoryRecord` can be placed onto the Grid plane across multiple layers via **Anchors**. An anchor represents the spatial manifestation of a Memory on a specific layer at explicit cell coordinates.
 

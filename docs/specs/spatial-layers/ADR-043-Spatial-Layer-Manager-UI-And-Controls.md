@@ -8,7 +8,7 @@ status: "PARTIAL — verified implementation with remaining interaction gaps"
 | :--- | :--- |
 | **Status** | PARTIAL — verified implementation with remaining interaction gaps |
 | **Date** | 2026-08-12 |
-| **Area** | HUD Slate Plane / Layer Control UI / Avalonia Controls |
+| **Area** | HUD Overlay Plane / Layer Control UI / Avalonia Controls |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 |
 | **Authors** | Chief Product Definition Architect |
 
@@ -16,10 +16,10 @@ status: "PARTIAL — verified implementation with remaining interaction gaps"
 
 ## 1. Executive Context & Surface Class Contract
 
-The **Spatial Layer Manager** is a viewport-fixed HUD Slate composed on Plane 2 as defined in `docs/design-system/30-components/Layer-manager.md`, `docs/design-system/20-planes/HUD-plane.md`, and [ADR-031](file:///C:/dev/grove-v9/docs/specs/hud-system/ADR-031-Slate-Window-System-And-Anatomy.md).
+The **Spatial Layer Manager** is a viewport-fixed HUD overlay composed on Plane 2 as defined in `docs/design-system/30-components/Layer-manager.md`, `docs/design-system/20-planes/HUD-plane.md`, and [ADR-031](file:///C:/dev/grove-v9/docs/specs/hud-system/ADR-031-Slate-Window-System-And-Anatomy.md). It is not a named Slate.
 
 ```
-Plane 2 HUD Layer Manager Slate Anatomy
+Plane 2 — HUD Plane: Layer Manager Overlay Anatomy
 ─────────────────────────────────────────────────────────────────────────────────────────────
 ┌───────────────────────────────────────────────────────────────────────────────────────────┐
 │ LAYERS                                                                           [Close]  │ <-- Header Row
@@ -29,7 +29,7 @@ Plane 2 HUD Layer Manager Slate Anatomy
 │ └───────────────────────────────────────────────────────────────────────────────────────┘ │
 │ ───────────────────────────────────────────────────────────────────────────────────────── │
 │ B01   Background Drawings                             [Visible] [Color: Clay]   [...]     │
-│ 01    Base Field Anchor (Active Layer)                [Visible] [Color: Slate]  [...]     │ <-- Selected Row
+│ 01    Base Field Anchor (Active Layer)                [Visible] [Color: Slate Blue]  [...] │ <-- Selected Row
 │ 02    Architectural Annotations                       [Visible] [Color: Violet] [...]     │
 │       ┌──────────────────────────────────────────────────────────────────────────────┐    │
 │       │ Remove Layer 02 and move what is on it to Layer 01?                          │    │ <-- Inline Confirm
@@ -82,7 +82,7 @@ Each row provides a visibility toggle button:
 ### 3.3 Layer Color Tint Assignments
 
 Layers support custom hue tinting to differentiate visual aura presence fields on Plane 0:
-- Color swatches select from canonical design system hues: Slate (`#4E6E9C`), Clay (`#B0524E`), Violet (`#6E62A6`), Amber (`#B08D4E`), Forest (`#4EB07B`).
+- Color swatches select from canonical design system hues: Slate Blue (`#4E6E9C`), Clay (`#B0524E`), Violet (`#6E62A6`), Amber (`#B08D4E`), Forest (`#4EB07B`).
 - Assigning a color tint mutates the layer's `ColorTint` vector, which feeds directly into the `VerticalAuraPermeabilityEngine` energy blending calculations.
 
 ### 3.4 Layer Removal & Inline Confirm Flow
@@ -226,13 +226,13 @@ public partial class LayerManagerViewModel : ObservableObject
 }
 ```
 
-### 4.2 Avalonia XAML View (`LayerManagerSlate.axaml`)
+### 4.2 Avalonia XAML View (`LayerManagerOverlay.axaml`)
 
 ```xml
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="clr-namespace:Grove.SpatialLayers.UI"
-             x:Class="Grove.SpatialLayers.UI.LayerManagerSlate"
+             x:Class="Grove.SpatialLayers.UI.LayerManagerOverlay"
              x:DataType="ui:LayerManagerViewModel"
              Width="320" HorizontalAlignment="Right" VerticalAlignment="Stretch">
     
@@ -328,7 +328,7 @@ public partial class LayerManagerViewModel : ObservableObject
   2. Closes open row context menu.
   3. Closes inline confirm (chooses `Keep it`).
   4. Clears non-empty filter field text.
-  5. Closes the Layer Manager Slate surface.
+  5. Closes the Layer Manager overlay.
 - **WAI-ARIA Accessibility**:
   - Accessible Role: `region` with `aria-label="Layers"`.
   - Stack List Role: `listbox` with `aria-multiselectable="false"`.

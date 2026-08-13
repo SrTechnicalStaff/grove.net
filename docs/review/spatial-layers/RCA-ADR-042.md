@@ -8,7 +8,7 @@
 | **ADR Title** | Spatial Layer State and Activation |
 | **Category** | Spatial Layers (`docs/specs/spatial-layers/`) |
 | **Claimed Status in Spec Header** | IMPLEMENTED - AWAITING USER REVIEW |
-| **Verified Status (User-Observable)** | **FALSE CLAIM — PARTIALLY IMPLEMENTED (10% Implemented, Key Interfaces Missing)** |
+| **Verified Status (User-Observable)** | **PARTIAL — activation, isolation, ghost presence, and modifier routing are wired; contract naming and full stack semantics remain** |
 | **Audit Date** | 2026-08-12 |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp |
 | **Auditor** | Principal AI Systems Architect & Product Auditor |
@@ -38,33 +38,32 @@
 
 | Symbol / Contract Name | Expected Location | Actual Status in `src/GroveApp/` | Line-by-Line Evidence |
 | :--- | :--- | :--- | :--- |
-| `LayerRenderMode` Enum | `src/GroveApp/Engine/` | **0% Implemented (MISSING SYMBOL)** | 0 occurrences in codebase. |
-| `ILayerActivationManager` | `src/GroveApp/Engine/` | **0% Implemented (MISSING SYMBOL)** | 0 occurrences in codebase. |
-| `LayerActivationManager` | `src/GroveApp/Engine/` | **0% Implemented (MISSING SYMBOL)** | 0 occurrences in codebase. |
-| Layer Isolation (Solo) Mode| `src/GroveApp/Engine/` | **0% Implemented (MISSING LOGIC)** | 0 occurrences in codebase. No isolation mode state or calculation exists. |
-| Ghost Silhouettes Pass | `src/GroveApp/Controls/` | **0% Implemented (MISSING LOGIC)** | Inactive layer items are simply skipped in `GridCanvasControl.cs` without drawing 15% opacity hairline outlines. |
-| Modifier Layer Shortcuts | `src/GroveApp/Engine/` | **0% Implemented (MISSING KEYBINDS)** | [`KeybindModule.cs:L271-L282`](file:///C:/dev/grove-v9/src/GroveApp/Engine/KeybindModule.cs#L271) handles only unmodified `[` and `]`. `Shift`, `Ctrl`, `Alt`, `Ctrl+I` are unhandled. |
+| `LayerRenderMode` Enum | `src/GroveApp/Engine/LayerActivationManager.cs` | **Implemented** | Selects active, inactive, isolated, and hidden render modes. |
+| `ILayerActivationManager` | `src/GroveApp/Engine/LayerActivationManager.cs` | **Implemented** | Owns isolation state and render-mode resolution. |
+| `LayerActivationManager` | `src/GroveApp/Engine/LayerActivationManager.cs` | **Implemented** | Bound to layer-stack changes and canvas refresh. |
+| Layer Isolation (Solo) Mode| `src/GroveApp/Engine/LayerActivationManager.cs` | **Implemented** | `Ctrl+I` suppresses inactive aura and content rendering. |
+| Ghost Silhouettes Pass | `src/GroveApp/Engine/NoteRenderModule.cs` | **Implemented** | Inactive content renders a 15% discrete outline through `GridCanvasRenderPipeline`. |
+| Modifier Layer Shortcuts | `src/GroveApp/Engine/KeybindModule.cs` | **Implemented** | Shift bracket jumps, Alt arrows reorder, and Ctrl+I isolates the active layer. |
 
 ---
 
 ## 4. Standards & Visual Plane Seam Audit
 
-### 4.1 Visual Plane Separation (Plane 0 vs Layer 1 vs Plane 2)
-- **Plane 0 (Spatial Grid Canvas)**: Inactive layer content items are unpainted, but Ghost Silhouettes ($1.0\text{px}$ stroke at $\alpha=0.15$) are NOT rendered, leaving users unaware of off-layer content placement boundaries.
-- **Key Routing**: Keypresses bypass `LayerActivationManager` and `SpatialLayerNavigationHandler`.
+### 4.1 Visual Plane Separation (Plane 0 vs Plane 1 vs Plane 2)
+- **Plane 0 (Spatial Grid Canvas)**: Inactive content remains non-interactive and renders discrete 15% outlines; inactive aura presence remains available outside isolation mode.
+- **Key Routing**: `KeybindModule` routes navigation, isolation, insertion, and reorder actions through `IKeybindHost`.
 
 ### 4.2 Code Smells & Architectural Violations
-1. **False Claim in Spec Header**: The spec header asserts `status: "IMPLEMENTED - AWAITING USER REVIEW"`, yet `ILayerActivationManager.cs` does not exist, Ghost Silhouettes are unpainted, and `Ctrl+I` isolation mode is missing.
-2. **Missing Inactive Layer Visual Cues**: Inactive layers disappear completely without leaving structural ghost outlines.
+1. **Contract Drift**: The original review predates the activation and feedback seams now present in source.
+2. **Remaining Gap**: The public activation contract uses `ToggleIsolationMode` and `GetRenderMode`; it does not expose alternate `ActivateNextLayer` method names from the draft.
 
 ---
 
 ## 5. Root Cause Analysis (RCA)
 
 ### 5.1 Primary Root Cause
-ADR-042's spec header was falsely marked as implemented. The activation state machine was implemented only as a simple active/inactive layer filter inside `SpatialLayerStack.cs`, missing `ILayerActivationManager`, `GhostSilhouettes`, Isolation Mode, and modifier keybindings.
+ADR-042 is partially implemented. The activation state machine and visual feedback exist, but the review ledger was not updated after those seams were added.
 
 ### 5.2 Failure Chain
-1. **False Documentation Claims**: Spec status was updated without auditing the layer activation codebase.
-2. **Missing Activation Service**: `LayerActivationManager.cs` was omitted from `src/GroveApp/Engine/`.
-3. **Incomplete Keyboard Handler**: `KeybindModule.cs` implemented only 2 of the 9 required bracket navigation shortcuts.
+1. **Stale Review Evidence**: The ledger described an earlier source state.
+2. **Contract Naming Drift**: The implemented service uses the current engine vocabulary rather than the draft method names.

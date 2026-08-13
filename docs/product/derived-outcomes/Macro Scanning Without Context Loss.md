@@ -8,7 +8,7 @@ tags: [grove, derived-outcome, macro-scanning, distance-lod]
 # Product Outcome: Macro Scanning Without Context Loss
 
 > **Plain-English Human-Behavior Statement**:
-> "I can step back to view my entire workspace from a distance without unreadable text or artificial summary bubbles hiding the true layout of my work."
+> "I can step back to view my entire spatial field from a distance without unreadable text or artificial summary bubbles hiding the true layout of my work."
 
 ---
 
@@ -19,7 +19,7 @@ When zooming out on conventional infinite canvas tools, text becomes tiny pixela
 With macro scanning without context loss:
 - Pulling back the camera simplifies how content is drawn without hiding its existence or position.
 - Every placement maintains its exact cell footprint in a recognizable representation tier (stand-in form, stepped form).
-- Macro zoom levels transition aura fields to geographic map-like level-of-detail (LOD) views, letting users perceive workspace density and major focus clusters instantly.
+- Macro zoom levels transition aura fields to geographic map-like level-of-detail (LOD) views, letting users perceive spatial-field density and major focus clusters instantly.
 
 ---
 

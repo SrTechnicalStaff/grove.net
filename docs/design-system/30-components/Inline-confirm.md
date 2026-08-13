@@ -102,7 +102,7 @@ All nine.
 | Pending | Not reachable. | The confirm closes on the frame either action is pressed, and the surface that asked holds any pending form, because a question left open after it was answered asks twice. |
 | Refused | The same frame with its border in `--signal-refusal` at full strength, one sentence stating the condition in place of the question, and a quiet action beside a retry. Never a destructive pair. | The commit that failed is what is being reported, so the row that raised it is the row that answers; no second surface, no strip, no banner. |
 | Unavailable | Not reachable. | A confirm opens only on an attempt that can still be completed and closes on the answer, so neither action is ever present-but-unusable; a question whose commit cannot run was raised in error. |
-| Anchored | Not reachable. | Anchored is authored context carried by a Memory or a placement, and a question is neither. |
+| Anchored | Not reachable. | Anchored is authored context carried by Content, and a question is neither. |
 
 Combination follows `10-grammar/States.md` without exception. Focused plus
 Engaged is both: the ring stays outside the pressed box.

@@ -24,7 +24,7 @@ The **Global Keybind Focus Precedence Router** solves this by establishing a 4-t
 1. **4-Tier Priority Pyramid**:
    - **Level 0 (`FocusedTextBox`)**: Inline editor, Local Notepad, Quick Note input. Highest priority. Intercepts all text entry keys.
    - **Level 1 (`InformationOverlay`)**: Modal popups, Layer Manager dialogs, system notifications on Plane 2.
-   - **Level 2 (`HUDPlane`)**: Plane 1 Slate window headers, toolbars, HUD buttons, layer selector controls.
+   - **Level 2 (`HUDPlane`)**: Writing Slate, Memory Slate, Gallery Slate headers, toolbars, HUD buttons, and Layer Manager overlay controls.
    - **Level 3 (`Plane0Canvas`)**: Plane 0 Spatial Grid Canvas, marquee box selection, cursor movement, spatial tool arming. Lowest fallback level.
 2. **Strict Text Editing Isolation**: When keyboard focus is inside a text input control (`FocusedTextBox`), single-character spatial hotkeys (`N`, `Shift+N`, `D`, `A`, `Spacebar`, `Del`) MUST NOT be intercepted by Plane 0 canvas handlers. They are forwarded as standard text composition characters.
 3. **Deterministic Override Exceptions**:
@@ -66,7 +66,7 @@ The **Global Keybind Focus Precedence Router** solves this by establishing a 4-t
 | :--- | :--- | :--- | :--- | :--- |
 | **Level 0** | `FocusedTextBox` | Active text editor, inline QuickNote, text inputs | **Exclusive Text Mode**: Blocks all single-key spatial hotkeys. | Text insertion / local edit commands. |
 | **Level 1** | `InformationOverlay` | Plane 2 overlays, modal windows, Spatial Layer Manager | **Modal Lock**: Intercepts `Esc`, `Tab`, dialog shortcuts. | Pass unhandled events to Level 2. |
-| **Level 2** | `HUDPlane` | Plane 1 Slate controls, window headers, HUD buttons | **Control Navigation**: Intercepts toolbar hotkeys and tab cycles. | Pass unhandled events to Level 3. |
+| **Level 2** | `HUDPlane` | Slate controls, window headers, HUD buttons, Layer Manager overlay | **Control Navigation**: Intercepts toolbar hotkeys and tab cycles. | Pass unhandled events to Level 3. |
 | **Level 3** | `Plane0Canvas` | Plane 0 Grid Canvas, background surface | **Spatial Grid Engine**: Handles `N`, `Shift+N`, `D`, `A`, `Del`, `Space`. | Global unhandled key drop. |
 
 ---
@@ -80,12 +80,12 @@ The following matrix defines the exact resolution of every keyboard shortcut acr
 | `Spacebar` | Inserts space character `' '` | Triggers active overlay button | Triggers focused HUD control | Toggles spatial pan / canvas drag mode |
 | `Ctrl+Enter` | Commits text edit, blurs text box, transfers focus to `Plane0Canvas` | Default modal action (OK/Confirm) | Confirms HUD dialog action | Opens full Local Editor / Notepad for selection |
 | `Ctrl+E` | Inserts inline code block or formatting | Ignored | Focuses layer search bar | Opens Local Editor for selected placement |
-| `Tab` / `Ctrl+Tab` | Inserts indent tab / moves focus to next text field | Cycles modal tab controls / layer list | Cycles focus across HUD controls / Slates | Cycles spatial layer selection (up / down) |
+| `Tab` / `Ctrl+Tab` | Inserts indent tab / moves focus to next text field | Cycles modal tab controls / layer list | Cycles focus across HUD controls / named Slates | Cycles spatial layer selection (up / down) |
 | `N` | Inserts lowercase character `'n'` | Ignored / Search filter | Ignored | Arms **Note** tool (`ARMED_NOTE`) |
 | `Shift+N` | Inserts uppercase character `'N'` | Ignored / Search filter | Ignored | Arms **Quick Note** tool (`ARMED_QUICKNOTE`) |
 | `D` | Inserts lowercase character `'d'` | Ignored / Search filter | Ignored | Arms **Document** tool (`ARMED_DOCUMENT`) |
 | `A` | Inserts lowercase character `'a'` | Selects all in overlay search | Selects all in HUD container | Toggles `IsAnchored` pinning on selection |
-| `Del` / `Backspace` | Deletes preceding / selected character | Deletes overlay item | Closed focused Slate | Deletes selected spatial placements from grid |
+| `Del` / `Backspace` | Deletes preceding / selected character | Deletes overlay item | Closed focused named Slate | Deletes selected spatial placements from grid |
 | `Esc` | Blurs text focus, cancels editing state | Closes active overlay window | Returns focus from HUD to Plane0Canvas | Disarms armed tool / clears active selection |
 | `Ctrl+C` | Copies highlighted text to OS clipboard | Copies selected overlay text | Copies HUD panel descriptor | Copies selected Memory references to spatial clipboard |
 | `Ctrl+V` | Pastes text from OS clipboard into text editor | Pastes into overlay search | Ignored | Pastes spatial payload relative to grid cursor |
@@ -110,7 +110,7 @@ public enum FocusPrecedenceLevel : byte
 {
     FocusedTextBox = 0,     // Level 0: Active text editing
     InformationOverlay = 1, // Level 1: Plane 2 modal popups & dialogs
-    HUDPlane = 2,           // Level 2: Plane 1 Slates & HUD controls
+    HUDPlane = 2,           // Level 2: Slates & HUD controls
     Plane0Canvas = 3        // Level 3: Plane 0 Spatial grid canvas
 }
 

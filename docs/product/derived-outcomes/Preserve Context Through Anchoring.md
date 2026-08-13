@@ -34,6 +34,6 @@ With context preservation through anchoring:
 
 - **Core Primitives**: `Memory`, `Grid`, `Content`.
 - **System Mechanics**:
-  - **Memory Tracing**: Memories hold multiple spatial anchors across layers without duplicating source files.
+  - **Content Tracing**: A Memory can have multiple Content instances across Grid Layers without duplicating the semantic record. Each Content instance may carry its own authored Anchor context.
   - **Spatial Proximity**: Distance on the 2D plane replaces folder containment as the primary carrier of meaning.
   - **Zero-Structure Overhead**: No mandatory tags, categories, or folder trees required to establish relationships.

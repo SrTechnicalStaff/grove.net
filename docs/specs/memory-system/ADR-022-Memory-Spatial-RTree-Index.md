@@ -1,12 +1,21 @@
 ---
-status: "Normative / Accepted"
+status: "PARTIAL — Content spatial index contract; domain ownership reconciled by ADR-023"
 ---
 
 # ADR-022: Memory Spatial R-Tree Index Architecture
 
+> **Ownership correction.** The spatial index indexes Content placements (or a
+> Content-owned spatial projection), never Memory records. Any occurrence of
+> `MemoryAnchor` in this historical implementation sketch means a spatial
+> Content index record; it is not an Anchor collection on Memory. Authored
+> Anchor context remains a separate Content-side relation. See
+> [`docs/domain/Content.md`](../../domain/Content.md),
+> [`docs/domain/Anchor.md`](../../domain/Anchor.md), and
+> [ADR-023](ADR-023-Memory-Content-Anchor-Relationship.md).
+
 | Property | Value |
 | :--- | :--- |
-| **Status** | Normative / Accepted |
+| **Status** | PARTIAL — Content spatial index contract |
 | **Date** | 2026-08-12 |
 | **Architectural Scope** | Spatial Indexing & Query Subsystem / Multi-Layer R-Tree Index |
 | **Target Runtime** | .NET 9.0 / C# 13 / Avalonia UI 11.2.5 / SkiaSharp |
@@ -16,13 +25,13 @@ status: "Normative / Accepted"
 
 ## 1. Context & Architectural Drivers
 
-Grove v9 supports continuous infinite 2D spatial grids populated by thousands of memory placements across multiple layers. During panning, zooming, continuous rendering, or marquee selection, the visual engine (Avalonia UI 11.2.5 / SkiaSharp) must query all Memory Anchors intersecting the active viewport bounding box within sub-millisecond time limits ($<0.5\text{ms}$).
+Grove v9 supports continuous infinite 2D spatial grids populated by thousands of Content placements across Grid Layers. During panning, zooming, continuous rendering, or marquee selection, the visual engine (Avalonia UI 11.2.5 / SkiaSharp) must query all spatial Content records intersecting the active viewport bounding box within sub-millisecond time limits ($<0.5\text{ms}$).
 
-Linear scanning over $10^5+$ memory anchors introduces severe frame drops ($>16\text{ms}$). To guarantee 60–120 FPS UI execution, Grove requires a high-performance **Multi-Layer Spatial R-Tree Index** paired with a **2D Cell Coordinate Query Cache**.
+Linear scanning over $10^5+$ Content placements introduces severe frame drops ($>16\text{ms}$). To guarantee 60–120 FPS UI execution, Grove requires a high-performance **Multi-Grid-Layer Spatial R-Tree Index** paired with a **2D Cell Coordinate Query Cache**.
 
 ### Key Architectural Requirements
 1. **$O(\log_M N)$ Spatial Search**: Fast bounding-box queries for viewport culling and spatial marquee selection.
-2. **Multi-Layer Partitioning & Multiplicity**: Support querying anchors filtered by single layer, subset of layers, or composite workspace bounds.
+2. **Multi-Layer Partitioning & Multiplicity**: Support querying anchors filtered by single layer, subset of layers, or composite spatial-field bounds.
 3. **Zero-Allocation Viewport Queries**: Return query results into caller-provided `Span<MemoryAnchor>` arrays without heap allocations.
 4. **2D Cell Query Cache (`SpatialQueryCache`)**: Spatial hashing into $64 \times 64$ cell tile buckets to cache viewport results across consecutive render frames.
 5. **High-Frequency Mutation Efficiency**: Node insert, update, and removal operations executed in $O(\log_M N)$ time without re-indexing the whole tree.

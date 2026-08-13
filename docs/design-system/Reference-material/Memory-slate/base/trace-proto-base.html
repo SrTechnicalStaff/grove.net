@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trace — [Prototype Name]</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       BASE SUBSTRATE — do not modify this line; fork into variant additions
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <link rel="stylesheet" href="trace-proto-base.css">
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       VARIANT ADDITIONS
+       Declare ONLY what is new or overridden for this prototype.
+       Rename this file, update the <title>, and add variant CSS below.
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <style>
+    /*
+     * Variant: [describe what this prototype demonstrates]
+     *
+     * New tokens (if any):
+     *   --c-agent: 196 130 92;  (gen-18 machine/copper hue — include if needed)
+     *
+     * Add new component styles below. Do not re-declare base tokens.
+     */
+  </style>
+</head>
+
+<body>
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       CANVAS SHELL — standard structure; leave intact
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="viewport" id="viewport">
+    <div class="world" id="world">
+      <!-- Placement objects are created here by JS -->
+    </div>
+  </div>
+
+  <!-- Passive background watermark (bottom-right) -->
+  <div class="watermark">
+    <span class="wk-name">Trace</span>
+    <span class="wk-num" id="wk-num">01</span>
+  </div>
+
+  <!-- Cursor dot (replaces OS cursor over canvas) -->
+  <div class="cursor-dot" id="cursor-dot"></div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       HUD LEGEND — keyboard reference; update rows for this prototype's keys
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="hud" id="hud">
+    <div class="hud-head">
+      <span>Controls</span>
+      <button class="hud-x" id="hud-close" title="Collapse">−</button>
+    </div>
+    <div class="hud-rows">
+      <div><span class="dot" style="background:var(--k-tool)"></span>1–5 — brush</div>
+      <div><span class="dot" style="background:var(--k-view)"></span>scroll — zoom · mid-drag — pan</div>
+      <div><span class="dot" style="background:var(--k-layer)"></span>↑↓ — layer · Shift+↑↓ — create</div>
+      <div><span class="dot" style="background:var(--k-edit)"></span>f — frame · Esc — neutral</div>
+    </div>
+    <div class="hud-legend">
+      <!-- Add prototype-specific legend entries here -->
+    </div>
+    <div class="hud-hint">
+      <b>Click + drag</b> to create &nbsp;·&nbsp; <b>Del</b> to remove &nbsp;·&nbsp; right-click entity to delete
+    </div>
+  </div>
+  <button class="hud-pip" id="hud-pip" title="Controls">?</button>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       BASE RUNTIME
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <script src="trace-proto-base.js"></script>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       VARIANT SCRIPT
+       Put only prototype-specific logic here. TraceProto is already available.
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <script>
+    // ── Init base runtime ──────────────────────────────────────────────────
+    TraceProto.init({
+      viewport: document.getElementById('viewport'),
+      world:    document.getElementById('world'),
+      // Center the camera on origin
+      initialPan: {
+        x: window.innerWidth  / 2,
+        y: window.innerHeight / 2,
+      },
+    });
+
+    // ── HUD collapse / expand ──────────────────────────────────────────────
+    const hud    = document.getElementById('hud');
+    const hudPip = document.getElementById('hud-pip');
+    document.getElementById('hud-close').addEventListener('click', () => {
+      hud.classList.add('hidden');
+      hudPip.style.display = 'flex';
+    });
+    hudPip.addEventListener('click', () => {
+      hud.classList.remove('hidden');
+      hudPip.style.display = 'none';
+    });
+
+    // ── Demo placements ────────────────────────────────────────────────────
+    // A few seed placements so the canvas isn't blank on open.
+    // Remove or replace these for your prototype.
+    const seeds = [
+      { col: -2, row: -1, size: 1, type: 'sticky', color: '#4a8c6e' },
+      { col:  0, row: -1, size: 2, type: 'sheet'                    },
+      { col:  3, row: -1, size: 1, type: 'sticky', color: '#8c6e4a' },
+    ];
+
+    for (const s of seeds) {
+      const inner = s.type === 'sheet'
+        ? `<div class="sheet" style="width:100%;height:100%;">
+             <span class="sheet__label">Document</span>
+             <div class="sheet__title">Untitled</div>
+             <div class="sheet__rule"></div>
+             <div class="sheet__body">Start writing…</div>
+           </div>`
+        : `<div class="sticky" style="width:100%;height:100%;background:${s.color};">
+             <span class="note">Note</span>
+           </div>`;
+
+      const el = TraceProto.makePlacementEl(s.col, s.row, s.size, inner);
+
+      // Right-click to delete
+      el.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        TraceProto.removePlacement(p);
+        TraceProto.spawnBurst(el);
+      });
+
+      const p = TraceProto.addPlacement({ col: s.col, row: s.row, size: s.size, el });
+    }
+
+    // ── Variant interaction goes here ──────────────────────────────────────
+    // Example: canvas click creates a sticky note with the active brush
+    document.getElementById('viewport').addEventListener('click', (e) => {
+      if (TraceProto.activeBrush === 'neutral') return;
+      if (e.target.closest('.obj')) return;          // hit a placement — ignore
+      const { col, row } = TraceProto.screenToCell(e.clientX, e.clientY);
+
+      // Check for overlap (simple — replace with real footprint check if needed)
+      // ... add variant creation logic here
+
+      TraceProto.activeBrush = 'neutral';            // return to neutral after place
+    });
+  </script>
+</body>
+</html>

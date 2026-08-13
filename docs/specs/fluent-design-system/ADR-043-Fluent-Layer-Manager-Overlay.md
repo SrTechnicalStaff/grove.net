@@ -1,9 +1,9 @@
 ---
-status: "NORMATIVE SPECIFICATION — FLUENT SPATIAL LAYER MANAGER SLATE"
-verification: "PARTIAL — the Plane 2 slate and core layer operations are implemented; per-layer swatches and transfer confirmation wording remain."
+status: "NORMATIVE SPECIFICATION — FLUENT SPATIAL LAYER MANAGER OVERLAY"
+verification: "PARTIAL — the Plane 2 overlay and core grid-layer operations are implemented; per-layer swatches and transfer confirmation wording remain."
 ---
 
-# ADR-043: Fluent Spatial Layer Manager Slate & Physics Integration
+# ADR-043: Fluent Spatial Layer Manager Overlay & Physics Integration
 
 | Property | Value |
 | :--- | :--- |

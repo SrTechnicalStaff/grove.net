@@ -48,7 +48,7 @@
 
 ## 4. Standards & Visual Plane Seam Audit
 
-- **Visual Plane Isolation (Plane 0 vs Layer 1 vs Plane 2)**:
+- **Visual Plane Isolation (Plane 0 vs Plane 1 vs Plane 2)**:
   - Spec mandates Plane 0 Skia hardware vector rendering for fluid aura gradients with path-difference inner line masking.
   - Codebase reality: Avalonia `DrawingContext` high-level primitives (`FillRectangle`) are used on Plane 0 inside `FieldLedgerModule.cs`, missing GPU shader acceleration and path geometry operations.
 - **Visual Defect Persistence**:

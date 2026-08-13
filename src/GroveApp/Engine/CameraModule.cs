@@ -72,6 +72,11 @@ namespace GroveApp.Engine
                 (int)Math.Ceiling((visibleWorld.Bottom + buffer) / cellSize));
         }
 
+        public (int minX, int maxX, int minY, int maxY) GetFieldCellBounds(Size viewport, double cellSize)
+        {
+            return GetVisibleCellBounds(viewport, cellSize, Tokens.MaxCullingRadiusCells);
+        }
+
         /// <summary>
         /// Transforms a 2D world coordinate into 2D screen coordinate space:
         /// P_screen = P_world * Zoom + CameraOffset

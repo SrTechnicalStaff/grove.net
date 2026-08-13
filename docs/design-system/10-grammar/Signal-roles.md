@@ -248,7 +248,7 @@ identity, not a signal, and it never carries a signal's job.
 | The control that permanently removes authored work | Refusal |
 | A person's Anchor is on this | Authored context |
 | Authored context is inside this cell's presence | Authored context |
-| A Memory's Anchor in a record or a list | Authored context |
+| A Content-side Anchor in a record or a list | Authored context |
 | A person's chosen Note colour | None — it is content |
 | Which operation family a control belongs to | None — role hue |
 | A result asked for and not yet arrived | None — hold the fullest form already available |

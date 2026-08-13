@@ -35,8 +35,10 @@ The system separates spatial storage, local operational overlays, and global app
 | Plane | Name | Plane Order | CSS / Compositor Band | Coordinate Space | Camera Relationship | Surface Ownership |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Plane 0** | **Spatial Grid Canvas** | `0` (Lowest) | `z-index: 10` | Grid Cells projected by Camera Matrix $T(x,y,s)$ | Fully transformed by Camera | Placed Notes, Documents, Pictures, Grid Lines, Presence Aura Heatmaps, Field Perimeter Rings, Selection Marquee, Grid Cursor. |
-| **Plane 1** | **Information Layer** | `1` (Middle) | `z-index: 20` | Spatial locality coordinates $(x_{\text{world}}, y_{\text{world}} \to x_{\text{screen}}, y_{\text{screen}})$ | Position-linked to camera; unscaled by camera zoom | Local Text Editors, Full-Size Image Viewers, Annotation Markers, Annotation Overlays, Quick Notes. |
-| **Plane 2** | **HUD Plane** | `2` (Highest) | `z-index: 30` | Viewport-relative screen pixels | Completely independent of Camera | Slates (Memory Slate, Gallery Slate, Writing Slate), Operation Bar, Context Menus, Global Mode Controllers, Notification Strips. |
+| **Plane 1** | **Information Plane** | `1` (Middle) | `z-index: 300` | Spatial locality coordinates $(x_{\text{world}}, y_{\text{world}} \to x_{\text{screen}}, y_{\text{screen}})$ | Position-linked to camera; unscaled by camera zoom | Local Text Editors, Full-Size Image Viewers, Annotation Markers, Annotation Overlays, Quick Notes. |
+| **Plane 2** | **HUD Plane** | `2` (Highest) | `z-index: 400` | Viewport-relative screen pixels | Completely independent of Camera | Slates (Memory Slate, Gallery Slate, Writing Slate), Operation Bar, Context Menus, Global Mode Controllers, Notification Strips. |
+
+The numeric compositor bands are owned by the normative plane contracts in [`docs/design-system/20-planes/`](file:///C:/dev/grove-v9/docs/design-system/20-planes/), indexed by [`docs/design-system/README.md`](file:///C:/dev/grove-v9/docs/design-system/README.md). This ADR consumes those values: Plane 0 uses `10`, Plane 1 uses `300`, and Plane 2 uses `400`.
 
 ---
 
@@ -54,21 +56,21 @@ Rendering follows a strict bottom-to-top execution sequence during each GPU fram
    - Placed Content Footprints & Renderables
    - Grid Cursor & Selection Marquee
   ↓
-2. Render Plane 1 (Information Layer)
+2. Render Plane 1 (Information Plane)
    - Evaluate active local editors & annotation markers
    - Project spatial origin to screen position
    - Render overlay controls with fixed screen scale
   ↓
 3. Render Plane 2 (HUD Plane)
-   - Render Slates, Operation Bar, and Menus
+   - Render Writing Slate, Memory Slate, Gallery Slate, Layer Manager overlay, Operation Bar, and Menus
    - Draw focus rings (`--focus-ring`)
 [Frame Present / Swap Buffers]
 ```
 
 ### 3.1 Transparency & Compositor Blending Rules
 - **Plane 0**: Opaque base canvas fill (`#0E0E10`).
-- **Plane 1**: Fully transparent root layer. Individual local editor surfaces are opaque over their own footprint only (`--surface-chrome` `#161618`) with `--shadow-local` (`0 8px 24px rgb(0 0 0 / 0.40)`).
-- **Plane 2**: Fully transparent root layer. Slates fill designated screen regions with `--surface-chrome` `#161618`.
+- **Plane 1**: Fully transparent root host. Individual local editor surfaces are opaque over their own footprint only (`--surface-chrome` `#161618`) with `--shadow-local` (`0 8px 24px rgb(0 0 0 / 0.40)`).
+- **Plane 2**: Fully transparent root host. Writing Slate, Memory Slate, Gallery Slate, and the Layer Manager overlay fill designated screen regions with `--surface-chrome` `#161618`.
 
 ---
 
@@ -82,7 +84,7 @@ Input Event Received
 1. Test Plane 2 (HUD Plane) Hit Targets
    - Hit? → Consume event, dispatch to Plane 2 Control. Stop.
   ↓
-2. Test Plane 1 (Information Layer) Hit Targets
+2. Test Plane 1 (Information Plane) Hit Targets
    - Hit? → Consume event, dispatch to Plane 1 Overlay. Stop.
   ↓
 3. Pass Event to Plane 0 (Spatial Grid Canvas)
@@ -105,7 +107,7 @@ using SkiaSharp;
 public enum VisualPlaneType
 {
     Plane0_SpatialGrid = 0,
-    Plane1_InformationLayer = 1,
+    Plane1_InformationPlane = 1,
     Plane2_HUDPlane = 2
 }
 

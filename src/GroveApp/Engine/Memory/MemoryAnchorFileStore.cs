@@ -30,11 +30,17 @@ public sealed class MemoryAnchorFileStore : IMemoryAnchorStore
         builder.AppendLine("anchors:");
         foreach (MemoryAnchor anchor in anchors.OrderBy(item => item.CreatedAtTicks))
         {
-            builder.AppendLine($"  - id: {anchor.AnchorId:N}");
-            builder.AppendLine($"    memory: {anchor.MemoryId:N}");
-            builder.AppendLine($"    layer: {anchor.LayerId:N}");
-            builder.AppendLine($"    cell: [{anchor.CellX}, {anchor.CellY}]");
-            builder.AppendLine($"    context: {Quote(anchor.ContextLabel)}");
+            builder.AppendLine($"  - anchor_id: \"{anchor.AnchorId:D}\"");
+            builder.AppendLine($"    memory_id: \"{anchor.MemoryId:D}\"");
+            builder.AppendLine($"    layer_id: \"{anchor.LayerId:D}\"");
+            builder.AppendLine($"    cell_x: {anchor.CellX}");
+            builder.AppendLine($"    cell_y: {anchor.CellY}");
+            builder.AppendLine($"    cell_width: {anchor.CellWidth}");
+            builder.AppendLine($"    cell_height: {anchor.CellHeight}");
+            builder.AppendLine($"    content_id: {Quote(anchor.ContentId)}");
+            builder.AppendLine($"    content_type: {Quote(anchor.ContentType)}");
+            builder.AppendLine($"    label: {Quote(anchor.ContextLabel)}");
+            builder.AppendLine($"    created_at_iso: \"{new DateTime(anchor.CreatedAtTicks, DateTimeKind.Utc):O}\"");
         }
         builder.AppendLine("---");
 
@@ -61,6 +67,10 @@ public sealed class MemoryAnchorFileStore : IMemoryAnchorStore
         Guid layerId = Guid.Empty;
         int cellX = 0;
         int cellY = 0;
+        int cellWidth = 1;
+        int cellHeight = 1;
+        string contentId = string.Empty;
+        string contentType = string.Empty;
         string context = string.Empty;
         long createdAt = DateTime.UtcNow.Ticks;
 
@@ -78,30 +88,70 @@ public sealed class MemoryAnchorFileStore : IMemoryAnchorStore
                 LayerId = layerId,
                 CellX = cellX,
                 CellY = cellY,
-                ContextLabel = context,
+                CellWidth = Math.Max(1, cellWidth),
+                CellHeight = Math.Max(1, cellHeight),
+                ContentId = contentId.Length > 0 ? contentId : context,
+                ContentType = contentType,
+                ContextLabel = contentId.Length > 0 ? context : string.Empty,
                 CreatedAtTicks = createdAt
             });
             anchorId = Guid.Empty;
             memoryId = Guid.Empty;
             layerId = Guid.Empty;
+            cellX = 0;
+            cellY = 0;
+            contentId = string.Empty;
+            contentType = string.Empty;
             context = string.Empty;
+            cellWidth = 1;
+            cellHeight = 1;
+            createdAt = DateTime.UtcNow.Ticks;
         }
 
         foreach (string rawLine in lines)
         {
             string line = rawLine.Trim();
-            if (line.StartsWith("- id:", StringComparison.Ordinal))
+            if (line.StartsWith("- anchor_id:", StringComparison.Ordinal))
             {
                 Flush();
-                Guid.TryParse(line[5..].Trim(), out anchorId);
+                anchorId = ParseGuid(line[12..]);
+            }
+            else if (line.StartsWith("- id:", StringComparison.Ordinal))
+            {
+                Flush();
+                anchorId = ParseGuid(line[5..]);
+            }
+            else if (line.StartsWith("memory_id:", StringComparison.Ordinal))
+            {
+                memoryId = ParseGuid(line[10..]);
             }
             else if (line.StartsWith("memory:", StringComparison.Ordinal))
             {
-                Guid.TryParse(line[7..].Trim(), out memoryId);
+                memoryId = ParseGuid(line[7..]);
+            }
+            else if (line.StartsWith("layer_id:", StringComparison.Ordinal))
+            {
+                layerId = ParseGuid(line[9..]);
             }
             else if (line.StartsWith("layer:", StringComparison.Ordinal))
             {
-                Guid.TryParse(line[6..].Trim(), out layerId);
+                layerId = ParseGuid(line[6..]);
+            }
+            else if (line.StartsWith("cell_x:", StringComparison.Ordinal))
+            {
+                int.TryParse(line[7..].Trim(), out cellX);
+            }
+            else if (line.StartsWith("cell_y:", StringComparison.Ordinal))
+            {
+                int.TryParse(line[7..].Trim(), out cellY);
+            }
+            else if (line.StartsWith("cell_width:", StringComparison.Ordinal))
+            {
+                int.TryParse(line[11..].Trim(), out cellWidth);
+            }
+            else if (line.StartsWith("cell_height:", StringComparison.Ordinal))
+            {
+                int.TryParse(line[12..].Trim(), out cellHeight);
             }
             else if (line.StartsWith("cell:", StringComparison.Ordinal))
             {
@@ -112,9 +162,26 @@ public sealed class MemoryAnchorFileStore : IMemoryAnchorStore
                     int.TryParse(parts[1], out cellY);
                 }
             }
+            else if (line.StartsWith("content_id:", StringComparison.Ordinal))
+            {
+                contentId = Unquote(line[11..].Trim());
+            }
+            else if (line.StartsWith("content_type:", StringComparison.Ordinal))
+            {
+                contentType = Unquote(line[13..].Trim());
+            }
+            else if (line.StartsWith("label:", StringComparison.Ordinal))
+            {
+                context = Unquote(line[6..].Trim());
+            }
             else if (line.StartsWith("context:", StringComparison.Ordinal))
             {
                 context = Unquote(line[8..].Trim());
+            }
+            else if (line.StartsWith("created_at_iso:", StringComparison.Ordinal) &&
+                     DateTime.TryParse(Unquote(line[15..].Trim()), out DateTime parsed))
+            {
+                createdAt = parsed.ToUniversalTime().Ticks;
             }
         }
 
@@ -127,4 +194,7 @@ public sealed class MemoryAnchorFileStore : IMemoryAnchorStore
 
     private static string Unquote(string value) =>
         value.Trim().Trim('"').Replace("\\\"", "\"", StringComparison.Ordinal).Replace("\\\\", "\\", StringComparison.Ordinal);
+
+    private static Guid ParseGuid(string value) =>
+        Guid.TryParse(Unquote(value.Trim()), out Guid parsed) ? parsed : Guid.Empty;
 }

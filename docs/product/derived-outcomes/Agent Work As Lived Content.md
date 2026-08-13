@@ -14,7 +14,7 @@ tags: [grove, derived-outcome, agent-work, lived-content]
 
 ## 1. Behavior Change Description
 
-In conventional AI assistant interfaces, automated agents interact through isolated chat sidebar dialogs or ephemeral text outputs that are disconnected from the user's primary working document. The user must manually copy, paste, and format agent responses into their workspace.
+In conventional AI assistant interfaces, automated agents interact through isolated chat sidebar dialogs or ephemeral text outputs that are disconnected from the user's primary working document. The user must manually copy, paste, and format agent responses into the spatial field.
 
 With agent work as lived content:
 - Automated background agents generate first-class spatial content (notes, documents, visual assets) directly on the working surface.

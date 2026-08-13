@@ -98,7 +98,7 @@ When a user switches active layers, the visual render loop dynamically adjusts r
 
 ### 3.1 Content Migration on Layer Removal
 When layer $L_{\text{target}}$ is removed:
-1. If $L_{\text{target}}$ contains placed content, open an inline confirm in the Layer Manager Slate naming the destination layer: `"Remove Layer B02 and move what is on it to Layer 01?"`.
+1. If $L_{\text{target}}$ contains placed content, open an inline confirm in the Layer Manager overlay naming the destination layer: `"Remove Layer B02 and move what is on it to Layer 01?"`.
 2. Upon confirmation, all content footprints on $L_{\text{target}}$ are reassigned to $L_{\text{destination}}$ (the next layer down, or next layer up if removing bottom layer).
 3. If destination cells are occupied, the confirm transitions to refusal state: `"That space is occupied on Layer 01."`.
 
@@ -120,7 +120,7 @@ Layer navigation and stack management are driven via ergonomic bracket key combi
 | `Ctrl+]` / `Cmd+]` | **Add Layer Above**: Create layer immediately above active layer. | Inserts into stack sequence. Preserves labels. |
 | `Alt+[` | **Move Layer Down**: Reorder active layer down by 1 position. | Stack reorder only. Stable label unchanged. |
 | `Alt+]` | **Move Layer Up**: Reorder active layer up by 1 position. | Stack reorder only. Stable label unchanged. |
-| `L` | **Toggle Layer Manager Slate**: Open/Close Layer Manager on Plane 2. | Focuses active layer row in Slate. |
+| `L` | **Toggle Layer Manager**: Open/close the Layer Manager overlay on Plane 2. | Focuses the active layer row in the overlay. |
 
 ---
 

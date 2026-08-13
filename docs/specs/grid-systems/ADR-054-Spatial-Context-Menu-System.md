@@ -16,13 +16,13 @@ status: "PARTIAL — verified context menu service and overlay"
 
 ## 1. Executive Context & Architectural Principles
 
-Grove v9 enforces strict visual separation across three composition planes (Plane 0: Grid Canvas, Plane 1: Information Layer, Plane 2: HUD Slate Plane). When a context menu is invoked via right-click, pointer long-press, or `Menu` keyboard key, it must render as a targeted overlay without disrupting continuous rendering on Plane 0.
+Grove v9 enforces strict visual separation across three composition planes (Plane 0: Grid Canvas, Plane 1: Information Plane, Plane 2: HUD Plane). When a context menu is invoked via right-click, pointer long-press, or `Menu` keyboard key, it must render as a targeted overlay without disrupting continuous rendering on Plane 0.
 
 ### Key Architectural Drivers:
 1. **Zero-Modal Pass-Through Architecture**: The context menu resides on Plane 2 (HUD Overlay Canvas). It introduces ZERO backdrop scrim (`#000000` opacity = 0%) and ZERO canvas blur. Pointer events occurring outside the menu rect pass through directly to interact with Plane 0 grid content or dismiss the menu without modal input trapping.
 2. **Context-Sensitive Target Resolution**: Right-clicking a coordinate evaluates cell occupancy to construct targeted menu models:
    - **Empty Field Context**: Create Note (`N`), Create Document, Paste (`Ctrl+V`), Grid Properties.
-   - **Single Item Context**: Open Slate, Anchor (`A`), Trace to Layer (`1`), Copy (`Ctrl+C`), Cut (`Ctrl+X`), Delete (`Del`).
+   - **Single Item Context**: Open in Writing Slate, Memory Slate, or Gallery Slate, Anchor (`A`), Trace to Layer (`1`), Copy (`Ctrl+C`), Cut (`Ctrl+X`), Delete (`Del`).
    - **Multi-Selection Context**: Group Anchor (`A`), Batch Trace (`1`), Copy All (`Ctrl+C`), Delete All (`Del`).
 3. **Viewport Collision Clamping**: Menu screen coordinates dynamically adjust to remain fully inside viewport bounds $[0, 0, W_{\text{viewport}}, H_{\text{viewport}}]$, preventing clipped popups near display edges.
 

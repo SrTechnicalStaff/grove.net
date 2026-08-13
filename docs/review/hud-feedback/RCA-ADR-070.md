@@ -22,7 +22,7 @@
 
 | Requirement ID | Spec Requirement / Symbol Name | Target Specification Details |
 | :--- | :--- | :--- |
-| `REQ-070-01` | Plane 2 HUD Anchoring | Positioned in bottom-right corner of Plane 2 HUD Overlay (`Right: 16px`, `Bottom: 16px`) at `ZIndex = 300`, unscaled by camera transform $T(x,y,s)$. |
+| `REQ-070-01` | Plane 2 HUD Anchoring | Positioned in bottom-right corner of Plane 2 HUD Overlay (`Right: 16px`, `Bottom: 16px`) at `ZIndex = 400`, unscaled by camera transform $T(x,y,s)$. |
 | `REQ-070-02` | Pointer Passthrough Rules | Non-interactive elements (W-02 brand `GROVE v9`, W-03 zoom readout) are `IsHitTestVisible = false` (pass clicks to canvas); active layer pill is interactive. |
 | `REQ-070-03` | W-02 Brand Token | `56px` fixed width, `--f-mono` 500 9px (`--t-micro`), `--tr-wide` (0.16em), `--ink-whisper` (`0.04`). |
 | `REQ-070-04` | W-03 Camera Scale Readout | `44px` fixed width, `--f-mono` 500 9px (`--t-micro`), `--tr-mono` (0.08em), `--ink-tertiary` (`0.51`). |
@@ -38,7 +38,7 @@
 
 | Requirement ID | Codebase Symbol / Location | Implementation Status & Evidence |
 | :--- | :--- | :--- |
-| `REQ-070-01` | [`MainWindow.axaml:25-28`](file:///C:/dev/grove-v9/src/GroveApp/MainWindow.axaml#L25-L28) | **NON-COMPLIANT**: Implemented as a full-width static `Border` height 32px (`HorizontalAlignment="Stretch"`), NOT a bottom-right viewport cell margin control (`Right: 16px`, `Bottom: 16px`) at `ZIndex = 300`. |
+| `REQ-070-01` | [`MainWindow.axaml:25-28`](file:///C:/dev/grove-v9/src/GroveApp/MainWindow.axaml#L25-L28) | **NON-COMPLIANT**: Implemented as a full-width static `Border` height 32px (`HorizontalAlignment="Stretch"`), NOT a bottom-right viewport cell margin control (`Right: 16px`, `Bottom: 16px`) at `ZIndex = 400`. |
 | `REQ-070-02` | `MainWindow.axaml:29-76` | **NON-COMPLIANT**: Pointer hit-testing policy is unmanaged; no `IsHitTestVisible="False"` passthrough rules are defined for brand token or scale readout. |
 | `REQ-070-03` | `src/GroveApp/` | **0% Implemented**: Brand Token W-02 (`GROVE v9`, `--f-mono` 9px, `--ink-whisper`) does **NOT** exist anywhere in the user interface. |
 | `REQ-070-04` | [`MainWindow.axaml:42-46`](file:///C:/dev/grove-v9/src/GroveApp/MainWindow.axaml#L42-L46) | **PARTIAL**: Scale readout is rendered as static text `ZOOM: 100%` inside a horizontal telemetry strip, missing W-03 tokens and formatting specifications. |
@@ -52,8 +52,8 @@
 
 ## 4. Standards & Visual Plane Seam Audit
 
-- **Visual Plane Isolation (Plane 0 vs Layer 1 vs Plane 2)**:
-  - Spec mandates a dedicated Plane 2 HUD Overlay control (`ZIndex = 300`) anchored to bottom-right viewport coordinates (`Right: 16px`, `Bottom: 16px`).
+- **Visual Plane Isolation (Plane 0 vs Plane 1 vs Plane 2)**:
+  - Spec mandates a dedicated Plane 2 HUD Overlay control (`ZIndex = 400`) anchored to bottom-right viewport coordinates (`Right: 16px`, `Bottom: 16px`).
   - Codebase reality: A full-width `Border` (height 32px) is stretched across the bottom of `MainWindow.axaml` as a static status bar.
 - **Interactive Layer Identity Seam Failure**:
   - The watermark is intended to serve as a live reactive link to `ISpatialLayerStateService.ActiveLayer`, allowing users to rename layers directly from the HUD. The existing telemetry strip has zero layer awareness and zero interactivity.

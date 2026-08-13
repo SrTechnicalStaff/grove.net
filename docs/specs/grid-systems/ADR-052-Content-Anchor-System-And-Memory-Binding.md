@@ -1,12 +1,20 @@
 ---
-status: "PARTIAL — verified anchor ribbon and memory binding seam"
+status: "Superseded by ADR-023 and docs/domain/Anchor.md"
 ---
 
 # ADR-052: Content Anchor System and Memory Binding Architecture
 
+> **Superseded.** This ADR conflated authored Anchor context with a spatial
+> pin/lock state. The canonical Anchor is an optional authored label attached
+> to Content. Placement and movement state belong to Content and Placement.
+> The `IsAnchored` ribbon/lock design below is historical and is not an Anchor
+> contract. See [`docs/domain/Anchor.md`](../../domain/Anchor.md),
+> [`docs/domain/Content.md`](../../domain/Content.md), and
+> [`docs/domain/Placement.md`](../../domain/Placement.md).
+
 | Property | Value |
 | :--- | :--- |
-| **Status** | PARTIAL — verified anchor ribbon and memory binding seam |
+| **Status** | Superseded by ADR-023 and `docs/domain/Anchor.md` |
 | **Date** | 2026-08-12 |
 | **Area** | Spatial Grid Engine / Memory Ledger & Anchoring Subsystem |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp 3.x |

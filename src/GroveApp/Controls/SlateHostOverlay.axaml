@@ -1,7 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ds="clr-namespace:GroveApp.DesignSystem"
-             x:Class="GroveApp.Controls.NamedSlateOverlay"
+             xmlns:controls="clr-namespace:GroveApp.Controls"
+             x:Class="GroveApp.Controls.SlateHostOverlay"
              IsVisible="False"
              IsHitTestVisible="True"
              HorizontalAlignment="Stretch"
@@ -71,11 +72,10 @@
                                  FontFamily="{x:Static ds:Typography.FontFamilyUi}"
                                  FontSize="{x:Static ds:Typography.SizeBody}" />
                     </Grid>
-                    <WrapPanel x:Name="ArchivePanel"
+            <controls:MasonryGalleryPanel x:Name="ArchivePanel"
                                IsVisible="False"
-                               ItemWidth="220"
-                               ItemHeight="180"
-                               Orientation="Horizontal" />
+                               ColumnMinWidth="220"
+                               GutterSpacing="12" />
                 </Grid>
             </ScrollViewer>
         </Grid>

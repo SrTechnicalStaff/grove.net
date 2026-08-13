@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using GroveApp.Models.Memory;
 
 namespace GroveApp.Engine.Memory;
@@ -31,20 +32,6 @@ public sealed class ImmutableMemoryLedger : IMemoryLedger
             if (parentMemoryId.HasValue && !_recordsById.TryGetValue(parentMemoryId.Value, out parent))
             {
                 throw new KeyNotFoundException($"Parent memory {parentMemoryId.Value} was not found.");
-            }
-
-            // A root import with the same payload is a duplicate. Versioned appends
-            // still create a child node so the lineage can represent a real edit.
-            if (!parentMemoryId.HasValue &&
-                _canonicalIdByHash.TryGetValue(hash, out Guid canonicalId) &&
-                _recordsById.TryGetValue(canonicalId, out MemoryRecord? canonical))
-            {
-                if (initialAnchors is null || initialAnchors.Count == 0)
-                {
-                    return canonical;
-                }
-
-                return AddAnchorsUnderLock(canonical, initialAnchors);
             }
 
             Guid memoryId = Guid.CreateVersion7();
@@ -156,6 +143,46 @@ public sealed class ImmutableMemoryLedger : IMemoryLedger
         }
     }
 
+    public void Import(MemoryRecord record)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+        if (!record.HasValidHash())
+        {
+            throw new InvalidDataException($"Memory {record.MemoryId} failed its payload hash check.");
+        }
+
+        lock (_writeGate)
+        {
+            if (record.MemoryId == Guid.Empty || record.RootMemoryId == Guid.Empty)
+            {
+                throw new InvalidDataException("Imported memory records require non-empty identities.");
+            }
+
+            if (record.ParentMemoryId is Guid parentId && !_recordsById.ContainsKey(parentId))
+            {
+                throw new KeyNotFoundException($"Parent memory {parentId} was not found while importing {record.MemoryId}.");
+            }
+
+            MemoryRecord normalized = record with
+            {
+                Anchors = NormalizeAnchors(record.Anchors, record.MemoryId)
+            };
+
+            if (_recordsById.TryGetValue(normalized.MemoryId, out MemoryRecord? existing))
+            {
+                if (existing != normalized)
+                {
+                    throw new InvalidDataException($"Memory {normalized.MemoryId} has conflicting persisted records.");
+                }
+
+                return;
+            }
+
+            _recordsById.Add(normalized.MemoryId, normalized);
+            _canonicalIdByHash.TryAdd(normalized.Hash, normalized.MemoryId);
+        }
+    }
+
     public ReadOnlySpan<MemoryRecord> GetAllMemories()
     {
         lock (_writeGate)
@@ -165,41 +192,6 @@ public sealed class ImmutableMemoryLedger : IMemoryLedger
             Array.Sort(snapshot, CompareRecords);
             return snapshot;
         }
-    }
-
-    private MemoryRecord AddAnchorsUnderLock(
-        MemoryRecord record,
-        ImmutableList<MemoryAnchor> initialAnchors)
-    {
-        MemoryRecord updated = record;
-        foreach (MemoryAnchor anchor in initialAnchors)
-        {
-            updated = AddAnchorUnderLock(updated, NormalizeAnchor(anchor, record.MemoryId));
-        }
-
-        return updated;
-    }
-
-    private MemoryRecord AddAnchorUnderLock(MemoryRecord record, MemoryAnchor anchor)
-    {
-        foreach (MemoryAnchor existing in record.Anchors)
-        {
-            if (existing.AnchorId == anchor.AnchorId)
-            {
-                if (existing != anchor)
-                {
-                    throw new InvalidOperationException($"Anchor ID {anchor.AnchorId} has conflicting metadata.");
-                }
-
-                return record;
-            }
-        }
-
-        MemoryRecord updated = record.WithAnchors(
-            record.Anchors.Add(anchor),
-            NextTimestamp(record.UpdatedAtTicks));
-        _recordsById[record.MemoryId] = updated;
-        return updated;
     }
 
     private MemoryRecord GetRequiredMemoryUnderLock(Guid memoryId)
@@ -249,6 +241,8 @@ public sealed class ImmutableMemoryLedger : IMemoryLedger
         {
             AnchorId = anchor.AnchorId == Guid.Empty ? Guid.CreateVersion7() : anchor.AnchorId,
             MemoryId = memoryId,
+            CellWidth = Math.Max(1, anchor.CellWidth),
+            CellHeight = Math.Max(1, anchor.CellHeight),
             CreatedAtTicks = anchor.CreatedAtTicks == 0 ? DateTime.UtcNow.Ticks : anchor.CreatedAtTicks
         };
     }

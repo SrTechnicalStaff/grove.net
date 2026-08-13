@@ -12,21 +12,21 @@ using Colors = GroveApp.DesignSystem.Colors;
 
 namespace GroveApp.Controls;
 
-public enum NamedSlateMode : byte
+public enum SlateKind : byte
 {
     Writing,
     Memory,
     Gallery
 }
 
-public partial class NamedSlateOverlay : UserControl
+public partial class SlateHostOverlay : UserControl
 {
     private GridDocument? _document;
     private GridContentItem[] _archiveItems = Array.Empty<GridContentItem>();
     private ContentKind? _archiveFilter;
-    private NamedSlateMode _mode;
+    private SlateKind _mode;
 
-    public NamedSlateOverlay()
+    public SlateHostOverlay()
     {
         InitializeComponent();
         CloseButton.Click += (_, _) => Close();
@@ -37,7 +37,7 @@ public partial class NamedSlateOverlay : UserControl
         ImagesFilterButton.Click += (_, _) => SetArchiveFilter(ContentKind.Image);
     }
 
-    public NamedSlateMode Mode => _mode;
+    public SlateKind Mode => _mode;
 
     public event Action? Closed;
 
@@ -47,7 +47,7 @@ public partial class NamedSlateOverlay : UserControl
     {
         ArgumentNullException.ThrowIfNull(document);
         _document = document;
-        _mode = NamedSlateMode.Writing;
+        _mode = SlateKind.Writing;
         IdentityText.Text = string.IsNullOrWhiteSpace(document.Title) ? "WRITING" : document.Title.ToUpperInvariant();
         WritingEditor.Text = document.RawText;
         WritingPanel.IsVisible = true;
@@ -61,7 +61,7 @@ public partial class NamedSlateOverlay : UserControl
     {
         ArgumentNullException.ThrowIfNull(items);
         _document = null;
-        _mode = NamedSlateMode.Memory;
+        _mode = SlateKind.Memory;
         _archiveFilter = null;
         IdentityText.Text = "MEMORIES";
         ArchiveControls.IsVisible = true;
@@ -76,7 +76,7 @@ public partial class NamedSlateOverlay : UserControl
     {
         ArgumentNullException.ThrowIfNull(images);
         _document = null;
-        _mode = NamedSlateMode.Gallery;
+        _mode = SlateKind.Gallery;
         _archiveFilter = ContentKind.Image;
         IdentityText.Text = "GALLERY";
         ArchiveControls.IsVisible = true;

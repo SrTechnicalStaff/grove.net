@@ -25,5 +25,7 @@ public interface IMemoryLedger
 
     MemoryRecord RemoveAnchor(Guid memoryId, Guid anchorId);
 
+    void Import(MemoryRecord record);
+
     ReadOnlySpan<MemoryRecord> GetAllMemories();
 }

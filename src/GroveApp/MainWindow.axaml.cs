@@ -42,7 +42,7 @@ namespace GroveApp
                 PlaneCompositor.RegisterPlaneView(new ThreePlaneVisualCompositorContainer.ControlPlaneView(
                     view, VisualPlaneType.Plane1_InformationPlane, ThreePlaneVisualCompositorContainer.Plane1ZIndex));
             }
-            foreach (Control view in new Control[] { LayerManagerOverlay, ContextMenuOverlay, SpatialWatermark, PerformanceTracker, NamedSlate })
+            foreach (Control view in new Control[] { LayerManagerOverlay, ContextMenuOverlay, SpatialWatermark, PerformanceTracker, SlateHost })
             {
                 PlaneCompositor.RegisterPlaneView(new ThreePlaneVisualCompositorContainer.ControlPlaneView(
                     view, VisualPlaneType.Plane2_HUDPlane, ThreePlaneVisualCompositorContainer.Plane2ZIndex));
@@ -58,14 +58,16 @@ namespace GroveApp
 
             _focusRouter = new GlobalFocusPrecedenceRouter(
                 this,
-                () => NotepadEditor.IsVisible || QuickNote.IsVisible || DocumentEditor.IsVisible || ImageProperties.IsVisible || LayerManagerOverlay.IsVisible || ContextMenuOverlay.IsVisible || NamedSlate.IsVisible,
-                () => !NotepadEditor.IsVisible && !QuickNote.IsVisible && !DocumentEditor.IsVisible && !ImageProperties.IsVisible && !LayerManagerOverlay.IsVisible && !ContextMenuOverlay.IsVisible && !NamedSlate.IsVisible,
+                () => NotepadEditor.IsVisible || QuickNote.IsVisible || DocumentEditor.IsVisible || ImageProperties.IsVisible || LayerManagerOverlay.IsVisible || ContextMenuOverlay.IsVisible || SlateHost.IsVisible,
+                () => !NotepadEditor.IsVisible && !QuickNote.IsVisible && !DocumentEditor.IsVisible && !ImageProperties.IsVisible && !LayerManagerOverlay.IsVisible && !ContextMenuOverlay.IsVisible && !SlateHost.IsVisible,
                 combination => _keybindModule.ProcessRoutedCombination(combination, this));
-            Closed += (_, _) =>
+            Closed += async (_, _) =>
             {
                 _focusRouter.Dispose();
                 SpatialWatermark.Dispose();
                 _watermarkBinding?.Dispose();
+                await CanvasControl.FlushLayerStateAsync().ConfigureAwait(true);
+                await CanvasControl.MemoryAnchors.FlushAsync().ConfigureAwait(true);
             };
 
             TransparencyLevelHint = new[]
@@ -118,8 +120,8 @@ namespace GroveApp
             ImageProperties.Closed += OnOverlayClosed;
 
             LayerManagerOverlay.Closed += OnOverlayClosed;
-            NamedSlate.Closed += OnOverlayClosed;
-            NamedSlate.DocumentSaveRequested += OnNamedSlateDocumentSaveRequested;
+            SlateHost.Closed += OnOverlayClosed;
+            SlateHost.DocumentSaveRequested += OnSlateDocumentSaveRequested;
 
             SizeChanged += (s, e) => UpdateNotepadEditorPosition();
 
@@ -270,11 +272,11 @@ namespace GroveApp
         {
             if (item is GridDocument document)
             {
-                NamedSlate.OpenForDocument(document);
+                SlateHost.OpenForDocument(document);
             }
             else if (item is GridImage image)
             {
-                NamedSlate.OpenGallery(new[] { image });
+                SlateHost.OpenGallery(new[] { image });
             }
         }
 
@@ -313,7 +315,7 @@ namespace GroveApp
             CanvasControl.Focus();
         }
 
-        private void OnNamedSlateDocumentSaveRequested(GridDocument document, string title, string rawText)
+        private void OnSlateDocumentSaveRequested(GridDocument document, string title, string rawText)
         {
             document.UpdateText(title, rawText);
             CanvasControl.UpdateMemoryForItem(document);
@@ -387,10 +389,10 @@ namespace GroveApp
                     OpenNotepadEditorForNote(note);
                     break;
                 case "open" when target is GridDocument document:
-                    NamedSlate.OpenForDocument(document);
+                    SlateHost.OpenForDocument(document);
                     break;
                 case "open" when target is GridImage image:
-                    NamedSlate.OpenGallery(new[] { image });
+                    SlateHost.OpenGallery(new[] { image });
                     break;
                 case "anchor" when target != null:
                     IReadOnlyList<GridContentItem> anchorTargets = CanvasControl.GetSelectedItems();
@@ -442,6 +444,15 @@ namespace GroveApp
                     }
                     CanvasControl.RefreshFieldLedger();
                     CanvasControl.InvalidateVisual();
+                    break;
+                case "trace-layer" when target is GridContentItem traceTarget:
+                    IReadOnlyList<GridContentItem> traceTargets = CanvasControl.GetSelectedItems();
+                    if (traceTargets.Count == 0)
+                    {
+                        traceTargets = new[] { traceTarget };
+                    }
+
+                    CanvasControl.TryTraceSelectionToActiveLayer(traceTargets, out _);
                     break;
                 case "cut" when target is GridContentItem cutTarget:
                     _ = CutContextMenuItemAsync(cutTarget);
@@ -500,11 +511,11 @@ namespace GroveApp
                 return;
             }
 
-            if (NamedSlate.IsVisible)
+            if (SlateHost.IsVisible)
             {
                 if (e.Key == Key.Escape)
                 {
-                    NamedSlate.Close();
+                    SlateHost.Close();
                     e.Handled = true;
                 }
                 return;
@@ -559,6 +570,8 @@ namespace GroveApp
             OpenContextMenuAt(screenPoint);
             Dispatcher.UIThread.Post(ContextMenuOverlay.FocusFirstCommand);
         }
+        void IKeybindHost.OpenMemorySlate() =>
+            SlateHost.OpenMemory(CanvasControl.GetMemoryRepresentatives());
         void IKeybindHost.ToggleLayerIsolation() => CanvasControl.LayerActivation.ToggleIsolationMode();
         void IKeybindHost.ToggleGridLines() => CanvasControl.ToggleGridLines();
         void IKeybindHost.FrameAllContent() => CanvasControl.FrameAllContent();
@@ -614,6 +627,9 @@ namespace GroveApp
             CanvasControl.RefreshFieldLedger();
             CanvasControl.InvalidateVisual();
         }
+
+        void IKeybindHost.TraceSelectionToActiveLayer() =>
+            CanvasControl.TryTraceSelectionToActiveLayer(CanvasControl.GetSelectedItems(), out _);
 
         void IKeybindHost.DeleteSelectedItems()
         {

@@ -22,7 +22,7 @@ Key properties:
 1. Every placed content item (`Note`, `Document`, `Picture`) possesses a Mass $M \ge 1.0$.
 2. Content energy attenuates continuously across spatial distance $d$.
 3. Energy saturates vertically across adjacent layers via a layer-depth decay factor.
-4. Cells reaching isoline energy threshold $E \ge 0.15$ form distinct visual perimeter containment rings.
+4. Cells reaching isoline energy threshold $E \ge 0.15$ form distinct visual perimeter containment rings for Content on the active Grid Layer only. Cross-Grid-Layer field saturation contributes to cell presence but never creates or extends a perimeter ring.
 
 ---
 
@@ -67,11 +67,17 @@ $$R_{\text{influence}} = \left[ X_{\text{min}} - 6, \; Y_{\text{min}} - 6, \; X_
 - Neighborhood grid dimensions: Maximum $(W_{\text{footprint}} + 12) \times (H_{\text{footprint}} + 12)$ cells.
 - Any cell outside $R_{\text{influence}}$ receives zero field calculation from content $i$.
 
+The field snapshot used by the camera expands the visible cell rectangle by the
+same six-cell radius before evaluating or extracting perimeter topology. The
+viewport still clips the final pixels, but the snapshot must retain the full
+influence envelope so content just outside the viewport cannot create a false
+contour cutoff as the camera pans or changes scale.
+
 ---
 
 ## 4. 1.5px Perimeter Containment Ring Specification
 
-Cells whose composite energy $E_{\text{total}} \ge 0.15$ form an occupied energy domain. The boundary between occupied ($E \ge 0.15$) and unoccupied ($E < 0.15$) cells is rendered as a continuous containment ring.
+Cells whose same-Grid-Layer Content energy $E_{\text{same}} \ge 0.15$ form an occupied perimeter domain. The boundary between occupied ($E_{\text{same}} \ge 0.15$) and unoccupied ($E_{\text{same}} < 0.15$) cells is rendered as a continuous containment ring. Total field energy remains cross-Grid-Layer and is used for presence fills and metadata, not perimeter topology.
 
 ### 4.1 Rendering Tokens & Parameters
 - Token `--field-perimeter-width`: $1.5\text{ DIPs}$.
@@ -81,10 +87,14 @@ Cells whose composite energy $E_{\text{total}} \ge 0.15$ form an occupied energy
 
 ### 4.2 Skia Contour Path Extraction
 To render the 1.5px perimeter ring crisp on Plane 0:
-1. Iterate over all cells in $R_{\text{influence}}$.
-2. Identify edges separating a cell with $E \ge 0.15$ from an adjacent cell with $E < 0.15$.
+1. Iterate over all cells in $R_{\text{influence}}$ for the active Grid Layer.
+2. Identify edges separating a cell with same-Grid-Layer Content energy $E_{\text{same}} \ge 0.15$ from an adjacent cell with $E_{\text{same}} < 0.15$.
 3. Build a continuous `SKPath` along cell edges.
 4. Draw using `SKPaint` with `StrokeWidth = 1.5f`, `Style = SKPaintStyle.Stroke`, `IsAntialias = true`.
+
+The contour colour is the normalized hue of the same-Grid-Layer perimeter
+sources. It is never a static Windows-blue signal colour and never uses a hue
+that exists only because another Grid Layer saturated the cell.
 
 ---
 

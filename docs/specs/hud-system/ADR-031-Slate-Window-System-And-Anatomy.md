@@ -16,26 +16,26 @@ status: "Accepted"
 
 ## 1. Executive Context & Architectural Principles
 
-As specified in `docs/design-system/20-planes/HUD-plane.md` and `docs/design-system/10-grammar/Surface-classes.md`, a **Slate** is the primary composed HUD surface on Plane 2. Slates provide generous workspace for tasks requiring broad viewport space (reading long documents, searching memory archives, browsing media collections, managing spatial layers).
+As specified in `docs/design-system/20-planes/HUD-plane.md` and `docs/design-system/10-grammar/Surface-classes.md`, the **Writing Slate**, **Memory Slate**, and **Gallery Slate** are the composed sub-applications on the HUD Plane. They provide generous viewport space for reading long documents, browsing every Memory record, and browsing media collections. The Layer Manager is a separate overlay.
 
 ### Architectural Rules
-1. **Viewport Fixed Mechanics**: Slates are anchored strictly to viewport coordinates and are completely immune to camera pan, zoom, or rotation.
-2. **Opaque Visual Depth & Zero Scrim**: Slates use an opaque dark surface fill (`#161618`, `--surface-chrome`) surrounded by a 1px quiet containment border (`#2D2D2A`, `--edge-control`). Slates NEVER dim, blur, or block rendering of Plane 0 (Spatial Grid) or Plane 1 (Information Layer) outside their physical footprint.
+1. **Viewport Fixed Mechanics**: Slates are anchored strictly to viewport coordinates and are completely immune to camera pan, zoom, or rotation. A Slate is composed as Full, Left, or Right; it is never free-floating, draggable, or hover-anchored.
+2. **Opaque Visual Depth & Zero Scrim**: Named Slates use an opaque dark surface fill (`#161618`, `--surface-chrome`) surrounded by a 1px quiet containment border (`#2D2D2A`, `--edge-control`). Named Slates NEVER dim, blur, or block rendering of Plane 0 (Spatial Grid) or Plane 1 (Information Plane) outside their physical footprint.
 3. **Strict Hierarchy Boundary**: Maximum of 3 dark tonal steps in the UI hierarchy:
    - Base Canvas (Plane 0): `#0E0E10` (`--surface-grid`)
-   - Slate Chrome (Plane 2): `#161618` (`--surface-chrome`)
-   - Slate Nested Pane (Plane 2): `#101012` (`--surface-nested`)
+   - Named-Slate Chrome (Plane 2): `#161618` (`--surface-chrome`)
+   - Named-Slate Nested Pane (Plane 2): `#101012` (`--surface-nested`)
    - *Refusal*: No 4th dark step is permitted under any condition.
-4. **Zero-Modal Pass-Through Input**: Unbound pointer clicks outside active Slate bounds pass directly through to Plane 1 and Plane 0 without dismissing or blocking user interactions on the spatial grid.
+4. **Zero-Modal Pass-Through Input**: Unbound pointer clicks outside active named-Slate bounds pass directly through to Plane 1 and Plane 0 without dismissing or blocking user interactions on the spatial grid.
 5. **No Truncation / No Ellipsis**: Authoring content inside Slates never crops, truncates, or line-clamps authored text or media frames to fit container boundaries. Masonry columns reflow and scroll vertically.
 
 ---
 
-## 2. Slate Surface Design Tokens & Visual Anatomy
+## 2. Named-Slate Surface Design Tokens & Visual Anatomy
 
 ```text
 +-----------------------------------------------------------------------------------+
-| SLATE HEADER: [IDENTITY: MEMORIES / GALLERY / WRITING / LAYERS]   [CLOSE (Esc)]   |
+| NAMED-SLATE HEADER: [IDENTITY: MEMORIES / GALLERY / WRITING] [CLOSE (Esc)]      |
 | (1px Border: #2D2D2A | Chrome Fill: #161618 | Identity Ink: #E6E6E6)              |
 +-----------------------------------------------------------------------------------+
 | SLATE CONTROLS / FILTERS / SEARCH ROW                                             |
@@ -82,7 +82,9 @@ The **Writing Slate** is the dedicated HUD viewing and authoring host for Docume
 - **Paper Canvas Rendering**: Document cards and reader surfaces use `--surface-page` background fill with `#0E0E10` paper ink, preserving authentic reading contrast (15.97:1 contrast ratio).
 
 ### 3.2 Memory Slate Specification
-The **Memory Slate** provides universal archive access for all kept spatial content.
+The **Memory Slate** provides universal archive access for every Memory record,
+including records with zero Content instances. It is not a gallery of Content
+representatives.
 
 - **Header Identity**: Displays `Memories` (uppercase, `--t-title-small`, ink `#E6E6E6`).
 - **Search & Filter Controls**:
@@ -94,7 +96,7 @@ $$\text{Column Count } n = \max\left(1, \left\lfloor \frac{W + g}{220 + g} \righ
 
 $$\text{Column Width} = \frac{W - (n - 1) \cdot g}{n}$$
 
-- **Cards & Provenance**: Note cards (`--surface-nested`), Picture cards (intrinsic aspect ratio), Document cards (`--surface-page`). Double-clicking a card opens its complete record view with provenance details (Added timestamp, Form, Anchor status).
+- **Cards & Provenance**: Each card represents one Memory record. Note cards (`--surface-nested`), Picture cards (intrinsic aspect ratio), and Document cards (`--surface-page`) render the record payload. A Memory referenced by many Content instances still produces one card; the card reports Content/Anchor count and provenance. A record with no Content remains visible. Double-clicking a card opens its complete record view.
 
 ### 3.3 Gallery Slate Specification
 The **Gallery Slate** displays every picture imported into Grove in intrinsic proportions.
@@ -109,12 +111,15 @@ The **Gallery Slate** displays every picture imported into Grove in intrinsic pr
 
 ## 4. Tabbed Docking & Window Management Mechanics
 
-Slates are hosted within a unified `SlateWindowHost` container that supports flexible layout docking states.
+Slates are hosted within a unified Slate host that supports Full, Left, and Right
+viewport compositions. A Slate never hovers over the viewport as a movable
+window. The Layer Manager is hosted by the HUD overlay container, not by the
+Slate host.
 
 ```
        [FULL VIEWPORT DOCK]                [SPLIT LEFT / RIGHT DOCK]
 +--------------------------------+  +----------------+----------------+
-| Slate Header         [Close]   |  | Left Slate     | Right Slate    |
+| Named-Slate Header   [Close]   |  | Left Named Slate | Right Named Slate |
 +--------------------------------+  | (Width: 50%)   | (Width: 50%)   |
 |                                |  |                |                |
 | Generous Content Pane          |  | Masonry Pane   | Document Reader|
@@ -123,13 +128,13 @@ Slates are hosted within a unified `SlateWindowHost` container that supports fle
 ```
 
 ### 4.1 Docking Rules
-- **Full Dock**: Fills viewport minus `--sp-md` ($16\text{px}$) margin on all sides.
-- **Left / Right Split Dock**: Splits viewport into 50/50 dual pane configuration.
+- **Full Dock**: Fills the complete viewport extent of the HUD Plane.
+- **Left / Right Split Dock**: Occupies exactly one half of the viewport while the peer half remains a live HUD composition.
 - **Escape Dismissal Sequence**: Pressing `Escape` peels exactly one layer in strict sequence:
   1. Dismisses active contextual menu or rename input field.
   2. Clears active search field filter text.
   3. Returns from record view to gallery view.
-  4. Dismisses the topmost active Slate and returns keyboard focus to the triggering element on Plane 0 / Plane 1.
+  4. Dismisses the topmost active named Slate and returns keyboard focus to the triggering element on Plane 0 / Plane 1.
 
 ---
 

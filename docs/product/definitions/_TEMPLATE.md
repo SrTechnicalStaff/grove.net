@@ -9,7 +9,7 @@ tags: [grove, product-definition, template, intersectionality]
 # Product Definition Template: [Concept Name]
 
 > [!NOTE]
-> This template establishes the canonical structure for all formal Grove v9 Product Definitions. Every definition must adhere strictly to this schema, maintaining high architectural rigor, zero fluff, and explicit intersectionality across all eight core primitives (**Grid**, **Memory**, **Content**, **Aura**, **Layer**, **Annotation**, **Blip**, **Slate**).
+> This template establishes the canonical structure for all formal Grove v9 Product Definitions. Every definition must adhere strictly to this schema, maintaining high architectural rigor, zero fluff, and explicit intersectionality across the core primitives (**Grid**, **Memory**, **Content**, **Aura**, **Layer**, **Annotation**, **Blip**, **Writing Slate**, **Memory Slate**, **Gallery Slate**).
 
 ---
 
@@ -30,7 +30,7 @@ tags: [grove, product-definition, template, intersectionality]
 3. **[Invariant Name 3]**: [Detailed rule]
 
 ### Data & State Schema
-- **State Ownership**: [Which layer/subsystem owns this entity? e.g., Grid Plane, Information Layer, Viewport Overlay]
+- **State Ownership**: [Which Layer/subsystem owns this entity? e.g., Grid Plane, Information Plane, HUD Plane]
 - **Spatial Coordinates**: [How is position/scale expressed? e.g., `(x, y, layer_id, cell_span)`]
 - **Persistence Boundary**: [Disk representation vs. runtime state]
 
@@ -46,7 +46,7 @@ tags: [grove, product-definition, template, intersectionality]
 | **Content** | *How this primitive manifests as or interacts with placed spatial media/text objects.* |
 | **Aura** | *How this primitive influences or responds to field radiation, saturation, and hue composite blending.* |
 | **Layer** | *How this primitive behaves across stacked spatial frequency bands / Z-planes.* |
-| **Annotation** | *How this primitive relates to curated, source-anchored editorial overviews on the Information Layer.* |
+| **Annotation** | *How this primitive relates to curated, source-anchored editorial overviews on the Information Plane.* |
 | **Blip** | *How this primitive interacts with passive/dormant indicator blimps at distance or in unengaged states.* |
 | **Slate** | *How this primitive transitions to or interfaces with fixed-viewport tactical reading/writing slates.* |
 

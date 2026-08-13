@@ -22,7 +22,7 @@ An exhaustive audit of all 35 Architecture Decision Records (ADRs) across the 9 
 ### Master Status Distribution
 - **Truly Implemented (Observable & Interactive)**: **12 ADRs (34.3%)** — *Core 2D Camera, Note Primitives, Document Reflow, Image Footprints, OS Drag-and-Drop, Clipboard Interop, Spent Cell Trails, Basic Snap Resize, Anchoring Pin, Selection Sweep, Keybind Router, Window Transparency Hints.*
 - **Partially Implemented (Sub-Set Logic / UI Missing)**: **13 ADRs (37.1%)** — *Grid Lines, Field Ledger, Aura Physics, Three-Plane Compositor, Spatial Layer Stack, Permeability, Layer State, Footprint Cursor, Selection CRUD, Multi-Item Group Drag, Type Resize Solvers, Keybind Arming, Local Editor Overlay, Fluent Backdrops, Layer Feedback.*
-- **False / Unimplemented (0% Interactive UI Implementation)**: **10 ADRs (28.6%)** — *Memory Model Ledger, Memory Lineage Version Tree, Memory Spatial R-Tree, Slate Window System, Spatial Context Menu, Spatial Layer Manager UI, Fluid Aura Shaders, Skia GPU Pipeline, HUD Spatial Watermark, Layer Creation Flash Sweep.*
+- **False / Unimplemented (0% Interactive UI Implementation)**: **10 ADRs (28.6%)** — *Memory Model Ledger, Memory Lineage Version Tree, Memory Spatial R-Tree, Named Slate Window System, Spatial Context Menu, Spatial Layer Manager UI, Fluid Aura Shaders, Skia GPU Pipeline, HUD Spatial Watermark, Layer Creation Flash Sweep.*
 
 ---
 
@@ -98,12 +98,12 @@ This section lists every missing contract, class, interface, method, UI control,
 #### 1. Three-Plane Compositor Host ([`ADR-030`](file:///C:/dev/grove-v9/docs/specs/hud-system/ADR-030-Three-Plane-Compositor-Architecture-Validation.md))
 - [ ] **Compositor Control**: Implement `ThreePlaneCompositorHost` as the root window content view in [`MainWindow.axaml`](file:///C:/dev/grove-v9/src/GroveApp/MainWindow.axaml).
 
-#### 2. Slate Window System ([`ADR-031`](file:///C:/dev/grove-v9/docs/specs/hud-system/ADR-031-Slate-Window-System-And-Anatomy.md))
-- [ ] **`SlateFrameControl`**: Build viewport-fixed HUD slate container control adhering to design tokens (`--surface-chrome`, `1px` `--k-slate-b`).
+#### 2. Named Slate Window System ([`ADR-031`](file:///C:/dev/grove-v9/docs/specs/hud-system/ADR-031-Slate-Window-System-And-Anatomy.md))
+- [ ] **Named-Slate frame control**: Build viewport-fixed container controls for Writing, Memory, and Gallery Slates adhering to design tokens (`--surface-chrome`, `1px` `--k-slate-b`).
 - [ ] **Specialized Slates**: Build `WritingSlate`, `MemorySlate`, `GallerySlate`, and `MasonryGalleryPanel`.
 
 #### 3. Spatial Layer Navigation ([`ADR-032`](file:///C:/dev/grove-v9/docs/specs/hud-system/ADR-032-Spatial-Layer-Manager-And-Navigation.md))
-- [ ] **Extended Hotkeys**: Implement `Shift+[` and `Shift+]` for top/bottom layer jumping, and `Ctrl+Shift+L` for toggling the HUD `LayerManagerSlate`.
+- [ ] **Extended Hotkeys**: Implement `Shift+[` and `Shift+]` for top/bottom layer jumping, and `Ctrl+Shift+L` for toggling the Layer Manager overlay.
 
 ---
 
@@ -122,7 +122,7 @@ This section lists every missing contract, class, interface, method, UI control,
 - [ ] **Ghost Presence Silhouettes**: Render low-opacity ghost presence outlines on Plane 0 for content items residing on inactive spatial layers.
 
 #### 4. Spatial Layer Manager UI ([`ADR-043`](file:///C:/dev/grove-v9/docs/specs/spatial-layers/ADR-043-Spatial-Layer-Manager-UI-And-Controls.md))
-- [ ] **`LayerManagerSlate.axaml` Control**: Build viewport-fixed Plane 2 HUD slate control featuring:
+- [ ] **Layer Manager overlay control**: Build viewport-fixed Plane 2 overlay control featuring:
   - Header row with stack count (`12 LAYERS`).
   - Search filter text field (`Find a Layer`).
   - 12 layer rows with fixed `4ch` monospaced labels (`B01`, `01`, `02`), layer display names, color indicator dots, visibility toggle buttons (`[Visible]`/`[Hidden]`), and active layer selection outline (`2px` `--signal-interaction`).
@@ -216,13 +216,13 @@ This section lists every missing contract, class, interface, method, UI control,
   - Double-click or `F2` triggers `W-07` inline text box with automatic focus capture.
   - Commit on `Enter` or `Blur`; cancel on `Escape`.
   - Duplicate name collision displays refusal ink `--c-invalid` (`#E2625C`) and blocks commit.
-- [ ] **`ISpatialWatermarkService` & Ledger Sync**: Build reactive watermark service propagating layer name changes directly into `FieldLedgerEngine` and `LayerManagerSlate`.
+- [ ] **`ISpatialWatermarkService` & Ledger Sync**: Build reactive watermark service propagating layer name changes directly into `FieldLedgerEngine` and the Layer Manager overlay.
 
 #### 2. Layer Creation & Insertion Feedback ([`ADR-071`](file:///C:/dev/grove-v9/docs/specs/hud-feedback/ADR-071-Layer-Creation-And-Insertion-Feedback-Effects.md))
 - [ ] **`FlashSweepDrawOperation`**: Build Plane 0 GPU Skia custom draw operation (`ICustomDrawOperation`) rendering a 480ms radial flash sweep and Gaussian aura pulse wave $E(r,t) = E_{\text{peak}} \cdot \exp\left(-\frac{(r - v_{\text{wave}} t)^2}{2\sigma^2}\right)$.
 - [ ] **`LayerFeedbackAnimationController`**: Build animation controller orchestrating Plane 0 canvas radial sweep (`480ms` `--ease`) and Plane 2 `LayerManager` stack row height expansion (`0px` $\rightarrow$ `36px`, `280ms` `--overshoot`).
 - [ ] **OS Reduced-Motion Integration**: Collapse all motion duration tokens to `0ms` when OS `prefers-reduced-motion` is active.
-- [ ] **Layer Creation Pipeline**: Wire `Ctrl+Shift+N` hotkey, Slate `[+ New Layer]` button, and context menu actions to dispatch the layer creation animation pipeline.
+- [ ] **Layer Creation Pipeline**: Wire `Ctrl+Shift+N` hotkey, Layer Manager overlay `[+ New Layer]` control, and context menu actions to dispatch the layer creation animation pipeline.
 
 ---
 
@@ -240,8 +240,8 @@ To execute this work systematically without introducing regression risks or brea
                                          |
                                          v
 +-----------------------------------------------------------------------------------+
-| PHASE 2: HUD Plane Controls & Slates (Plane 2)                                    |
-| - Build LayerManagerSlate.axaml (ADR-043).                                        |
+| PHASE 2: HUD Plane Controls & Named Slates (Plane 2)                              |
+| - Build the Layer Manager overlay (ADR-043).                                      |
 | - Build HudSpatialWatermarkControl.axaml with inline rename & validation (ADR-070).|
 | - Build SpatialContextMenuOverlayView.axaml on right-click (ADR-054).            |
 +-----------------------------------------------------------------------------------+

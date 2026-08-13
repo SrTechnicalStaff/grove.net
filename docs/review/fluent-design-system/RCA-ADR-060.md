@@ -14,7 +14,7 @@
 ## 1. Executive Metadata & Audit Summary
 
 - **Claimed Implementation Files**: [`LocalEditorOverlay.axaml.cs`](file:///C:/dev/grove-v9/src/GroveApp/Controls/LocalEditorOverlay.axaml.cs), [`QuickNoteOverlay.axaml.cs`](file:///C:/dev/grove-v9/src/GroveApp/Controls/QuickNoteOverlay.axaml.cs)
-- **Verified Runtime Reality**: `LocalEditorOverlay` exists as an in-canvas `UserControl` overlay on Layer 1 of the spatial workspace. While it provides basic draft editing, tabbed document switching, and RAW/WYSIWYG toggling via `Ctrl+E`, it completely deviates from the normative WinUI 3 / Windows 11 Notepad frame topology mandated by ADR-060. It is **not** hosted inside a standalone `fa:AppWindow` / `FluentWindow` with DWM backdrops (`MicaAlt` / `DesktopAcrylic`), uses incorrect corner radii and border colors, omits mandatory C# viewmodel interfaces, and relies on ad-hoc buttons rather than FluentAvalonia `ui:Segmented` controls.
+- **Verified Runtime Reality**: `LocalEditorOverlay` exists as an in-canvas `UserControl` overlay on Plane 1 of the spatial field. While it provides basic draft editing, tabbed document switching, and RAW/WYSIWYG toggling via `Ctrl+E`, it completely deviates from the normative WinUI 3 / Windows 11 Notepad frame topology mandated by ADR-060. It is **not** hosted inside a standalone `fa:AppWindow` / `FluentWindow` with DWM backdrops (`MicaAlt` / `DesktopAcrylic`), uses incorrect corner radii and border colors, omits mandatory C# viewmodel interfaces, and relies on ad-hoc buttons rather than FluentAvalonia `ui:Segmented` controls.
 
 ---
 
@@ -52,9 +52,9 @@
 
 ## 4. Standards & Visual Plane Seam Audit
 
-- **Visual Plane Isolation (Plane 0 vs Layer 1 vs Plane 2)**:
-  - Spec mandates a windowed Notepad surface using `fa:AppWindow` anchored to Layer 1 of the visual plane hierarchy.
-  - Codebase reality: `LocalEditorOverlay` is rendered as an in-canvas `UserControl` inside `MainWindow.axaml` (Layer 1 overlay). It translates pointer events directly back to the canvas when clicking outside bounds ([`LocalEditorOverlay.axaml.cs:403-456`](file:///C:/dev/grove-v9/src/GroveApp/Controls/LocalEditorOverlay.axaml.cs#L403-L456)).
+- **Visual Plane Isolation (Plane 0 vs Plane 1 vs Plane 2)**:
+  - Spec mandates a windowed Notepad surface using `fa:AppWindow` anchored to Plane 1 of the visual plane hierarchy.
+  - Codebase reality: `LocalEditorOverlay` is rendered as an in-canvas `UserControl` inside `MainWindow.axaml` (Plane 1 overlay). It translates pointer events directly back to the canvas when clicking outside bounds ([`LocalEditorOverlay.axaml.cs:403-456`](file:///C:/dev/grove-v9/src/GroveApp/Controls/LocalEditorOverlay.axaml.cs#L403-L456)).
 - **Design System Tokens & Styling**:
   - `Tokens.CornerRadiusSm` (`4px`) is incorrectly applied to `FrameBorder` instead of `--r-md` (`8px`).
   - Color `#242428` is used for the outer border brush instead of `--k-edit-b` (`#7A3F3A`).

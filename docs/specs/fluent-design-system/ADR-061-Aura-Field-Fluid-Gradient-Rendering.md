@@ -66,7 +66,7 @@ $$\left. \frac{d\mathcal{A}}{dt} \right|_{t=1} = \left. \alpha_{\text{peak}} \cd
 
 ---
 
-## 3. Compositor Layering & Grid Line Masking Algorithm
+## 3. Compositor Planes & Grid Line Masking Algorithm
 
 ### 3.1 Plane 0 Execution Order
 Rendering of the spatial grid plane follows a strict 4-pass sequence to guarantee zero inner line pollution inside aura fields:

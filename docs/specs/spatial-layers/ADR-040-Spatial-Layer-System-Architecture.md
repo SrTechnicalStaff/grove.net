@@ -16,7 +16,7 @@ status: "PARTIAL — verified implementation with remaining migration gaps"
 
 ## 1. Executive Context & Architectural Principles
 
-In Grove v9, the spatial workspace is organized across a continuous 2D coordinate grid extended into depth via an unbounded stack of **Spatial Layers**. As defined in original architectural specifications (`Grove - Layers.txt`, `Grove - Field ledger.txt`, and [ADR-001](file:///C:/dev/grove-v9/docs/specs/spatial-grid/ADR-001-Spatial-Grid-Plane-Architecture.md)), a Spatial Layer is NOT a destructive container or isolated document tab. It is an addressable spatial frequency band in a continuous vertical depth stack through which energy fields saturate.
+In Grove v9, the spatial field is organized across a continuous 2D coordinate grid extended into depth via an unbounded stack of **Spatial Layers**. As defined in original architectural specifications (`Grove - Layers.txt`, `Grove - Field ledger.txt`, and [ADR-001](file:///C:/dev/grove-v9/docs/specs/spatial-grid/ADR-001-Spatial-Grid-Plane-Architecture.md)), a Spatial Layer is NOT a destructive container or isolated document tab. It is an addressable spatial frequency band in a continuous vertical depth stack through which energy fields saturate.
 
 ```
 Spatial Layer Stack Continuum Architecture
@@ -48,7 +48,7 @@ B02     StackIndex = -1  Inactive       Deep Below-Base / Heatmaps      Grid Cel
 
 Layer labels provide human-readable, fixed reference tokens that reflect the relative origin of creation relative to Base Layer `01`. Labels are formatted according to strict formatting rules:
 
-- **Base Layer Anchor**: Fixed label `01`. Permanent anchor created at workspace instantiation. Cannot be removed or re-labeled.
+- **Base Layer Anchor**: Fixed label `01`. Permanent anchor created when the spatial field is initialized. Cannot be removed or re-labeled.
 - **Above-Base Layers**: Minted with two-digit zero-padded positive integers (`02`, `03`, `04`, $\dots$, `99`, `100`).
 - **Below-Base Layers**: Minted with prefix `B` followed by two-digit zero-padded positive integers (`B01`, `B02`, `B03`, $\dots$, `B99`).
 
@@ -244,7 +244,7 @@ using SkiaSharp;
 using Grove.SpatialLayers.Architecture;
 
 /// <summary>
-/// Custom Avalonia Skia rendering operator executing layered spatial canvas draw commands.
+/// Custom Avalonia Skia rendering operator executing Grid Layer-aware canvas draw commands.
 /// </summary>
 public sealed class SpatialLayerCanvasRenderOperation : ICustomDrawOperation
 {

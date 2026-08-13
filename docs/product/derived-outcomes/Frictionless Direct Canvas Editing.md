@@ -8,7 +8,7 @@ tags: [grove, derived-outcome, direct-canvas-editing, armed-cursor]
 # Product Outcome: Frictionless Direct Canvas Editing
 
 > **Plain-English Human-Behavior Statement**:
-> "I can manipulate, resize, copy, and move items across my workspace using simple single-key gestures without dealing with complex toolbar menus."
+> "I can manipulate, resize, copy, and move items across my spatial field using simple single-key gestures without dealing with complex toolbar menus."
 
 ---
 

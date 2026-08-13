@@ -19,20 +19,20 @@ verification: "PARTIAL — FlashSweepDrawOperation and Plane 2 row animation are
 
 As specified in `docs/design-system/00-foundations/Motion.md` and [ADR-032](file:///C:/dev/grove-v9/docs/specs/hud-system/ADR-032-Spatial-Layer-Manager-And-Navigation.md), Grove v9 motion exists exclusively to confirm actions, carry objects, or settle surfaces. Motion that decorates, entertains, or delays user operation is strictly forbidden.
 
-When a user creates or inserts a new spatial layer (via HUD `LayerManager` Slate, hotkeys `Ctrl+Shift+N`, or contextual actions), the system must acknowledge the addition instantly across two visual planes:
+When a user creates or inserts a new spatial layer (via the Layer Manager overlay, hotkeys `Ctrl+Shift+N`, or contextual actions), the system must acknowledge the addition instantly across two visual planes:
 1. **Plane 0 (Spatial Grid Canvas)**: Executes a 2D radial flash sweep and aura pulse animation across the grid cells governed by `--d-sweep` (`480ms`). The sweep radiates outward from the spatial viewport center (or insertion origin) and dissipates without mutating underlying content state.
 2. **Plane 2 (HUD Overlay Plane)**: Executes a vertical sliding insertion and height expansion animation inside the `LayerManager` stack list governed by `--d-place` (`280ms`) with `--overshoot` easing.
 
 ```
                           LAYER CREATION FEEDBACK PIPELINE
   +-----------------------------------------------------------------------------------+
-  | User Action: Create / Insert Layer (Hotkey, Slate Menu, Context)                  |
+  | User Action: Create / Insert Layer (Hotkey, Overlay Menu, Context)                |
   +-----------------------------------------------------------------------------------+
                                             |
                     +-----------------------+-----------------------+
                     |                                               |
                     v                                               v
-     Plane 0: Skia Canvas Sweep                     Plane 2: LayerManager Slate Insertion
+     Plane 0: Skia Canvas Sweep                     Plane 2: Layer Manager Overlay Insertion
   +-----------------------------------+           +-----------------------------------+
   | - Duration: --d-sweep (480ms)     |           | - Duration: --d-place (280ms)     |
   | - Curve: --ease                   |           | - Curve: --overshoot              |
@@ -60,7 +60,7 @@ When a user creates or inserts a new spatial layer (via HUD `LayerManager` Slate
 | `--d-press` | `90ms` | Pointer-down button acknowledgement | `--ease` | Layer creation keypress or button push feedback. |
 | `--d-fade` | `120ms` | Surface appearance / dismissal | `--ease` | Background aura highlights & selection outline fade. |
 | `--d-swap` | `160ms` | Form exchange in place | `--ease` | Layer label token reordering & label updates. |
-| `--d-exit` | `200ms` | Removed layer row collapse | `--ease` | Destructive removal of a layer row from Slate stack. |
+| `--d-exit` | `200ms` | Removed layer row collapse | `--ease` | Destructive removal of a layer row from the Layer Manager stack. |
 | `--d-place` | `280ms` | Arrival & insertion confirmation | `--overshoot` | Height expansion of newly inserted layer row. |
 | `--d-sweep` | `480ms` | Radial flash sweep & aura ripple | `--ease` | Spatial canvas visual wave expanding across Plane 0. |
 
@@ -145,7 +145,7 @@ if (AccessibilitySettings.PrefersReducedMotion)
 
 1. **Duration Override**: When `PrefersReducedMotion` is `true`, `--d-sweep`, `--d-place`, `--d-fade`, `--d-press`, `--d-exit`, and `--d-swap` return `0ms`.
 2. **Flash Sweep Suppression**: The 480ms radial flash sweep on Plane 0 is bypassed entirely; no expanding rings or flickering sweeps are drawn.
-3. **Instant Insertion**: The newly created layer row in the `LayerManager` Slate appears instantly at full height (`36px`) and target opacity without keyframe interpolation.
+3. **Instant Insertion**: The newly created layer row in the Layer Manager overlay appears instantly at full height (`36px`) and target opacity without keyframe interpolation.
 
 ---
 
@@ -330,7 +330,7 @@ public sealed class LayerFeedbackAnimationController
     }
 
     /// <summary>
-    /// Builds Avalonia Animation for inserting a row into the LayerManager Slate list (Plane 2).
+    /// Builds Avalonia Animation for inserting a row into the Layer Manager overlay list (Plane 2).
     /// </summary>
     public Animation BuildLayerRowInsertionAnimation()
     {

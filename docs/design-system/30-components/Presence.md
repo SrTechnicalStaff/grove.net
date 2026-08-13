@@ -117,19 +117,27 @@ and `0.038`, with each ring's corners taking the next level down. The falloff
 is computed per cell and never drawn as a halo, so the perimeter of a footprint
 stays exact and the light begins at the neighbouring cell.
 
-### Across Layers
+### Across Grid Layers
 
-A Layer other than the current one contributes presence and nothing else: lit
-cells in its content's hue, in the same cell system, summing into the same
-cells. No frame, no text, no outline, and no faint drawing of any kind crosses
-from another Layer. Attenuation is `exp(−layerDistance × 0.55)`. Rendering may
-drop contributions below the declared contribution floor, but Layer depth is
-unbounded: a fifteenth Layer, or a deeper Layer, remains valid data and remains
-navigable. Field visibility never rejects, relocates, or deletes its Content.
+A Grid Layer other than the active Grid Layer contributes presence and nothing
+else: lit cells in its Content's hue, in the same cell system, summing into the
+same cells. No frame, no text, no outline, and no faint drawing of any kind
+crosses from another Grid Layer. Attenuation is `exp(−layerDistance × 0.55)`.
+Rendering may drop contributions below the declared contribution floor, but
+Grid Layer depth is unbounded: a fifteenth Grid Layer, or a deeper Grid Layer,
+remains valid data and remains navigable. Field visibility never rejects,
+relocates, or deletes its Content.
 
-The perimeter ring is drawn only on a region occupied on the current Layer,
-because a contour around a footprint a person cannot reach states an extent
-they cannot act on.
+The perimeter ring is drawn only for Content footprints occupied on the active
+Grid Layer. Cross-Grid-Layer saturation never creates, extends, merges, or
+recolours a perimeter ring. A contour around a footprint a person cannot reach
+states an extent they cannot act on.
+
+The field and the contour are separate products of the computation: the field
+may contain attenuated contributions from every Grid Layer, while the contour
+queries same-Grid-Layer Content geometry and same-Grid-Layer boundary energy
+only. A cross-Grid-Layer contribution can light a cell beneath the active
+Grid Layer without causing an outline to persist there.
 
 ### The occupied region
 

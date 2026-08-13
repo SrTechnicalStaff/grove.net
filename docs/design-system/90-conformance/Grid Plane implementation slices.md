@@ -67,11 +67,11 @@ MemoryRef / intent ───────> HUD surfaces
 
 | Slice | Name | Primary contract owners | Required result |
 | --- | --- | --- | --- |
-| GP-01 | Camera and Grid projection | `domain/camera.ts`, `domain/grid.ts`, `ui/canvas/grid.ts`, `workspace/grid/stage.ts`, camera controls | One pure Camera model and one Grid projection. Lines, Grid world, cell geometry, and Camera input remain focal, finite, and camera-consistent. |
+| GP-01 | Camera and Grid projection | `domain/camera.ts`, `domain/grid.ts`, `ui/canvas/grid.ts`, `grid/stage.ts`, camera controls | One pure Camera model and one Grid projection. Lines, Grid world, cell geometry, and Camera input remain focal, finite, and camera-consistent. |
 | GP-02 | Presence and Layer field | `domain/field.ts`, `ui/canvas/field.ts`, `30-components/Presence.md`, `10-grammar/Layer-depth.md` | Full derived cross-Layer field calculation with hard cell boundaries, bounded visible work, no saturation mutation, and field beneath Content. |
 | GP-03 | Content forms and footprints | `domain/placement.ts`, `domain/image-footprint.ts`, Grid stage, material styles, content commands | Note, Document, and Picture use explicit whole-cell footprints, complete form-specific geometry, intrinsic image proportions, and exact Placement identity. |
 | GP-04 | Cursor and Grid interaction | `Grid-cursor.md`, `Selection.md`, `Placement-preview.md`, `Refusal.md`, cursor, selection, drag, keyboard, command owners | Cursor, selection, marquee, move, resize, placement, refusal, handles, Escape, and Delete follow one Grid interaction grammar. |
-| GP-05 | Distance representation | `Representation-tiers.md`, `Stand-in.md`, `workspace/grid/representations.ts`, Grid content styles | Working, stepped, and stand-in forms use projected cell size, hysteresis, exact footprints, in-place promotion, and no selection pinning. |
+| GP-05 | Distance representation | `Representation-tiers.md`, `Stand-in.md`, `grid/representations.ts`, Grid content styles | Working, stepped, and stand-in forms use projected cell size, hysteresis, exact footprints, in-place promotion, and no selection pinning. |
 | GP-06 | Grid persistence and plane handoff | Grid outcomes, Layer commands, history, persistence, surface seam, Grid QA | Camera/view persistence, Layer traversal, history, transfer, source handoff, and return behavior preserve Grid ownership and plane isolation. |
 
 ## Slice boundaries

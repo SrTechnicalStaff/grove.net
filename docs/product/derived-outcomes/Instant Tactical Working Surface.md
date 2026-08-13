@@ -14,7 +14,7 @@ tags: [grove, derived-outcome, tactical-working-surface, slate-overlay]
 
 ## 1. Behavior Change Description
 
-When working across large visual canvasses, opening a document for deep editing often requires zooming the entire canvas camera into a tight view, losing sight of surrounding materials, or opening separate window tabs that break the spatial workspace context.
+When working across large visual canvasses, opening a document for deep editing often requires zooming the entire canvas camera into a tight view, losing sight of surrounding materials, or opening separate window tabs that break the spatial-field context.
 
 With instant tactical working surface:
 - Double-clicking any item on the spatial surface immediately brings up a clean writing slate fixed to the screen viewport.
@@ -32,8 +32,8 @@ With instant tactical working surface:
 
 ## 3. Product Architecture Mapping
 
-- **Core Primitives**: `Slate`, `Content`, `Grid`.
+- **Core Primitives**: `Writing Slate`, `Memory Slate`, `Gallery Slate`, `Content`, `Grid`.
 - **System Mechanics**:
-  - **Viewport-Fixed HUD Overlay**: Slates occupy Plane 2 (HUD Plane) at fixed screen coordinates, leaving Plane 0 (Grid) intact.
+  - **Viewport-Fixed HUD Overlay**: Writing Slate, Memory Slate, and Gallery Slate occupy Plane 2 (HUD Plane) at fixed screen coordinates, leaving Plane 0 (Grid) intact.
   - **Synchronous Persistence**: Edits made inside the slate update underlying memory objects and disk files synchronously.
   - **Instant Focus Return**: Dismissing slate returns focus immediately to grid camera navigation.

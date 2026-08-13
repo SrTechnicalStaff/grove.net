@@ -12,7 +12,7 @@ date: 2026-08-11
 ## Behavior Scenarios
 
 ### Vertical Layer Alignment
-Placements on Layer 1 (Information) and Layer 2 (HUD) maintain identical 2D spatial cell coordinates relative to Layer 0 (Grid Plane).
+Placements on Plane 1 (Information) and Plane 2 (HUD) maintain identical 2D spatial cell coordinates relative to Plane 0 (Grid Plane).
 
 ## Mapping
 - **Domain Primitives**: `Layer.md`, `Grid.md`

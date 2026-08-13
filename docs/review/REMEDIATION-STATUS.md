@@ -25,11 +25,25 @@ partial after cross-referencing the ADRs.
 - Perimeter rendering now emits only exposed edges (no interior cross-lines),
   annotation metadata records the ADR qualification thresholds, and invalid
   resize attempts show a discrete refusal hatch/strip.
-- Memory payload extraction is behind `GridContentMemoryPayloadAdapter`; the
-  memory version delta now uses a Myers shortest-edit path; spatial-index
-  viewport queries and asynchronous anchor YAML persistence are wired.
+- Memory is a distinct immutable ledger record from its placed Content
+  instances. Content carries a shared `MemoryId` and an independent `AnchorId`;
+  trace, structured copy/paste, edit, move, resize, layer transfer, and delete
+  paths preserve that distinction. Memory version deltas use a Myers
+  shortest-edit path, spatial anchors index full footprints, and viewport
+  queries use the R-tree/tile-cache seam. Canonical per-record payload
+  persistence, Grid Layer stack restoration, startup hydration, and shutdown
+  flushing are wired.
 - The roadmap and ADR-071 checklist no longer claim that absent implementations
   are complete. RCA files are explicitly historical.
+- The canonical cursor model now has one descriptor resolver for passive,
+  footprint, armed-tool, and drop-preview cursors; recursive LOD is selected
+  from zoom thresholds and the spent trail stores complete world footprints.
+- Pan gesture state is isolated in `CanvasPanInteraction`; the canvas remains
+  the Avalonia adapter that applies camera results and raises product events.
+- Resize geometry mutation is polymorphic on `GridContentItem`, so the canvas
+  no longer reaches into concrete Note, Document, or Image dimension fields.
+- Resize handles now expose the matching native diagonal cursor while hovered
+  and return to the hidden grid cursor everywhere else.
 
 ## Deliberately partial or refused
 
@@ -38,8 +52,8 @@ partial after cross-referencing the ADRs.
   because the Presence contract refuses gradient/halo effects; ADR-061 remains
   conflicting/refused.
 - Standalone Mica hosting, a full Skia GPU pipeline, document page-turn/column
-  controls, image aspect-lock/alignment controls, and the specified resize
-  hatch/cursor affordances remain bounded follow-up work.
+  controls, image aspect-lock/alignment controls, and the specified standalone
+  resize draw-operation seam remain bounded follow-up work.
 - ADR-071's `FlashSweepDrawOperation`/Gaussian sweep is not being introduced:
   it conflicts with the explicit discrete-presence refusal. The current
   discrete insertion feedback is the verified implementation.

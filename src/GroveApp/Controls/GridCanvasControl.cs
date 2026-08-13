@@ -3,11 +3,13 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using GroveApp.DesignSystem;
 using GroveApp.Engine;
@@ -50,13 +52,24 @@ namespace GroveApp.Controls
         public IMemoryVersionTree MemoryVersionTree { get; } = new MemoryVersionTree();
         public MemorySpatialIndex MemorySpatialIndex { get; } = new();
         public IMemoryAnchorStore MemoryAnchorStore { get; } = new MemoryAnchorFileStore();
+        public IMemoryRecordStore MemoryRecordStore { get; } = new MemoryRecordFileStore();
         public string MemoryAnchorFilePath { get; } = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Grove",
             "anchors.yml");
+        public string MemoryRecordDirectory { get; } = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Grove",
+            "memories");
+        public MemoryAnchorService MemoryAnchors { get; }
         public SpatialLayerStack LayerStack { get; } = new SpatialLayerStack();
+        public ISpatialLayerFileStore LayerStore { get; } = new SpatialLayerFileStore();
+        public string LayerStateFilePath { get; } = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Grove",
+            "grid-layers.json");
         public LayerActivationManager LayerActivation { get; }
-        public ToolArmingStateMachine Arming { get; }
+        public IToolArmingService Arming { get; }
         public LayerFeedbackAnimationController LayerFeedback { get; } = new();
 
         public ExternalDragDropHandler DragDropHandler { get; private set; }
@@ -177,6 +190,9 @@ namespace GroveApp.Controls
         private TimeSpan _lastAnimationTimestamp;
         private int _knownLayerCount;
         private DateTime _placementRejectedUntilUtc;
+        private bool _contentHydrated;
+        private bool _layerStateHydrated;
+        private readonly SemaphoreSlim _layerPersistenceGate = new(1, 1);
 
         public event Action<GridContentItem>? ItemSelected;
         public event Action<GridNote>? NoteSelected;
@@ -188,6 +204,7 @@ namespace GroveApp.Controls
         public event Action<GridContentItem, ArmableContentType>? ArmedItemPlaced;
         public event Action<HudPerformanceSnapshot>? PerformanceChanged;
         public event Action<Exception>? MemoryAnchorPersistenceFailed;
+        public event Action<Exception>? LayerPersistenceFailed;
         public event Action<Exception>? PreferencePersistenceFailed;
 
         public GridCanvasControl()
@@ -201,6 +218,16 @@ namespace GroveApp.Controls
             _viewPreferences = new GridViewPreferenceStore();
             _viewPreferences.PersistenceFailed += exception => PreferencePersistenceFailed?.Invoke(exception);
             GridLinesVisible = _viewPreferences.LoadLinesVisible();
+            MemoryAnchors = new MemoryAnchorService(
+                MemoryLedger,
+                MemoryVersionTree,
+                MemorySpatialIndex,
+                MemoryAnchorStore,
+                MemoryAnchorFilePath,
+                LayerGuid,
+                MemoryRecordStore,
+                MemoryRecordDirectory);
+            MemoryAnchors.PersistenceFailed += exception => MemoryAnchorPersistenceFailed?.Invoke(exception);
 
             LayerActivation = new LayerActivationManager(LayerStack);
             _selectionService.SelectionChanged += OnSelectionChanged;
@@ -234,9 +261,8 @@ namespace GroveApp.Controls
                 {
                     if (item.LayerId == fromLayerId)
                     {
-                        RemoveMemoryAnchor(item);
                         item.LayerId = toLayerId;
-                        AddMemoryAnchor(item);
+                        MemoryAnchors.UpdatePlacement(item);
                     }
                 }
                 RefreshFieldLedger();
@@ -260,7 +286,6 @@ namespace GroveApp.Controls
 
             ClipboardService = new NativeClipboardService(() => TopLevel.GetTopLevel(this)?.Clipboard);
 
-            SeedSampleData();
             RefreshCursorDescriptor(new Point(0, 0));
             SizeChanged += OnCanvasSizeChanged;
         }
@@ -276,23 +301,169 @@ namespace GroveApp.Controls
             InvalidateVisual();
         }
 
-        private void SeedSampleData()
-        {
-            AddItem(new GridNote(0, 0, "# Field Ledger\n\n> Spatial grid canvas with **high-DPI** subpixel typography.\n\n- Inline `code` & <u>underline</u> & <del>strikethrough</del>\n- H<sub>2</sub>O and E=mc<sup>2</sup> formulas", NoteColor.Violet, isAnchored: true));
-            AddItem(new GridNote(3, 1, "## Code Engine Parity\n\n```cs\npublic class GridEngine {\n    public string Name { get; set; } = \"Grove\";\n    public bool IsActive() => true;\n}\n```", NoteColor.Clay));
-            AddItem(new GridNote(-2, 3, "### Spacetime Grid\n\n1. **Zero** global overhead\n2. [Primary signal](#E8B964) status\n3. <i>Crisp</i> Inter & Consolas", NoteColor.SlateBlue));
-            AddItem(new GridDocument(-4, -1, 2, 2, "Architecture Manifesto", "# Grove Architectural Principles\n\nContinuous spatial grid plane acting as Plane 0. Enforces physical paper proportions, whole-cell integral footprints, deterministic page texture rules, and multi-column AST text pagination."));
-        }
-
-        protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+        protected override async void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
         {
             base.OnAttachedToVisualTree(e);
             _topLevel = TopLevel.GetTopLevel(this);
 
             DragDropHandler.Attach(this);
 
+            if (!_contentHydrated)
+            {
+                _contentHydrated = true;
+                if (!_layerStateHydrated)
+                {
+                    _layerStateHydrated = true;
+                    await RestoreLayerStateAsync();
+                }
+                await RestorePersistedContentAsync();
+            }
+
             RefreshFieldLedger();
             RequestNextAnimationFrame();
+        }
+
+        private async Task RestoreLayerStateAsync()
+        {
+            try
+            {
+                SpatialLayerStackState? state = await LayerStore.LoadAsync(LayerStateFilePath).ConfigureAwait(true);
+                if (state is not null)
+                {
+                    LayerStack.ImportState(state);
+                }
+            }
+            catch (Exception exception)
+            {
+                LayerPersistenceFailed?.Invoke(exception);
+            }
+        }
+
+        public Task FlushLayerStateAsync() => PersistLayerStateAsync(LayerStack.ExportState());
+
+        private void PersistLayerState()
+        {
+            _ = PersistLayerStateAsync(LayerStack.ExportState());
+        }
+
+        private async Task PersistLayerStateAsync(SpatialLayerStackState state)
+        {
+            await _layerPersistenceGate.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                await LayerStore.SaveAsync(LayerStateFilePath, state).ConfigureAwait(false);
+            }
+            catch (Exception exception)
+            {
+                LayerPersistenceFailed?.Invoke(exception);
+            }
+            finally
+            {
+                _layerPersistenceGate.Release();
+            }
+        }
+
+        private async Task RestorePersistedContentAsync()
+        {
+            try
+            {
+                IReadOnlyList<MemoryRecord> records = await MemoryAnchors.HydrateAsync().ConfigureAwait(true);
+                Dictionary<Guid, MemoryRecord> recordsById = records.ToDictionary(record => record.MemoryId);
+
+                foreach (MemoryAnchor anchor in MemoryAnchors.ActiveAnchors)
+                {
+                    if (!recordsById.TryGetValue(anchor.MemoryId, out MemoryRecord? record))
+                    {
+                        continue;
+                    }
+
+                    GridContentItem? restored = CreatePersistedContent(record, anchor);
+                    if (restored is not null && Items.All(item => item.Id != restored.Id))
+                    {
+                        Items.Add(restored);
+                    }
+                }
+
+            }
+            catch (Exception exception)
+            {
+                MemoryAnchorPersistenceFailed?.Invoke(exception);
+            }
+        }
+
+        private GridContentItem? CreatePersistedContent(MemoryRecord record, MemoryAnchor anchor)
+        {
+            int layerId = ResolveLayerId(anchor.LayerId);
+            string contentType = anchor.ContentType;
+            GridContentItem? item;
+
+            if (string.Equals(contentType, ContentKind.Document.ToString(), StringComparison.OrdinalIgnoreCase))
+            {
+                item = new GridDocument(
+                    anchor.CellX,
+                    anchor.CellY,
+                    Math.Clamp(anchor.CellWidth, 2, 8),
+                    Math.Clamp(anchor.CellHeight, 2, 8),
+                    anchor.ContextLabel,
+                    record.GetUtf8Payload(),
+                    isAnchored: true,
+                    layerId);
+            }
+            else if (string.Equals(contentType, ContentKind.Image.ToString(), StringComparison.OrdinalIgnoreCase) ||
+                     record.PayloadKind == MemoryPayloadKind.BinaryImage)
+            {
+                string payloadPath = Path.Combine(MemoryRecordDirectory, $"{record.MemoryId:N}.bin");
+                if (!File.Exists(payloadPath))
+                {
+                    return null;
+                }
+
+                using FileStream stream = File.OpenRead(payloadPath);
+                Bitmap bitmap = new(stream);
+                GridImage image = new(
+                    anchor.CellX,
+                    anchor.CellY,
+                    payloadPath,
+                    bitmap.PixelSize.Width,
+                    bitmap.PixelSize.Height,
+                    isAnchored: true,
+                    layerId);
+                image.LoadedBitmap = bitmap;
+                image.ResizeTo(new SpatialRegion(anchor.CellX, anchor.CellY, anchor.CellWidth, anchor.CellHeight));
+                item = image;
+            }
+            else
+            {
+                GridNote note = new(
+                    anchor.CellX,
+                    anchor.CellY,
+                    record.GetUtf8Payload(),
+                    NoteColor.Violet,
+                    isAnchored: true,
+                    layerId);
+                note.ResizeTo(new SpatialRegion(anchor.CellX, anchor.CellY, anchor.CellWidth, anchor.CellHeight));
+                item = note;
+            }
+
+            item.Id = string.IsNullOrWhiteSpace(anchor.ContentId)
+                ? item.Id
+                : anchor.ContentId;
+            item.MemoryId = record.MemoryId;
+            item.AnchorId = anchor.AnchorId;
+            return item;
+        }
+
+        private int ResolveLayerId(Guid layerGuid)
+        {
+            foreach (SpatialLayerModel layer in LayerStack.Layers)
+            {
+                if (LayerGuid(layer.ZIndex) == layerGuid)
+                {
+                    return layer.ZIndex;
+                }
+            }
+
+            return 0;
         }
 
         protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -448,7 +619,7 @@ namespace GroveApp.Controls
             }
 
             FieldEngine.ActiveLayerId = LayerStack.ActiveLayerId;
-            var visibleBounds = Camera.GetVisibleCellBounds(Bounds.Size, CellSize);
+            var visibleBounds = Camera.GetFieldCellBounds(Bounds.Size, CellSize);
             int minCellX = visibleBounds.minX, maxCellX = visibleBounds.maxX;
             int minCellY = visibleBounds.minY, maxCellY = visibleBounds.maxY;
             var visibleItems = Items
@@ -715,70 +886,132 @@ namespace GroveApp.Controls
             RefreshFieldLedger();
         }
 
-        private void EnsureMemoryRecord(GridContentItem item, bool forceNewVersion = false)
+        public bool TryTraceToActiveLayer(GridContentItem source, out GridContentItem? tracedContent)
         {
-            if (item.MemoryId.HasValue && !forceNewVersion)
+            ArgumentNullException.ThrowIfNull(source);
+            tracedContent = null;
+
+            if (!TryTraceSelectionToActiveLayer(new[] { source }, out IReadOnlyList<GridContentItem> tracedContents))
             {
-                AddMemoryAnchor(item);
-                return;
+                return false;
             }
 
-            Guid? parentId = forceNewVersion ? item.MemoryId : null;
-            MemoryPayloadKind payloadKind = GridContentMemoryPayloadAdapter.GetKind(item);
-            byte[] payload = GridContentMemoryPayloadAdapter.ReadPayload(item);
-            MemoryRecord record = MemoryLedger.AppendMemory(payloadKind, payload, parentId);
-            MemoryVersionTree.AddVersionNode(record);
-            RemoveMemoryAnchor(item);
-            item.MemoryId = record.MemoryId;
-            AddMemoryAnchor(item);
+            tracedContent = tracedContents[0];
+            return true;
         }
 
-        private void AddMemoryAnchor(GridContentItem item)
+        public bool TryTraceSelectionToActiveLayer(
+            IReadOnlyList<GridContentItem> sources,
+            out IReadOnlyList<GridContentItem> tracedContents)
         {
-            if (!item.MemoryId.HasValue)
+            ArgumentNullException.ThrowIfNull(sources);
+            tracedContents = Array.Empty<GridContentItem>();
+            if (sources.Count == 0 || sources.Any(source => source is null || !Items.Contains(source)))
             {
-                return;
+                return false;
             }
 
-            var anchor = new MemoryAnchor
+            if (sources.Any(source => source is GridImage image &&
+                                      (string.IsNullOrWhiteSpace(image.FilePath) || !File.Exists(image.FilePath))))
             {
-                AnchorId = item.MemoryId.Value,
-                MemoryId = item.MemoryId.Value,
-                LayerId = LayerGuid(item.LayerId),
-                CellX = item.CellX,
-                CellY = item.CellY,
-                ContextLabel = item.Id,
-                CreatedAtTicks = DateTime.UtcNow.Ticks
-            };
-            MemorySpatialIndex.Insert(anchor);
-            PersistMemoryAnchors();
+                return false;
+            }
+
+            int targetLayerId = LayerStack.ActiveLayerId;
+            SpatialLayer targetLayer = LayerStack.GetLayer(targetLayerId);
+            if (targetLayer.IsLocked || !targetLayer.IsVisible)
+            {
+                return false;
+            }
+
+            var plannedRegions = new List<SpatialRegion>(sources.Count);
+            foreach (GridContentItem source in sources)
+            {
+                var region = new SpatialRegion(source.CellX, source.CellY, source.CellWidth, source.CellHeight);
+                if (plannedRegions.Any(region.Intersects))
+                {
+                    return false;
+                }
+
+                plannedRegions.Add(region);
+            }
+
+            bool createdTargetLayer = sources.Any(source => source.LayerId == targetLayerId);
+            if (createdTargetLayer)
+            {
+                int sourceZIndex = LayerStack.GetZIndexForLayerId(targetLayerId);
+                LayerStack.InsertLayerAbove(sourceZIndex);
+                targetLayerId = LayerStack.ActiveLayerId;
+            }
+
+            if (!createdTargetLayer)
+            {
+                foreach (GridContentItem source in sources)
+                {
+                    if (!IsRegionFree(
+                            new CellCoordinate(source.CellX, source.CellY),
+                            source.CellWidth,
+                            source.CellHeight,
+                            ignoreItem: null,
+                            layerId: targetLayerId))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            var created = new List<GridContentItem>(sources.Count);
+            try
+            {
+                foreach (GridContentItem source in sources)
+                {
+                    created.Add(ContentInstanceFactory.CreateTrace(source, targetLayerId));
+                }
+
+                foreach (GridContentItem trace in created)
+                {
+                    AddItem(trace);
+                }
+            }
+            catch
+            {
+                foreach (GridContentItem trace in created.Where(item => Items.Contains(item)).ToArray())
+                {
+                    RemoveItem(trace);
+                }
+
+                foreach (GridContentItem trace in created.Where(item => !Items.Contains(item)))
+                {
+                    if (trace is IDisposable disposable)
+                    {
+                        disposable.Dispose();
+                    }
+                }
+
+                throw;
+            }
+
+            SelectItems(created);
+            tracedContents = created;
+            InvalidateVisual();
+            return true;
+        }
+
+        private void EnsureMemoryRecord(GridContentItem item, bool forceNewVersion = false)
+        {
+            if (forceNewVersion)
+            {
+                MemoryAnchors.UpdatePayload(item);
+            }
+            else
+            {
+                MemoryAnchors.Attach(item);
+            }
         }
 
         private void RemoveMemoryAnchor(GridContentItem item)
         {
-            if (item.MemoryId is Guid memoryId)
-            {
-                MemorySpatialIndex.Remove(memoryId, out _);
-                PersistMemoryAnchors();
-            }
-        }
-
-        private void PersistMemoryAnchors()
-        {
-            MemoryAnchor[] snapshot = MemorySpatialIndex.Snapshot();
-            _ = PersistMemoryAnchorsAsync(snapshot);
-        }
-
-        private async Task PersistMemoryAnchorsAsync(MemoryAnchor[] snapshot)
-        {
-            try
-            {
-                await MemoryAnchorStore.SaveAsync(MemoryAnchorFilePath, snapshot).ConfigureAwait(false);
-            }
-            catch (Exception exception)
-            {
-                MemoryAnchorPersistenceFailed?.Invoke(exception);
-            }
+            MemoryAnchors.Detach(item);
         }
 
         private static Guid LayerGuid(int layerId) => new(layerId, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -1072,9 +1305,8 @@ namespace GroveApp.Controls
             {
                 if (_resizingItem != null && _resizeCandidateIsValid)
                 {
-                    RemoveMemoryAnchor(_resizingItem);
                     _resizingItem.ResizeTo(_resizeCandidateFootprint);
-                    AddMemoryAnchor(_resizingItem);
+                    MemoryAnchors.UpdatePlacement(_resizingItem);
                     RefreshFieldLedger();
                 }
                 _isResizingItem = false;
@@ -1108,8 +1340,7 @@ namespace GroveApp.Controls
                         item.CellY,
                         item.CellWidth,
                         item.CellHeight));
-                    RemoveMemoryAnchor(item);
-                    AddMemoryAnchor(item);
+                    MemoryAnchors.UpdatePlacement(item);
                 }
 
                 if (sourceFootprints.Count > 0)
@@ -1299,6 +1530,12 @@ namespace GroveApp.Controls
             }
             return list;
         }
+
+        public IReadOnlyList<GridContentItem> GetMemoryRepresentatives() =>
+            Items
+                .GroupBy(item => item.MemoryId ?? Guid.Empty)
+                .Select(group => group.First())
+                .ToArray();
 
         public bool IsToolArmed => Arming.IsArmed;
 
@@ -1550,7 +1787,7 @@ namespace GroveApp.Controls
             if (w <= 0 || h <= 0) return;
             context.FillRectangle(Colors.SurfaceGridBrush, new Rect(Bounds.Size));
 
-            var visibleBounds = Camera.GetVisibleCellBounds(Bounds.Size, CellSize);
+            var visibleBounds = Camera.GetFieldCellBounds(Bounds.Size, CellSize);
             int minCellX = visibleBounds.minX, maxCellX = visibleBounds.maxX;
             int minCellY = visibleBounds.minY, maxCellY = visibleBounds.maxY;
 
@@ -1653,6 +1890,7 @@ namespace GroveApp.Controls
 
         private void OnLayerStackChanged()
         {
+            PersistLayerState();
             int currentCount = LayerStack.Layers.Count;
             if (currentCount > _knownLayerCount)
             {

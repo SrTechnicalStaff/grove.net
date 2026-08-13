@@ -164,7 +164,7 @@ inner edge, the Grid cursor's ring.
 An inset shadow with a blur radius is refused everywhere: an inner shadow is a
 carved recess, and Grove has no recesses.
 
-## Layering order
+## Plane order
 
 Order is fixed. A component does not choose its band; its class does.
 
@@ -196,20 +196,20 @@ Within one floating surface, bottom to top:
 
 Across planes, bottom to top:
 
-| Band | Contents | Reason |
+| Plane | Contents | Reason |
 | --- | --- | --- |
-| 1 | The Grid plane and everything on it. | The Information layer exists above the Grid and the Grid does not know it exists. |
+| 1 | The Grid Plane and everything on it. | The Information Plane exists above the Grid and the Grid does not know it exists. |
 | 2 | Information plane surfaces. | They are locally coordinated to Grid content and must not cover the composed Grid furniture. |
 | 3 | The HUD. | A Slate is composed by its host and always outranks a surface floating beside Content. |
-| 4 | Menus and flyouts inside their owning plane. | Open order is resolved inside the plane band; no Information surface may promote above the HUD. |
+| 4 | Menus and flyouts inside their owning plane. | Open order is resolved inside the plane tier; no Information surface may promote above the HUD. |
 
-Where two states would draw the same region, `States.md` decides. These bands
+Where two states would draw the same region, `States.md` decides. These planes
 order parts and surfaces, not states.
 
-Bands are not adjustable per component. A component that needs to escape its
-band has the wrong surface class, and the class is corrected first. Opening an
-Information surface after a Slate never raises the Information band above the
-HUD band.
+Planes are not adjustable per component. A component that needs to escape its
+plane has the wrong surface class, and the class is corrected first. Opening an
+Information surface after a Slate never raises the Information plane above the
+HUD plane.
 
 ## One scene
 
@@ -240,7 +240,7 @@ Refused in every form:
 - A dimmed or darkened Grid behind a Slate, a menu, an editor, a viewer, a
   reading surface, or a capture surface.
 - A blurred or desaturated Grid behind anything.
-- An invisible full-viewport layer that swallows pointer events, because the
+- An invisible full-viewport overlay that swallows pointer events, because the
   Grid behind must stay usable and not merely lit.
 - Dimming one pane to emphasise another, dimming unselected cards to emphasise a
   selected one, or dimming a picture to show that it is chosen.
@@ -290,7 +290,7 @@ at all, Grove carries none either.
 - `docs/raw/original-notes/Grove - Layers.txt` — the Grid is 2D; depth is
   presence summed across Layers.
 - `docs/raw/original-notes/Grove - information layer.txt` — the Information
-  layer sits above the Grid and the Grid does not know it exists.
+  Plane sits above the Grid and the Grid does not know it exists.
 - `docs/design_catalogue/src/00-design-language.html` — borders contain,
   shadows separate, never a glow.
 - `docs/design_catalogue/src/grid-plane/05-presence-fields.html` — cells, not

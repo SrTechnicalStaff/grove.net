@@ -23,6 +23,18 @@ namespace GroveApp.Engine
         int MigratedItemCount,
         string ErrorReason);
 
+    public sealed record SpatialLayerState(
+        int Id,
+        string StableLabel,
+        string Name,
+        bool IsVisible,
+        bool IsLocked,
+        string ColorHex);
+
+    public sealed record SpatialLayerStackState(
+        IReadOnlyList<SpatialLayerState> Layers,
+        int ActiveLayerId);
+
     public sealed record SpatialLayer(
         int Id,
         string StableLabel,
@@ -60,7 +72,7 @@ namespace GroveApp.Engine
             public string Name { get; set; }
             public bool IsVisible { get; set; } = true;
             public bool IsLocked { get; set; } = false;
-            public string ColorHex { get; }
+            public string ColorHex { get; set; }
 
             public InternalLayer(int id, string stableLabel, string name, string colorHex)
             {
@@ -102,6 +114,68 @@ namespace GroveApp.Engine
         SpatialLayerModel ISpatialLayerStateService.ActiveLayer => GetModelForId(_activeLayerId);
 
         public IReadOnlyList<SpatialLayerModel> Layers => BuildModels();
+
+        public SpatialLayerStackState ExportState() => new(
+            _layers.Select(layer => new SpatialLayerState(
+                layer.Id,
+                layer.StableLabel,
+                layer.Name,
+                layer.IsVisible,
+                layer.IsLocked,
+                layer.ColorHex)).ToArray(),
+            _activeLayerId);
+
+        public bool ImportState(SpatialLayerStackState state)
+        {
+            ArgumentNullException.ThrowIfNull(state);
+            SpatialLayerState? ground = state.Layers.FirstOrDefault(layer => layer.Id == _groundLayer.Id);
+            if (ground is null || state.Layers.Count == 0 || state.Layers.Select(layer => layer.Id).Distinct().Count() != state.Layers.Count)
+            {
+                return false;
+            }
+
+            _layers.Clear();
+            _groundLayer.Name = string.IsNullOrWhiteSpace(ground.Name) ? "Main Ground Layer" : ground.Name;
+            _groundLayer.IsVisible = ground.IsVisible;
+            _groundLayer.IsLocked = false;
+            _groundLayer.ColorHex = string.IsNullOrWhiteSpace(ground.ColorHex) ? Colors.LayerFillHex : ground.ColorHex;
+
+            foreach (SpatialLayerState saved in state.Layers)
+            {
+                if (saved.Id == _groundLayer.Id)
+                {
+                    _layers.Add(_groundLayer);
+                    continue;
+                }
+
+                _layers.Add(new InternalLayer(
+                    saved.Id,
+                    string.IsNullOrWhiteSpace(saved.StableLabel) ? FormatLayerLabel(saved.Id) : saved.StableLabel,
+                    string.IsNullOrWhiteSpace(saved.Name) ? "New Layer" : saved.Name,
+                    string.IsNullOrWhiteSpace(saved.ColorHex) ? LayerColor(saved.Id) : saved.ColorHex)
+                {
+                    IsVisible = saved.IsVisible,
+                    IsLocked = saved.IsLocked
+                });
+            }
+
+            _nextId = Math.Max(1, _layers.Max(layer => layer.Id) + 1);
+            _nextUpperLabel = _layers
+                .Where(layer => int.TryParse(layer.StableLabel, out _))
+                .Select(layer => int.Parse(layer.StableLabel))
+                .DefaultIfEmpty(1)
+                .Max() + 1;
+            _nextLowerLabel = _layers
+                .Where(layer => layer.StableLabel.StartsWith("B", StringComparison.OrdinalIgnoreCase) &&
+                                int.TryParse(layer.StableLabel[1..], out _))
+                .Select(layer => int.Parse(layer.StableLabel[1..]))
+                .DefaultIfEmpty(0)
+                .Max() + 1;
+            _activeLayerId = GetStackIndex(state.ActiveLayerId) >= 0 ? state.ActiveLayerId : _groundLayer.Id;
+            LayerStackChanged?.Invoke();
+            ActiveLayerChanged?.Invoke(GetModelForId(_activeLayerId));
+            return true;
+        }
 
         public string FormatLayerLabel(int zIndex)
         {

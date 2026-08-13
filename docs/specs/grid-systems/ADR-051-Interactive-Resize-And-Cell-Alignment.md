@@ -1,12 +1,12 @@
 ---
-status: "PARTIAL — verified multi-type resize seam"
+status: "PARTIAL — verified multi-type resize and refusal feedback seam"
 ---
 
 # ADR-051: Interactive Resize Engine and Cell Alignment System
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | PARTIAL — verified multi-type resize seam |
+| **Status** | PARTIAL — verified multi-type resize and refusal feedback seam |
 | **Date** | 2026-08-12 |
 | **Area** | Spatial Grid Engine / Transform & Resize Subsystem |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp 3.x |

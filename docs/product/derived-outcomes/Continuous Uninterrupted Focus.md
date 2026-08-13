@@ -31,8 +31,8 @@ With continuous uninterrupted focus:
 
 ## 3. Product Architecture Mapping
 
-- **Core Primitives**: `Content`, `Slate`, `Grid`.
+- **Core Primitives**: `Content`, `Writing Slate`, `Memory Slate`, `Gallery Slate`, `Grid`.
 - **System Mechanics**:
   - **Zero Truncation Rule**: Content never uses `text-overflow: ellipsis` or hidden clipping; overflow generates contiguous pages.
-  - **Slate Overlays**: The writing slate provides a distraction-free editing surface fixed to the viewport while keeping the spatial canvas underneath intact.
+  - **Slate Surfaces**: The Writing Slate provides a focused editing surface fixed to the viewport while keeping the spatial canvas underneath intact.
   - **In-Place Representation**: Documents present clean representative frontmatter and excerpts optimized for spatial reading.

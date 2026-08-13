@@ -30,31 +30,19 @@ This document defines the normative specification for LOD-recursive grid cursor 
 Panning over a 2x2 or 4x4 occupied item causes individual internal 1x1 cells inside the item to flash or blink.
 
 #### Empirical Analysis
-In [GridCanvasControl.cs](file:///C:/dev/grove-v9/src/GroveApp/Controls/GridCanvasControl.cs#L485-L489), cell transition logic registers `(_lastCursorCellX, _lastCursorCellY)` into `SpentCells` whenever the cursor cell coordinate `(cx, cy)` changes:
+The original implementation registered `(_lastCursorCellX, _lastCursorCellY)` into `SpentCells` whenever a base cursor coordinate changed. That was the defect: it made the trail a second, base-cell cursor model. The corrected implementation keeps the previous resolved `CursorDescriptor` and registers its complete world footprint only when that descriptor footprint changes:
 
 ```csharp
-if (cx != _lastCursorCellX || cy != _lastCursorCellY)
-{
-    _cursorRenderModule.RegisterCellTransition(SpentCells, _lastCursorCellX, _lastCursorCellY);
-    _lastCursorCellX = cx;
-    _lastCursorCellY = cy;
-}
+_cursorModel.Apply(resolvedDescriptor);
 ```
 
-In [CursorRenderModule.cs](file:///C:/dev/grove-v9/src/GroveApp/Engine/CursorRenderModule.cs#L40-L50), `RegisterCellTransition` adds `(_lastCursorCellX, _lastCursorCellY)` as a **single 1x1 cell entry**.
+`CanonicalCursorTrailModel.Apply` deposits the previous descriptor's `WorldOrigin` and `WorldExtent`, preserving 44px, 220px, 1100px, content, and armed-tool footprints as one model.
 
-```
-+------------------------------------+
-|  Occupied Note (2x2 Footprint)     |
-|  +----------------+----------------+  <-- Spent Trail registers 1x1
-|  | Cell (0,0) [X] | Cell (1,0)     |      single-cell trail boxes inside
-|  +----------------+----------------+      occupied 2x2 footprint as
-|  | Cell (0,1)     | Cell (1,1)     |      camera pans across cells!
-|  +----------------+----------------+
-+------------------------------------+
-```
+The previous diagram showed four internal 1×1 trail boxes. That diagram is
+intentionally removed: the corrected trail is one world-space rectangle equal
+to the previous descriptor footprint.
 
-Because `RegisterCellTransition` does not verify whether the cell transition occurs inside an occupied item's footprint, every internal cell boundary crossed registers a 1x1 spent cell trail box. [RenderSpentTrail](file:///C:/dev/grove-v9/src/GroveApp/Engine/CursorRenderModule.cs#L55-L73) then fills these individual 1x1 cells with decaying trail ink (`Tokens.InkQuiet * spent.Energy`), producing a flickering effect on individual cells inside the item.
+The descriptor comparison suppresses movement within one occupied footprint. When the pointer leaves it, the full previous footprint is deposited as one world-space trail entity, so internal base-cell boundaries cannot create a second 1x1 cursor trail.
 
 ---
 
@@ -72,17 +60,23 @@ The grid cursor footprint must dynamically scale its cell occupancy to match the
 | \(s < 0.1\)        | Supercell Pitch      | 1100px     | Single Supercell      | 1.0px              |
 
 #### 3.1.2 Footprint Calculation Math
-When hovering over empty canvas space, `CursorRenderModule` calculates cursor geometry based on the active LOD step size:
+When hovering over empty canvas space, `CursorRenderModule` resolves one `CursorDescriptor` from the active grid tier. Camera scale selects the visible tier; the tier pitches themselves remain grid constants:
 
 ```csharp
-public (int startX, int startY, double widthPx, double heightPx) CalculateLODCursorBounds(
+public CursorDescriptor ResolveCursorDescriptor(
     Point worldPt,
     double zoom,
     GridContentItem? targetItem)
 {
     if (targetItem != null)
     {
-        return (targetItem.CellX, targetItem.CellY, targetItem.CellWidth * Tokens.GridCell, targetItem.CellHeight * Tokens.GridCell);
+        return CreateDescriptor(
+            targetItem.CellX * Tokens.GridCell,
+            targetItem.CellY * Tokens.GridCell,
+            targetItem.CellWidth * Tokens.GridCell,
+            targetItem.CellHeight * Tokens.GridCell,
+            CursorFootprintKind.Content,
+            zoom);
     }
 
     double stepSize = zoom switch
@@ -92,9 +86,11 @@ public (int startX, int startY, double widthPx, double heightPx) CalculateLODCur
         _ => Tokens.SupercellPitch     // 1100px
     };
 
-    int cx = (int)Math.Floor(worldPt.X / stepSize);
-    int cy = (int)Math.Floor(worldPt.Y / stepSize);
-    return (cx, cy, stepSize, stepSize);
+    double originX = Math.Floor(worldPt.X / stepSize) * stepSize;
+    double originY = Math.Floor(worldPt.Y / stepSize) * stepSize;
+    return CreateDescriptor(
+        originX, originY, stepSize, stepSize,
+        CursorFootprintKind.MinorGrid, zoom);
 }
 ```
 
@@ -105,7 +101,7 @@ The cursor remains clear, legible, and visually proportional across all zoom sca
 ### 3.2 Footprint-Aware Spent Trail Filtering
 
 #### 3.2.1 Internal Footprint Transition Suppression
-`RegisterCellTransition` must inspect whether both `(_lastCursorCellX, _lastCursorCellY)` and `(currentCellX, currentCellY)` fall within the cell bounds of the same active `GridContentItem`. If both coordinates belong to the same item, spent cell trail registration is suppressed.
+`CanonicalCursorTrailModel.Apply` compares the previous and current resolved descriptor footprints. If their world origin and extent are unchanged, spent trail registration is suppressed.
 
 #### 3.2.2 Item Perimeter Trail Registration
 When transitioning off an item onto empty grid space, the spent trail registers the full item footprint boundary as a single decay entity, preventing boundary flickering.

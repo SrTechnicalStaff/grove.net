@@ -38,11 +38,33 @@ namespace GroveApp.Engine
             or ToolArmingState.ArmedDocument;
     }
 
+    public readonly record struct PlacementCommitResult(
+        bool Succeeded,
+        Guid? MemoryId,
+        CursorPlacementFootprint Footprint,
+        bool ShouldFocusEditor,
+        string? RefusalReason);
+
+    public interface IToolArmingService
+    {
+        ToolArmingState CurrentState { get; }
+        GhostPlacementDescriptor ActiveGhostDescriptor { get; }
+        bool IsArmed { get; }
+        event Action<ToolArmingState>? ArmingStateChanged;
+        event Action<GhostPlacementDescriptor>? GhostPreviewUpdated;
+        event Action? PlacementRejected;
+        void ArmTool(ArmableContentType contentType, CursorDescriptor cursor, int layerId);
+        void Disarm();
+        void UpdateCursorPosition(CursorDescriptor cursor, int layerId);
+        bool TryCommit(out GhostPlacementDescriptor descriptor);
+        void CompletePlacement();
+    }
+
     /// <summary>
     /// Deep state machine for ADR-057. It never creates content and never opens a modal;
     /// callers commit the descriptor through their own placement adapter.
     /// </summary>
-    public sealed class ToolArmingStateMachine
+    public sealed class ToolArmingStateMachine : IToolArmingService
     {
         private readonly Func<CellCoordinate, int, int, int, bool> _isRegionFree;
         private GhostPlacementDescriptor _activeGhost;

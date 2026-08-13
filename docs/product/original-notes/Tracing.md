@@ -1,3 +1,11 @@
+# Historical source note
+
+This note preserves an earlier product exploration. It is not a definition or
+an implementation contract. Its “same content across layers” intent now means
+multiple Content instances referencing one Memory, and its use of “anchor” is
+superseded by the canonical Content-side Anchor definition in
+[`docs/domain/Anchor.md`](../../domain/Anchor.md).
+
 Tracing is the unique method of content placement that takes place when you want the same content across multiple layers. Normally, content exists in one layer, that is how copy/cut/duplicate and paste work. Trace / Tracing is how you move content across multiple layers.
 
 Tracing distinctly involves the information plane. All highlighted content is managed through a state of semi-permanent grouping. When moving from one layer to the next, the content keeps its fixed position on the grid in terms of cell occupancy; collision is detected however the interference, or prevention of placement, does not take place unless the user wants to "drop off" content on said layer, in which case placement collision rules apply. 

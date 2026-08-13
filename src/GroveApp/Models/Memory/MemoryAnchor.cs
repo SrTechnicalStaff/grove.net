@@ -4,7 +4,7 @@ using System.Collections.Immutable;
 namespace GroveApp.Models.Memory;
 
 /// <summary>
-/// Immutable spatial manifestation of a memory on one layer and one grid cell.
+/// Immutable spatial manifestation of a memory on one grid layer and footprint.
 /// </summary>
 public readonly record struct MemoryAnchor
 {
@@ -13,6 +13,10 @@ public readonly record struct MemoryAnchor
     public required Guid LayerId { get; init; }
     public required int CellX { get; init; }
     public required int CellY { get; init; }
+    public int CellWidth { get; init; } = 1;
+    public int CellHeight { get; init; } = 1;
+    public string ContentId { get; init; } = string.Empty;
+    public string ContentType { get; init; } = string.Empty;
     public string ContextLabel { get; init; } = string.Empty;
     public ImmutableDictionary<string, string> ExtendedFrontmatter { get; init; } =
         ImmutableDictionary<string, string>.Empty;
@@ -27,6 +31,8 @@ public readonly record struct MemoryAnchor
         Guid layerId,
         int cellX,
         int cellY,
+        int cellWidth = 1,
+        int cellHeight = 1,
         string contextLabel = "") => new()
         {
             AnchorId = Guid.CreateVersion7(),
@@ -34,6 +40,8 @@ public readonly record struct MemoryAnchor
             LayerId = layerId,
             CellX = cellX,
             CellY = cellY,
+            CellWidth = Math.Max(1, cellWidth),
+            CellHeight = Math.Max(1, cellHeight),
             ContextLabel = contextLabel,
             CreatedAtTicks = DateTime.UtcNow.Ticks
         };

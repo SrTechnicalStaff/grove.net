@@ -38,7 +38,7 @@
                                         VerticalAlignment="Top"
                                         Margin="16" />
 
-        <!-- Named viewport-fixed Slate host: Writing, Memory, or Gallery. -->
-        <controls:NamedSlateOverlay x:Name="NamedSlate" />
+        <!-- Viewport-fixed host for Writing, Memory, or Gallery. -->
+        <controls:SlateHostOverlay x:Name="SlateHost" />
     </controls:ThreePlaneVisualCompositorContainer>
 </fa:AppWindow>

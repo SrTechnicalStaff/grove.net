@@ -29,6 +29,7 @@ public interface IKeybindHost
     void CloseQuickNote();
     void ToggleLayerManager();
     void OpenContextMenuAtCursor();
+    void OpenMemorySlate();
     void ToggleLayerIsolation();
     bool ProcessLayerKeyDown(KeyEventArgs args);
 
@@ -50,6 +51,7 @@ public interface IKeybindHost
     void SelectOnly(GridContentItem item);
     void DeselectAllItems();
     void ToggleAnchorOnSelection();
+    void TraceSelectionToActiveLayer();
     void DeleteSelectedItems();
     void SetSelectedColor(NoteColor color);
     Task CopyItemsAsync(IReadOnlyList<GridContentItem> items);

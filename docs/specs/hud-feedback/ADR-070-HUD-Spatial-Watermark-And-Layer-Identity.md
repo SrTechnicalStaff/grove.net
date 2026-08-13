@@ -16,7 +16,7 @@ status: "PARTIAL — verified watermark and rename seam"
 
 ## 1. Executive Context & Architectural Principles
 
-As established in [ADR-004](file:///C:/dev/grove-v9/docs/specs/spatial-grid/ADR-004-Three-Plane-Visual-Hierarchy.md), [ADR-030](file:///C:/dev/grove-v9/docs/specs/hud-system/ADR-030-Three-Plane-Compositor-Architecture-Validation.md), and [ADR-042](file:///C:/dev/grove-v9/docs/specs/spatial-layers/ADR-042-Spatial-Layer-State-And-Activation.md), Grove v9 presents spatial context through Plane 2 (HUD Slate Plane), which remains fixed to the viewport at `ZIndex = 300` and unscaled by camera affine transformations $T(x,y,s)$.
+As established in [ADR-004](file:///C:/dev/grove-v9/docs/specs/spatial-grid/ADR-004-Three-Plane-Visual-Hierarchy.md), [ADR-030](file:///C:/dev/grove-v9/docs/specs/hud-system/ADR-030-Three-Plane-Compositor-Architecture-Validation.md), and [ADR-042](file:///C:/dev/grove-v9/docs/specs/spatial-layers/ADR-042-Spatial-Layer-State-And-Activation.md), Grove v9 presents spatial context through Plane 2 (HUD overlay plane), which remains fixed to the viewport at `ZIndex = 400` and unscaled by camera affine transformations $T(x,y,s)$.
 
 This ADR specifies the spatial watermark and active layer identity indicator residing in the **bottom-right corner of the HUD Plane**. The spatial watermark fulfills three concurrent runtime roles:
 1. **Product & Environment Anchor**: Provides ambient application context (`GROVE v9`) without distracting from spatial canvas work.
@@ -25,7 +25,7 @@ This ADR specifies the spatial watermark and active layer identity indicator res
 
 ```
 +-----------------------------------------------------------------------------------+
-| Viewport (Plane 2 HUD Overlay, ZIndex = 300)                                      |
+| Viewport (Plane 2 HUD Overlay, ZIndex = 400)                                      |
 |                                                                                   |
 |                                                                                   |
 |                                     +-------------------------------------------+ |
@@ -39,7 +39,7 @@ This ADR specifies the spatial watermark and active layer identity indicator res
 - **Non-Obstructive Pointer Passthrough**: Text blocks and watermark numerals (`GROVE v9`, scale percentage) have `IsHitTestVisible = false` and pass all pointer input directly through to Plane 1 / Plane 0. Only the interactive active layer identity pill captures pointer events.
 - **Strict Viewport Anchoring**: Bounded strictly to the bottom-right viewport cell margin (`Right: 16px`, `Bottom: 16px`), adhering to `--r-sm` corner radius and zero shadow elevation contracts (`docs/design-system/00-foundations/Shape.md`).
 - **Monospaced Structural Typography**: Driven exclusively by `--f-mono` (JetBrains Mono 500), using strict tokenized sizes (`--t-label`, `--t-micro`), tracking steps (`--tr-mono`, `--tr-label`), and ink steps (`--ink-whisper`, `--ink-tertiary`, `--ink-primary`).
-- **Single Active Layer Synchronization**: The watermark active layer identity binds reactively to the `ISpatialLayerStateService.ActiveLayer` state stream. Mutating the layer name in the watermark immediately propagates across the `LayerManager` Slate and Spatial Field Ledger.
+- **Single Active Layer Synchronization**: The watermark active layer identity binds reactively to the `ISpatialLayerStateService.ActiveLayer` state stream. Mutating the layer name in the watermark immediately propagates across the `Layer Manager` overlay and Spatial Field Ledger.
 
 ---
 
@@ -94,7 +94,7 @@ Adhering strictly to `docs/design-system/00-foundations/Tokens.md` and `docs/des
 
 ## 4. Inline Layer Renaming State Machine & Interface
 
-Inline renaming from the HUD watermark allows the user to update active layer identity metadata without opening the full `LayerManager` Slate.
+Inline renaming from the HUD watermark allows the user to update active layer identity metadata without opening the full Layer Manager overlay.
 
 ### 4.1 State Machine Transitions
 
@@ -434,7 +434,7 @@ public sealed class AsyncDelegateCommand(Func<Task> executeAsync) : ICommand
 
 ## 6. Avalonia 11.2.5 Control Implementation
 
-Below is the complete C# Code-Behind and Avalonia Control implementation for `HudSpatialWatermarkControl.cs` which lives on Plane 2 (`ZIndex = 300`).
+Below is the complete C# Code-Behind and Avalonia Control implementation for `HudSpatialWatermarkControl.cs` which lives on Plane 2 (`ZIndex = 400`).
 
 ```csharp
 // File: src/Grove.UI/Controls/HudSpatialWatermarkControl.cs
@@ -537,7 +537,7 @@ public class HudSpatialWatermarkControl : TemplatedControl
             Background="#1C1C20"
             BorderBrush="rgba(234,234,234,0.10)"
             BorderThickness="1"
-            ZIndex="300">
+            ZIndex="400">
         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
             
             <!-- W-02: Brand Token (Pointer Transparent) -->
@@ -619,7 +619,7 @@ public class HudSpatialWatermarkControl : TemplatedControl
 
 ## 7. Verification & Compliance Checklist
 
-- [x] **3-Plane Architecture Validation**: Fixed to Plane 2 Overlay (`ZIndex = 300`), independent of camera affine transform.
+- [x] **3-Plane Architecture Validation**: Fixed to Plane 2 Overlay (`ZIndex = 400`), independent of camera affine transform.
 - [x] **Pointer Hit-Testing**: Brand token and zoom readout pass through input (`IsHitTestVisible = false`); active layer identity pill captures clicks.
 - [x] **Typography & Ink Token Strictness**: JetBrains Mono 500 (`--f-mono`), `--t-label` (11px), `--t-micro` (9px), `--ink-whisper` (0.04), `--ink-tertiary` (0.51), `--k-layer` (`#E2A6C6`).
 - [x] **Inline Renaming Semantics**: Double-click / `F2` trigger, `Enter` commit, `Escape` cancel, duplicate name validation refusal.

@@ -16,7 +16,7 @@ status: "PARTIAL — verified Fluent hints and native dark-mode adapter"
 
 ## 1. Context & Visual Material Architecture
 
-Grove v9 integrates Windows 11 Desktop Window Manager (DWM) glassmorphic materials to establish visual depth hierarchy across window surfaces, floating HUD slates, and popover chrome.
+Grove v9 integrates Windows 11 Desktop Window Manager (DWM) glassmorphic materials to establish visual depth hierarchy across window surfaces, Writing Slate, Memory Slate, Gallery Slate, HUD overlays, and popover chrome.
 
 ### Architectural Directives
 1. **Material Standardization**: Window backgrounds must consume native Windows 11 materials (`Mica`, `MicaAlt`, `DesktopAcrylic`, `InAppAcrylic`) provided by FluentAvalonia `MicaController` and `AcrylicController`.
@@ -34,7 +34,7 @@ Grove v9 integrates Windows 11 Desktop Window Manager (DWM) glassmorphic materia
 | :--- | :--- | :--- | :--- | :--- |
 | **$z = 0$** | Main Grid Root Window | `MicaKind.Base` | `DWMSBT_MAINWINDOW` (`2`) | `#121212` / Solid Dark |
 | **$z = 1$** | Local Editor (`ADR-060`) | `MicaKind.MicaAlt` | `DWMSBT_TABBEDWINDOW` (`4`) | `#1E1E1E` / Semi-Dark |
-| **$z = 2$** | HUD Slates & Toolbars | `AcrylicKind.Desktop` | `DWMSBT_TRANSIENTWINDOW` (`3`) | `ExperimentalAcrylic` |
+| **$z = 2$** | Writing Slate, Memory Slate, Gallery Slate, Layer Manager overlay & Toolbars | `AcrylicKind.Desktop` | `DWMSBT_TRANSIENTWINDOW` (`3`) | `ExperimentalAcrylic` |
 | **$z = 3$** | Context Menus & Popovers | `AcrylicKind.InApp` | N/A (In-App Composition) | `#2A2A2A` / Opaque Inset |
 
 ### 2.2 Mathematical Optical Blur & Tint Formulas
@@ -54,7 +54,7 @@ For elevation steps:
  Elevation z
   z = 0 ──► Main App Shell ──────► Mica Base    (Blur: 10px, Tint Alpha: 0.850)
   z = 1 ──► Local Editor ────────► Mica Alt     (Blur: 20px, Tint Alpha: 0.748)
-  z = 2 ──► HUD Slates ──────────► Desktop Acrylic (Blur: 30px, Tint Alpha: 0.646)
+  z = 2 ──► Slates / HUD overlays ─► Desktop Acrylic (Blur: 30px, Tint Alpha: 0.646)
   z = 3 ──► Context Menus ───────► InApp Acrylic   (Blur: 40px, Tint Alpha: 0.544)
 ```
 

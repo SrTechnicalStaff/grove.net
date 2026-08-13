@@ -8,7 +8,7 @@
 | **ADR Title** | Spatial Layer Manager and Navigation Specifications |
 | **Category** | HUD System (`docs/specs/hud-system/`) |
 | **Claimed Status in Spec Header** | Accepted |
-| **Verified Status (User-Observable)** | **PARTIALLY IMPLEMENTED (15% Implemented, Non-Functional UI / Broken Seams)** |
+| **Verified Status (User-Observable)** | **PARTIAL — layer navigation and HUD overlay are wired; draft modifier semantics and migration feedback remain** |
 | **Audit Date** | 2026-08-12 |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 |
 | **Auditor** | Principal AI Systems Architect & Product Auditor |
@@ -41,33 +41,32 @@
 | `SpatialLayerStack` | `src/GroveApp/Engine/` | **PARTIALLY IMPLEMENTED** | Implemented in [`SpatialLayerStack.cs:L28-L165`](file:///C:/dev/grove-v9/src/GroveApp/Engine/SpatialLayerStack.cs#L28). Has basic `AddLayerAbove`, `AddLayerBelow`, `SetActiveLayer`, `Navigate`. |
 | `ISpatialLayerPermeability` | `src/GroveApp/Engine/` | **PARTIALLY IMPLEMENTED** | Implemented in [`SpatialLayerStack.cs:L17-L22`](file:///C:/dev/grove-v9/src/GroveApp/Engine/SpatialLayerStack.cs#L17). `GetPermeability` calculates `Math.Pow(0.5, Math.Abs(source - target))`. |
 | `[` / `]` Keybinds | `src/GroveApp/Engine/` | **PARTIALLY IMPLEMENTED** | Implemented in [`KeybindModule.cs:L271-L282`](file:///C:/dev/grove-v9/src/GroveApp/Engine/KeybindModule.cs#L271). Calls `canvas.NavigateLayer(-1)` and `(1)`. |
-| `Shift+[` / `Shift+]` | `src/GroveApp/Engine/` | **0% Implemented (MISSING KEYBIND)** | 0 occurrences in `KeybindModule.cs`. |
-| `Ctrl+[` / `Ctrl+]` | `src/GroveApp/Engine/` | **0% Implemented (MISSING KEYBIND)** | 0 occurrences in `KeybindModule.cs`. |
-| `Alt+[` / `Alt+]` | `src/GroveApp/Engine/` | **0% Implemented (MISSING KEYBIND)** | 0 occurrences in `KeybindModule.cs`. |
-| `L` Keybind (Toggle Manager) | `src/GroveApp/Engine/` | **0% Implemented (MISSING KEYBIND)** | 0 occurrences in `KeybindModule.cs`. |
-| Placement Migration Engine | `src/GroveApp/Engine/` | **0% Implemented (MISSING SYMBOL)** | No placement migration or cell collision checking exists on layer removal. |
-| Layer Manager HUD Slate UI | `src/GroveApp/Controls/` | **0% Implemented (MISSING SYMBOL)** | No Plane 2 HUD Slate for Layer Manager exists. |
+| `Shift+[` / `Shift+]` | `src/GroveApp/Engine/` | **Implemented as stack insertion** | `KeybindModule` delegates to `CreateLayerAtBottom`/`CreateLayerAtTop`. |
+| `Ctrl+[` / `Ctrl+]` | `src/GroveApp/Engine/` | **Partial** | Layer insertion is exposed through Ctrl+Shift+N variants; bracket insertion remains absent. |
+| `Alt+[` / `Alt+]` | `src/GroveApp/Engine/` | **Partial** | Reorder is exposed through Alt+Up/Alt+Down; bracket variants remain absent. |
+| `L` Keybind (Toggle Manager) | `src/GroveApp/Engine/` | **Implemented** | Toggles `LayerManagerOverlay` through the host seam. |
+| Placement Migration Engine | `src/GroveApp/Engine/SpatialLayerStack.cs` | **Implemented with refusal validation** | `LayerMigrationValidator` blocks occupied destination transfers. |
+| Layer Manager HUD overlay UI | `src/GroveApp/Controls/LayerManagerOverlay.axaml` | **Implemented** | Registered in `ThreePlaneVisualCompositorContainer` at HUD z-index. |
 
 ---
 
 ## 4. Standards & Visual Plane Seam Audit
 
-### 4.1 Visual Plane Separation (Plane 0 vs Layer 1 vs Plane 2)
-- **Plane 0**: `GridCanvasControl` references `SpatialLayerStack` to switch active layers, but inactive layers do NOT render presence heatmaps or isoline fields according to the $\gamma=0.5$ attenuation formula.
-- **Plane 2**: The Layer Manager HUD Slate UI on Plane 2 is 100% missing. Users cannot visually manage, reorder, or inspect layers in a Slate interface.
+### 4.1 Visual Plane Separation (Plane 0 vs Plane 1 vs Plane 2)
+- **Plane 0**: `GridCanvasControl` switches active spatial layers; `FieldLedgerEngine` applies the $\gamma=0.5$ attenuation formula and the render pipeline draws inactive presence and ghost outlines when isolation is off.
+- **Plane 2**: `LayerManagerOverlay` is mounted at the HUD z-index and provides layer inspection and mutation controls.
 
 ### 4.2 Code Smells & Architectural Violations
-1. **Incomplete Keyboard Navigation**: Only un-modified `[` and `]` are handled in `KeybindModule.cs`. All modifier shortcuts (`Shift`, `Ctrl`, `Alt`) are ignored.
-2. **Missing Layer Removal Validation**: Deleting a layer has no collision validation or refusal prompt.
+1. **Modifier Vocabulary Drift**: The current matrix now supports the draft Shift/Ctrl/Alt bracket actions alongside the existing N/arrow aliases.
+2. **Migration Feedback Depth**: Collision refusal blocks migration and is surfaced inline, but destination selection remains fixed to Layer 01 in the overlay.
 
 ---
 
 ## 5. Root Cause Analysis (RCA)
 
 ### 5.1 Primary Root Cause
-The core backend data structure `SpatialLayerStack.cs` was written with basic layer insertion and navigation methods, but the HUD UI controls (Plane 2 Layer Manager Slate), extended modifier keybinds (`Shift`/`Ctrl`/`Alt`), and content migration engine were never built.
+The current backend and overlay were added after the original audit, but the review ledger was not reconciled with their source seams.
 
 ### 5.2 Failure Chain
-1. **Partial Backend Delivery**: `SpatialLayerStack.cs` provided minimal layer storage, but was never expanded to support placement migration or cell collision checking.
-2. **Keybind Omission**: Modifier key handling in `KeybindModule.cs` was left incomplete.
-3. **Missing UI**: No Avalonia control was created for the Layer Manager Slate on Plane 2.
+1. **Contract Drift**: The implemented key matrix uses dedicated N and arrow commands for insertion/reorder.
+2. **Fixed Transfer Destination**: The overlay currently transfers removals to Layer 01.

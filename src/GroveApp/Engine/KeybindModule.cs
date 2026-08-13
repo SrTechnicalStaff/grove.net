@@ -45,6 +45,12 @@ namespace GroveApp.Engine
                 return true;
             }
 
+            if (combination.Key == Key.M && combination.Modifiers == KeyModifiers.None)
+            {
+                host.OpenMemorySlate();
+                return true;
+            }
+
             if (combination.Key == Key.N && combination.Modifiers == KeyModifiers.None)
             {
                 return host.ArmTool(ArmableContentType.Note);
@@ -193,12 +199,29 @@ namespace GroveApp.Engine
                 return true;
             }
 
+            if (e.Key == Key.M && e.KeyModifiers == KeyModifiers.None)
+            {
+                host.OpenMemorySlate();
+                e.Handled = true;
+                return true;
+            }
+
             if (e.Key == Key.A)
             {
                 var selectedItems = host.GetSelectedItems();
                 if (selectedItems.Count > 0)
                 {
                     host.ToggleAnchorOnSelection();
+                    e.Handled = true;
+                    return true;
+                }
+            }
+
+            if (e.Key == Key.D1 || e.Key == Key.NumPad1)
+            {
+                if (host.GetSelectedItems().Count > 0)
+                {
+                    host.TraceSelectionToActiveLayer();
                     e.Handled = true;
                     return true;
                 }

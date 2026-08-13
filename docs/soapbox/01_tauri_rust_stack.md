@@ -594,7 +594,7 @@ export const AnnotationReader: Component<AnnotationProps> = (props) => {
 | SQLite Mmap & Cache        | 25 MB                | In-memory WAL pages, query acceleration        |
 | R-Tree & Spatial Index     | 8 MB                 | 50,000 cell nodes spatial indexing structure   |
 +----------------------------+----------------------+------------------------------------------------+
-| TOTAL RUNTIME FOOTPRINT    | 178 MB               | Guaranteed under maximum workspace capacity    |
+| TOTAL RUNTIME FOOTPRINT    | 178 MB               | Guaranteed under the configured capacity       |
 +----------------------------------------------------------------------------------------------------+
 ```
 

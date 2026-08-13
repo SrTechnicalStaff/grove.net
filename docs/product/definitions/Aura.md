@@ -1,6 +1,8 @@
 ---
 type: product-definition
-status: canonical
+status: derived
+authority: derived-from-domain-model
+source_of_truth: ../../domain/Aura.md
 version: v9
 date: 2026-08-11
 tags: [grove, product-definition, aura, field-ledger, saturation]
@@ -54,7 +56,7 @@ tags: [grove, product-definition, aura, field-ledger, saturation]
 | **Layer** | Aura bleeds vertically across stacked Layers. Saturation penetrates Z-planes like liquid through paper towels, allowing users on one Layer to perceive work on adjacent Layers. |
 | **Annotation** | Annotations query cell Field Ledger metadata within dense Aura concentrations across all stacked Layers to curate source content for broadsheet editorial overlays. |
 | **Blip** | A Blip manifests as a small pulsating indicator dot at the geometric center of highest Aura overlap within a dense Content cluster when viewed at scale or when unengaged. |
-| **Slate** | Slate overlays bypass Aura rendering; however, inspecting an Annotation or Memory in Slate displays the Field Ledger metadata derived from the originating Aura field. |
+| **Slates** | Writing Slate, Memory Slate, and Gallery Slate bypass Aura rendering; inspecting an Annotation or Memory there displays Field Ledger metadata derived from the originating Aura field. |
 
 ---
 
@@ -75,4 +77,4 @@ tags: [grove, product-definition, aura, field-ledger, saturation]
 
 - **[Passive Awareness Of Surrounding Work](../derived-outcomes/Passive%20Awareness%20Of%20Surrounding%20Work.md)**: Users perceive activity and related content across multiple layers via vertical Aura saturation without needing to manually toggle planes.
 - **[Spatial Association Without Forcing Structure](../derived-outcomes/Spatial%20Association%20Without%20Forcing%20Structure.md)**: Users establish innate relationships between ideas simply by placing them in proximity, allowing Aura fields to merge into shared contexts.
-- **[See The Whole Field](../derived-outcomes/Continuous%20Uninterrupted%20Focus.md)**: Macro zoom levels leverage Aura LOD rendering to give users an immediate bird's-eye view of workspace density and focus areas.
+- **[See The Whole Field](../derived-outcomes/Continuous%20Uninterrupted%20Focus.md)**: Macro zoom levels leverage Aura LOD rendering to give users an immediate bird's-eye view of spatial-field density and focus areas.

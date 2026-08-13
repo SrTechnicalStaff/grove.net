@@ -48,7 +48,7 @@
 
 ## 4. Standards & Visual Plane Seam Audit
 
-- **Visual Plane Isolation (Plane 0 vs Layer 1 vs Plane 2)**:
+- **Visual Plane Isolation (Plane 0 vs Plane 1 vs Plane 2)**:
   - Spec mandates low-level Skia GPU pipeline management (`GRContext`, `SKFont`, `SKPaint`) on Plane 0 for vector stroke and subpixel text rendering.
   - Codebase reality: Rendering relies entirely on Avalonia's high-level `DrawingContext.DrawText()` and `FormattedText` wrappers inside [`NoteRenderModule.cs`](file:///C:/dev/grove-v9/src/GroveApp/Engine/NoteRenderModule.cs).
 - **Subpixel Shimmering Artifacts**:

@@ -14,7 +14,7 @@
 ## 1. Executive Metadata & Audit Summary
 
 - **Claimed Implementation Files**: [`Motion.cs`](file:///C:/dev/grove-v9/src/GroveApp/DesignSystem/Motion.cs), [`GridCanvasControl.cs`](file:///C:/dev/grove-v9/src/GroveApp/Controls/GridCanvasControl.cs)
-- **Verified Runtime Reality**: `Motion.cs` defines the normative motion duration tokens (`PressDurationMs`, `FadeDurationMs`, `SwapDurationMs`, `ExitDurationMs`, `PlaceDurationMs`, `SweepDurationMs`), cubic Bezier curve evaluation helpers (`EvaluateEase`, `EvaluateOvershoot`), and reduced motion accessibility flag (`IsReducedMotionEnabled`). However, the runtime feedback animation controllers and Skia draw operations mandated by ADR-071 are **0% Implemented**. The classes `FlashSweepDrawOperation` (Plane 0 Skia custom draw operation executing 480ms radial flash sweep and aura pulse wave $E(r,t)$) and `LayerFeedbackAnimationController` (orchestrating Plane 0 canvas sweep and Plane 2 `LayerManager` slate row insertion animation) do **NOT** exist anywhere in `src/GroveApp/`. When a new layer is created or inserted, zero feedback animations run across Plane 0 or Plane 2 in live UI.
+- **Verified Runtime Reality**: `Motion.cs` defines the normative motion duration tokens (`PressDurationMs`, `FadeDurationMs`, `SwapDurationMs`, `ExitDurationMs`, `PlaceDurationMs`, `SweepDurationMs`), cubic Bezier curve evaluation helpers (`EvaluateEase`, `EvaluateOvershoot`), and reduced motion accessibility flag (`IsReducedMotionEnabled`). However, the runtime feedback animation controllers and Skia draw operations mandated by ADR-071 are **0% Implemented**. The classes `FlashSweepDrawOperation` (Plane 0 Skia custom draw operation executing 480ms radial flash sweep and aura pulse wave $E(r,t)$) and `LayerFeedbackAnimationController` (orchestrating Plane 0 canvas sweep and Plane 2 Layer Manager overlay row insertion animation) do **NOT** exist anywhere in `src/GroveApp/`. When a new layer is created or inserted, zero feedback animations run across Plane 0 or Plane 2 in live UI.
 
 ---
 
@@ -23,7 +23,7 @@
 | Requirement ID | Spec Requirement / Symbol Name | Target Specification Details |
 | :--- | :--- | :--- |
 | `REQ-071-01` | Plane 0 Canvas Radial Flash Sweep | 2D radial flash sweep and aura pulse expanding from insertion origin on Plane 0 governed by `--d-sweep` (`480ms`) with `--ease` curve ($R(t) = R_{\max} \cdot f_{\text{ease}}(t / T_{\text{sweep}})$). |
-| `REQ-071-02` | Plane 2 Slate Row Insertion | Vertical sliding insertion and height expansion animation inside `LayerManager` stack list on Plane 2 governed by `--d-place` (`280ms`) with `--overshoot` curve. |
+| `REQ-071-02` | Plane 2 Layer Manager Row Insertion | Vertical sliding insertion and height expansion animation inside the Layer Manager overlay stack list on Plane 2 governed by `--d-place` (`280ms`) with `--overshoot` curve. |
 | `REQ-071-03` | Motion Token Scale Strictness | Durations MUST use defined tokens: `--d-press` (`90ms`), `--d-fade` (`120ms`), `--d-swap` (`160ms`), `--d-exit` (`200ms`), `--d-place` (`280ms`), `--d-sweep` (`480ms`). Raw millisecond values forbidden. |
 | `REQ-071-04` | Cubic Bezier Curve Models | `--ease` = `cubic-bezier(0.25, 0.1, 0.25, 1.0)`, `--overshoot` = `cubic-bezier(0.2, 1.25, 0.3, 1.0)`. |
 | `REQ-071-05` | Flash Sweep Opacity & Pulse Math | Opacity decay $A(t) = A_{\max} \cdot (1 - t/T_{\text{sweep}})^2$ ($A_{\max} = 0.35$); Aura pulse wave $E(r,t) = E_{\text{peak}} \exp\left(-\frac{(r - v_{\text{wave}} t)^2}{2\sigma^2}\right) (1 - t/T_{\text{sweep}})$. |
@@ -38,7 +38,7 @@
 | Requirement ID | Codebase Symbol / Location | Implementation Status & Evidence |
 | :--- | :--- | :--- |
 | `REQ-071-01` | `src/GroveApp/` | **0% Implemented**: Plane 0 radial flash sweep animation is completely missing. Creating or switching layers in [`SpatialLayerStack.cs`](file:///C:/dev/grove-v9/src/GroveApp/Engine/SpatialLayerStack.cs) triggers no radial wave on the canvas. |
-| `REQ-071-02` | `src/GroveApp/` | **0% Implemented**: Plane 2 `LayerManager` slate row height expansion (`0px -> 36px`) animation is missing. |
+| `REQ-071-02` | `src/GroveApp/` | **0% Implemented**: Plane 2 Layer Manager overlay row height expansion (`0px -> 36px`) animation is missing. |
 | `REQ-071-03` | [`Motion.cs:10-24`](file:///C:/dev/grove-v9/src/GroveApp/DesignSystem/Motion.cs#L10-L24) | **IMPLEMENTED**: All duration constants (`PressDurationMs` 90, `FadeDurationMs` 120, `SwapDurationMs` 160, `ExitDurationMs` 200, `PlaceDurationMs` 280, `SweepDurationMs` 480) and `TimeSpan` properties exist. |
 | `REQ-071-04` | [`Motion.cs:37-84`](file:///C:/dev/grove-v9/src/GroveApp/DesignSystem/Motion.cs#L37-L84) | **IMPLEMENTED**: `EvaluateCubicBezier`, `EvaluateEase` (0.25, 0.1, 0.25, 1.0), and `EvaluateOvershoot` (0.2, 1.25, 0.3, 1.0) exist and function correctly. |
 | `REQ-071-05` | `src/GroveApp/` | **0% Implemented**: Flash sweep opacity decay $A(t)$ and radial energy wave equation $E(r,t)$ do **NOT** exist in any rendering file. |
@@ -50,8 +50,8 @@
 
 ## 4. Standards & Visual Plane Seam Audit
 
-- **Visual Plane Isolation (Plane 0 vs Layer 1 vs Plane 2)**:
-  - Spec mandates dual-plane feedback execution: Plane 0 Skia custom draw operation for spatial canvas wave + Plane 2 Avalonia animation for HUD slate row insertion.
+- **Visual Plane Isolation (Plane 0 vs Plane 1 vs Plane 2)**:
+  - Spec mandates dual-plane feedback execution: Plane 0 Skia custom draw operation for spatial canvas wave + Plane 2 Avalonia animation for Layer Manager overlay row insertion.
   - Codebase reality: Neither Plane 0 nor Plane 2 feedback mechanisms are wired in live application code.
 - **Untriggered Motion Infrastructure**:
   - While `Motion.cs` contains math and token definitions, zero application code instantiates animations or dispatches draw operations when layers are created or activated.

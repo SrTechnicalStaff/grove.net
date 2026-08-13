@@ -1,6 +1,8 @@
 ---
 type: product-definition
-status: canonical
+status: derived
+authority: derived-from-domain-model
+source_of_truth: ../../domain/Memory.md
 version: v9
 date: 2026-08-11
 tags: [grove, product-definition, memory, tracing, anchoring]
@@ -9,26 +11,26 @@ tags: [grove, product-definition, memory, tracing, anchoring]
 # Product Definition: Memory
 
 > **What is a memory?**
-> A **Memory** is the foundational semantic record and substrate of human thought within Grove. It represents an immutable core unit of information (text, image, thought, or reference) that exists independent of any single spatial placement, allowing it to be instantiated, anchored, and traced across multiple spatial layers under distinct contextual meanings without data duplication.
+> A **Memory** is an immutable semantic record with stable identity, payload, and version lineage. It exists independently of Content, Placement, and Anchor records. A Memory may be referenced by no Content, one Content instance, or many Content instances.
 
 ---
 
 ## 1. Core Essence ("What is a memory?")
 
-- **Canonical Statement**: A Memory is the underlying semantic object that retains identity across space and time. When placed on the Grid, it manifests as Content; when traced across Layers, it gains contextual variants while maintaining a single unified provenance record.
-- **Primary Function**: Memory decouples pure information from spatial location. It allows a single piece of knowledge to participate in multiple workflows, hold multiple anchors, and acquire layered contextual nuances without generating fragmented, out-of-sync copies.
+- **Canonical Statement**: A Memory is the semantic record that retains identity across space and time. Content is a placed instance that references the Memory through `MemoryId`; one Memory may be referenced by any number of Content instances, or by none.
+- **Primary Function**: Memory decouples information from spatial location. Creating a Memory never requires Content. Placing a source that has no Memory creates the Memory first, then creates Content. Placing an existing Memory creates new Content without duplicating or mutating the Memory.
 - **Mental / Physical Model**: 
-  1. *Animation Keyframes & Cel Tracing*: Like an animator reusing a single character drawing on multiple transparent animation cels with slight contextual alterations per frame, a Memory is traced across different Layers to express different roles (e.g., composition vs. perspective vs. narrative).
+  1. *Animation Keyframes & Cel Tracing*: Like an animator reusing a single character drawing on multiple transparent animation cels with slight contextual alterations per frame, a Memory is reused through different Content instances on Grid Layers to express different roles (e.g., composition vs. perspective vs. narrative).
   2. *Mental Cognition & Association*: Human memories are singular entities that acquire new facets whenever recalled in different real-world contexts.
 
 ---
 
 ## 2. Fundamental Invariants & System Properties
 
-1. **Semantic Singularity**: A Memory is a single underlying data record. Tracing a Memory across Layers creates context variants, not independent file copies.
-2. **Context Variance via Tracing**: When a Memory is placed on multiple Layers via Tracing, each placement gains a layer-specific variant record (`Trace of` / `Traces`), allowing the Memory to hold distinct contextual meanings simultaneously.
-3. **Anchor Multiplicity**: A single Memory can hold multiple Anchors corresponding to different spatial surroundings, capturing the natural complexity of human thought passively.
-4. **User-Driven Relationship Ownership**: Creating new content by highlighting existing material instantiates a new Memory; the user retains explicit ownership over placing and defining its relationship relative to source material.
+1. **Semantic Singularity**: A Memory is a single underlying data record. Creating Content across Grid Layers creates additional Content records that reference the same Memory, not independent payload copies.
+2. **Versioned Editing**: Editing one Content instance creates a child Memory version for that Content instance. Other Content instances remain bound to their existing Memory version.
+3. **External Spatial Relationships**: Memory owns no Placement or Anchor collection. Content may have an optional Content-side Anchor, and a single Memory may be referenced by many Content/Anchor relationships.
+4. **User-Driven Relationship Ownership**: Quick Note and other capture actions may create a Memory without creating Content. Creating a new Memory from existing material creates a distinct record; placing an existing Memory creates Content that preserves its identity.
 5. **Disk Provenance Synchronization**: For frontmatter-compatible file formats (e.g., Markdown), disk files reflect tracing metadata via structured frontmatter fields (`Trace of: [source_uri]` and `Traces: [variant_uris]`), while non-frontmatter files fall back to filename lineage tracking.
 
 ### Data & State Schema
@@ -36,8 +38,9 @@ tags: [grove, product-definition, memory, tracing, anchoring]
 - **Memory Object Attributes**:
   - `memory_id`: Globally unique identifier (UUIDv4).
   - `raw_payload`: Primitive content payload (rich text markup, binary image reference, note string).
-  - `anchors`: List of `{ anchor_id, spatial_coordinate, label_text }`.
-  - `trace_variants`: Array of `{ layer_id, grid_coordinate, context_notes, frontmatter_metadata }`.
+  - `content_relationships`: External Content records joined by `memory_id`; not stored on Memory.
+  - `anchor_relationships`: External Content-side labels joined through Content; not stored on Memory.
+  - `trace_variants`: Version or Content relationships describing contextual reuse; not spatial state on Memory.
   - `created_at` / `updated_at`: Timestamps.
 - **Persistence Boundary**: Persisted to local disk storage as Markdown documents with YAML frontmatter or raw media files with companion sidecar metadata.
 
@@ -47,13 +50,13 @@ tags: [grove, product-definition, memory, tracing, anchoring]
 
 | Primitive | Intersection & Relational Rules |
 | :--- | :--- |
-| **Grid** | Memory has no innate physical dimensions until placed on the Grid; once placed, its location dictates spatial proximity and relationship to surrounding Memories. |
-| **Memory** | *Self-Intersection*: Memories connect via Anchors and Tracing relationships (`Trace of` / `Traces`), forming non-duplicative semantic networks across the workspace. |
-| **Content** | Content is the spatial manifestation of a Memory placed on the Grid. Modifying Content in-place modifies the underlying Memory payload or its layer variant. |
-| **Aura** | The semantic energy of a Memory determines the base color and intensity of the Aura field cast by its spatial Content manifestation. |
-| **Layer** | Memories are placed across Layers via Tracing. A Memory placed on Layer 1 can be traced to Layer 2 at identical or distinct grid coordinates with unique layer context. |
-| **Annotation** | Annotations aggregate Memories from overlapping Aura fields across all Layers, organizing them into broadsheet media templates for overview reading. |
-| **Blip** | A Blip signals an active cluster of Memories whose combined Aura fields reach a local threshold on the Information Layer. |
+| **Grid** | Memory has no grid coordinates. Content referencing the Memory occupies cells and establishes spatial relationships with surrounding Content. |
+| **Memory** | *Self-Intersection*: Memories are found through Content-side Anchor context and Content reuse; those external relationships do not become Memory-owned state. |
+| **Content** | Content is a placed spatial instance that references a Memory through `MemoryId`. Modifying Content creates a new Memory version and updates that Content's reference; other Content remains on its prior version. |
+| **Aura** | Content is the sole Aura source. The referenced Memory supplies semantic payload and identity, while Content geometry and type determine field emission. |
+| **Grid Layer** | Content instances referencing one Memory may exist on multiple Grid Layers with distinct spatial context. |
+| **Annotation** | Annotations aggregate Memories from overlapping Aura fields across all Grid Layers, organizing them into broadsheet media templates for overview reading. |
+| **Blip** | A Blip signals an active cluster of Content and their referenced Memories whose combined Aura fields reach a local threshold on the Spatial Grid Plane. |
 | **Slate** | Slates (e.g., Memory Slate, Writing Slate) provide direct, non-spatial viewing and editing interfaces for raw Memory payloads and their trace lineage. |
 
 ---
@@ -61,18 +64,18 @@ tags: [grove, product-definition, memory, tracing, anchoring]
 ## 4. User Interaction & Camera Dynamics
 
 - **Cursor Armed States**:
-  - `Trace` Mode (`1` key cycle): Armed cursor allows user to pick up a Memory and project it onto adjacent Layers without breaking its spatial alignment or copying disk data.
+  - `Trace` Mode (`1` key cycle): Armed cursor allows the user to create new Content referencing a Memory on an adjacent Grid Layer without copying or mutating the Memory payload.
   - `Copy` / `Duplicate` Modes: Generate a distinct, disconnected new Memory record (unlike `Trace`).
 - **Camera Zoom / Level-of-Detail (LOD) Behavior**:
   - At close camera distance, Memories render legible Content text and image thumbnails.
   - At macro zoom, individual Memories collapse into Aura field points and Blips, preserving visual clarity across large knowledge bases.
 - **Navigation Mechanics**:
-  - Clicking a Memory anchor or trace link in an Annotation or Slate immediately shifts the camera plane to that Memory's exact spatial coordinates and native Layer.
+  - Clicking a Content Anchor or trace link in an Annotation or named Slate shifts the camera to the referenced Content's coordinates and native Grid Layer.
 
 ---
 
 ## 5. Derived Outcomes Mapping
 
 - **[Multi Contextual Representation Without Duplication](../derived-outcomes/Multi%20Contextual%20Representation%20Without%20Duplication.md)**: Users apply the same core idea to multiple project phases or perspectives without creating redundant, desynchronized file copies.
-- **[Preserve Context Through Anchoring](../derived-outcomes/Preserve%20Context%20Through%20Anchoring.md)**: Users label and anchor memories based on spatial surroundings, preserving true cognitive context rather than forcing folder hierarchies.
-- **[Recall Memories](../derived-outcomes/Recall%20Memories.md)**: Users quickly search, inspect, and navigate Memory lineages across the entire spatial workspace.
+- **[Preserve Context Through Anchoring](../derived-outcomes/Preserve%20Context%20Through%20Anchoring.md)**: Users label Content with authored Anchors based on spatial surroundings, preserving true cognitive context rather than forcing folder hierarchies.
+  - **[Recall Memories](../derived-outcomes/Recall%20Memories.md)**: Users search every Memory through Content-side Anchor labels, Memory identity fields, and Memory payload, then navigate associated Content and Grid Layer context.

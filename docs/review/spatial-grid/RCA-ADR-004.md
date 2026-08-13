@@ -19,17 +19,17 @@
 | Spec ID | Requirement / Contract Description | Target Type / Symbol | Specified Value / Formula |
 | :--- | :--- | :--- | :--- |
 | **REQ-004-01** | Plane 0 Definition | Spatial Grid Canvas | `z-index: 10`, camera-projected world coordinates $(T(x,y,s))$ |
-| **REQ-004-02** | Plane 1 Definition | Information Layer | `z-index: 20`, position-linked to spatial world, unscaled by camera zoom |
-| **REQ-004-03** | Plane 2 Definition | HUD Plane | `z-index: 30`, fixed screen-space viewport coordinates |
+| **REQ-004-02** | Plane 1 Definition | Information Plane | `z-index: 300`, position-linked to spatial world, unscaled by camera zoom |
+| **REQ-004-03** | Plane 2 Definition | HUD Plane | `z-index: 400`, fixed screen-space viewport coordinates |
 | **REQ-004-04** | Zero Level-Lifting Rule | Architecture Law | Plane 0 NEVER raises compositor z-index to compete with Plane 1/2 |
 | **REQ-004-05** | No Canvas Dimming Rule | Architecture Law | Opening overlays on Plane 1/2 NEVER dims or blurs Plane 0 rendering |
-| **REQ-004-06** | Visual Plane Enum | `VisualPlaneType` | Enum: `Plane0_SpatialGrid = 0`, `Plane1_InformationLayer = 1`, `Plane2_HUDPlane = 2` |
+| **REQ-004-06** | Visual Plane Enum | `VisualPlaneType` | Enum: `Plane0_SpatialGrid = 0`, `Plane1_InformationPlane = 1`, `Plane2_HUDPlane = 2` |
 | **REQ-004-07** | Plane View Interface | `IPlaneView` | Interface with `PlaneType`, `CompositorZIndex`, `HandlesPointerInput`, `RenderPlane` |
 | **REQ-004-08** | Plane Compositor Interface | `IPlaneCompositor` | Interface with `RegisterPlaneView`, `RenderAllPlanes`, `RoutePointerEvent` |
 | **REQ-004-09** | Unified Compositor Container | `ThreePlaneVisualCompositorContainer` | Custom Avalonia `Panel` enforcing top-down pointer dispatch |
 | **REQ-004-10** | Top-Down Pointer Routing Protocol | Input Dispatch | Top-down evaluation: Plane 2 $\to$ Plane 1 $\to$ Plane 0 |
 | **REQ-004-11** | Base Canvas Ground Fill | Color Token | Opaque `#0E0E10` (`--c-base` / `Colors.SurfaceGrid`) |
-| **REQ-004-12** | Information Layer Chrome Fill | Color Token | `#161618` (`--surface-chrome`) over local footprint only |
+| **REQ-004-12** | Information Plane Chrome Fill | Color Token | `#161618` (`--surface-chrome`) over local footprint only |
 
 ---
 
@@ -37,7 +37,7 @@
 
 ### 3.1 Implemented Artifacts
 
-- **Visual Layer Stacking in XAML**: Implemented in [`src/GroveApp/MainWindow.axaml`](file:///C:/dev/grove-v9/src/GroveApp/MainWindow.axaml#L13-L78).
+- **Visual Plane stacking in XAML**: Implemented in [`src/GroveApp/MainWindow.axaml`](file:///C:/dev/grove-v9/src/GroveApp/MainWindow.axaml#L13-L78).
   - Lines 15: Plane 0 `GridCanvasControl` positioned as lowest Grid child.
   - Lines 19-22: Plane 1 `LocalEditorOverlay` and `QuickNoteOverlay` stacked in middle.
   - Lines 25-77: Plane 2 HUD telemetry border positioned at bottom (`VerticalAlignment="Bottom"`).

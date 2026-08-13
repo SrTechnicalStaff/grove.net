@@ -1,12 +1,12 @@
 ---
-status: "PARTIAL — verified footprint cursor and trail behavior"
+status: "PARTIAL — verified canonical footprint cursor and trail behavior"
 ---
 
 # ADR-050: Footprint-Aware Grid Cursor and Spent-Cell Trail Decay System
 
 | Property | Value |
 | :--- | :--- |
-| **Status** | PARTIAL — verified footprint cursor and trail behavior |
+| **Status** | PARTIAL — verified canonical footprint cursor and trail behavior |
 | **Date** | 2026-08-12 |
 | **Area** | Spatial Grid Engine / Cursor Interaction & Render Subsystem |
 | **Target Runtime** | C# 13 / .NET 9 / Avalonia 11.2.5 / SkiaSharp 3.x |
@@ -19,8 +19,8 @@ status: "PARTIAL — verified footprint cursor and trail behavior"
 In Grove v9, keyboard and pointer spatial focus on Plane 0 (Spatial Grid Canvas) is unified into a single primitive: the **Grid Cursor**. Unlike traditional desktop OS environments that render an unscaled screen-space mouse arrow, Grove eliminates the system arrow pointer over the grid canvas in favor of a spatial, footprint-aware cell cursor.
 
 ### Key Architectural Requirements:
-1. **Dynamic Footprint Expansion**: On empty cells, the cursor head occupies exactly $1 \times 1$ world cell ($220.0\text{ DIPs} \times 220.0\text{ DIPs}$). When addressing an existing placement (`Note`, `Document`, `Picture`), the head dynamically expands to match the content's full $N \times M$ grid cell footprint.
-2. **Visual Tokens & Inset Edge Geometry**: The cursor head is rendered with a 22% fill gain (`--cursor-fill-gain` = 0.22, base ink `#F4F4F2`) and an inset 2px ring (`--cursor-ring` = 2px, opacity 0.88). Outset strokes are strictly forbidden to eliminate cell boundary ambiguity.
+1. **Single Descriptor, Recursive Grid Footprint**: The cursor has one resolved descriptor shared by rendering, actions, previews, and trail registration. In empty space that descriptor occupies one cell of the active visible grid tier: the 44px minor subdivision, 220px major cell, or 1100px supercell. When addressing an existing placement (`Note`, `Document`, `Picture`) or an armed tool, the same descriptor carries the complete base-grid footprint. There is no second single-cell cursor model.
+2. **Visual Tokens & Inset Edge Geometry**: The cursor head is rendered with steady energy × fill gain (`--cursor-steady` × `--cursor-fill-gain` = 0.132, base ink `#F4F4F2`) and an inset tier ring (`2.0px` minor, `1.5px` major, `1.0px` supercell, opacity 0.88). Outset strokes are strictly forbidden to eliminate cell boundary ambiguity.
 3. **18-Step Spent-Cell Decay Physics**: As the cursor translates across cells, it deposits kinetic energy into traversed cells. Spent cells decay exponentially per frame over exactly 18 frames ($\gamma = 0.84$) before being pruned below a threshold of $0.03$.
 4. **Zero-Latency Compositor Execution**: Continuous cursor position updates and trail decay calculations execute on the Avalonia 11.2.5 render pipeline within custom Skia `CustomDrawOperation` calls, running at native display refresh rates (60Hz–144Hz) with zero garbage collection allocations on the render loop.
 
@@ -48,16 +48,27 @@ Let $P_{\text{world}} = (x_{\text{world}}, y_{\text{world}})$ be the world coord
 
 $$C_x = \left\lfloor \frac{x_{\text{world}}}{P_{\text{cell}}} \right\rfloor, \quad C_y = \left\lfloor \frac{y_{\text{world}}}{P_{\text{cell}}} \right\rfloor$$
 
-where $P_{\text{cell}} = 220.0\text{ DIPs}$.
+where $P_{\text{cell}} = 220.0\text{ DIPs}$. This base-grid coordinate is used for content lookup and placement storage. The visible empty-space cursor tier is resolved from the grid hierarchy, not from an arbitrary screen size:
+
+$$P_{\text{tier}}(s) = \begin{cases}
+44.0\text{ DIPs} & s \ge 0.5 \\
+220.0\text{ DIPs} & 0.1 \le s < 0.5 \\
+1100.0\text{ DIPs} & s < 0.1
+\end{cases}$$
+
+The camera scale $s$ only selects which already-defined grid tier is legible. It does not create a second cursor geometry or alter the grid pitches.
 
 ### 2.2 Footprint Expansion Math
 
-Let $S(C_x, C_y)$ be the spatial occupation lookup for cell $(C_x, C_y)$. The head footprint bounds $R_{\text{head}} = [X_{\text{origin}}, Y_{\text{origin}}, W_{\text{cells}}, H_{\text{cells}}]$ are evaluated as:
+Let $S(C_x, C_y)$ be the spatial occupation lookup for base cell $(C_x, C_y)$. The single descriptor's world footprint is evaluated in this order:
 
-$$R_{\text{head}} = \begin{cases} 
-[C_x, C_y, 1, 1] & \text{if } S(C_x, C_y) = \varnothing \\
-[X_{\text{item}}, Y_{\text{item}}, W_{\text{item}}, H_{\text{item}}] & \text{if } S(C_x, C_y) = \text{Item}_{\text{id}} 
+$$R_{\text{head}} = \begin{cases}
+[\lfloor x/P_{\text{tier}}\rfloor P_{\text{tier}}, \lfloor y/P_{\text{tier}}\rfloor P_{\text{tier}}, P_{\text{tier}}, P_{\text{tier}}] & \text{if no tool or placement is addressed} \\
+[X_{\text{item}}P_{\text{cell}}, Y_{\text{item}}P_{\text{cell}}, W_{\text{item}}P_{\text{cell}}, H_{\text{item}}P_{\text{cell}}] & \text{if } S(C_x, C_y) = \text{Item}_{\text{id}} \\
+[X_{\text{tool}}P_{\text{cell}}, Y_{\text{tool}}P_{\text{cell}}, W_{\text{tool}}P_{\text{cell}}, H_{\text{tool}}P_{\text{cell}}] & \text{if a placement tool is armed}
 \end{cases}$$
+
+Rendering and cursor-driven actions consume this same resolved descriptor. No action may fall back to an independent 1×1 cursor coordinate.
 
 World-space rectangular bounds $B_{\text{world}} = [x_0, y_0, x_1, y_1]$ for the cursor head:
 
@@ -67,7 +78,7 @@ $$x_1 = (X_{\text{origin}} + W_{\text{cells}}) \cdot P_{\text{cell}}, \quad y_1 
 ### 2.3 Head Fill and Inset Ring Specification
 
 The screen-projected head rectangle $B_{\text{screen}} = T_{\text{camera}}(B_{\text{world}})$.
-The stroke of the inset ring is defined as $w_{\text{ring}} = 2.0\text{ px}$ on screen space. The inset geometry rectangle $B_{\text{inset}}$ for drawing the 2px stroke is:
+The stroke of the inset ring is defined in screen space by the active grid tier: $w_{\text{ring}} \in \{2.0, 1.5, 1.0\}\text{ px}$. The inset geometry rectangle $B_{\text{inset}}$ is deflated by half of that active stroke:
 
 $$B_{\text{inset}} = \left[ x_{\text{screen}, 0} + \frac{w_{\text{ring}}}{2}, \, y_{\text{screen}, 0} + \frac{w_{\text{ring}}}{2}, \, x_{\text{screen}, 1} - \frac{w_{\text{ring}}}{2}, \, y_{\text{screen}, 1} - \frac{w_{\text{ring}}}{2} \right]$$
 
@@ -100,63 +111,35 @@ Thus, at frame $t = 18$, $E_{18} = 0.60 \cdot (0.84)^{18} \approx 0.0264 < 0.03$
 
 ## 3. C# 13 System Architecture & Interface Contracts
 
+The implementation has one `CursorDescriptor` value shared by pointer
+resolution, placement actions, previews, rendering, and trail registration.
+It carries the world origin and extent of the active grid footprint, its mode,
+and its screen-space ring weight. A base-grid placement origin is derived from
+that same world origin when a content operation requires integer storage
+coordinates; it is not a second cursor state.
+
 ```csharp
-namespace Grove.SpatialGrid.Cursor;
-
-using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using Avalonia;
-using SkiaSharp;
-
-public enum CursorRole : byte
+public readonly record struct CursorDescriptor(
+    Point WorldOrigin,
+    Size WorldExtent,
+    CursorFootprintKind Kind,
+    double RingStrokeWidth)
 {
-    Default = 0,
-    ToolPlacement = 1,  // --k-tool (#3B82F6)
-    EditTransform = 2,  // --k-edit (#F59E0B)
-    LayerTrace    = 3   // --k-layer (#10B981)
+    public CellCoordinate PlacementOriginCell => new(
+        (int)Math.Floor(WorldOrigin.X / Tokens.GridCell),
+        (int)Math.Floor(WorldOrigin.Y / Tokens.GridCell));
 }
 
-[StructLayout(LayoutKind.Sequential, Pack = 4)]
-public readonly record struct CellCoordinate(int X, int Y)
+public interface IGridCursorResolver
 {
-    public static CellCoordinate Zero => new(0, 0);
-}
-
-[StructLayout(LayoutKind.Sequential, Pack = 4)]
-public readonly record struct FootprintBounds(int OriginX, int OriginY, int WidthCells, int HeightCells)
-{
-    public bool Contains(CellCoordinate cell) =>
-        cell.X >= OriginX && cell.X < OriginX + WidthCells &&
-        cell.Y >= OriginY && cell.Y < OriginY + HeightCells;
-}
-
-public readonly record struct SpentCellSegment(
-    CellCoordinate Cell,
-    float KineticEnergy,
-    byte FrameAge
-);
-
-public sealed record GridCursorState(
-    CellCoordinate AddressedCell,
-    FootprintBounds ActiveFootprint,
-    CursorRole ActiveRole,
-    bool IsMiddlePanActive,
-    IReadOnlyList<SpentCellSegment> SpentTrail
-);
-
-public interface IGridCursorService
-{
-    GridCursorState CurrentState { get; }
-    event Action<GridCursorState>? CursorStateChanged;
-
-    void MoveToCell(CellCoordinate targetCell);
-    void SetPointerPosition(Point worldPosition);
-    void ArmRole(CursorRole role);
-    void DisarmRole();
-    void TickRenderFrame();
+    CursorDescriptor Resolve(Point worldPosition, double zoom,
+        GridContentItem? targetItem,
+        CursorPlacementFootprint? armedToolFootprint = null);
 }
 ```
+
+The spent trail stores the descriptor's world rectangle. It never reconstructs
+a trail from an independent `1 × 1` base-cell coordinate.
 
 ---
 

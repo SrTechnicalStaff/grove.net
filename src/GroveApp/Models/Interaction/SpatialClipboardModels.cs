@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text.Json.Serialization;
 
 namespace GroveApp.Models.Interaction;
 
@@ -16,7 +17,10 @@ public sealed record SpatialClipboardItemPayload(
     int RelativeCellX,
     int RelativeCellY,
     int WidthCells,
-    int HeightCells)
+    int HeightCells,
+    Guid? MemoryId = null,
+    int IntrinsicWidthPx = 0,
+    int IntrinsicHeightPx = 0)
 {
     public SpatialRegion RelativeFootprint =>
         new(RelativeCellX, RelativeCellY, WidthCells, HeightCells);
@@ -26,7 +30,10 @@ public sealed record SpatialClipboardPlacement(
     string OriginalPlacementId,
     string ContentType,
     string RawPayload,
-    SpatialRegion Footprint);
+    SpatialRegion Footprint,
+    Guid? MemoryId,
+    int IntrinsicWidthPx,
+    int IntrinsicHeightPx);
 
 /// <summary>
 /// Structured clipboard container for spatial placements. It carries no native
@@ -48,6 +55,14 @@ public sealed record SpatialClipboardContainer
             : copiedAtUtc.ToUniversalTime();
     }
 
+    [JsonConstructor]
+    public SpatialClipboardContainer(
+        ImmutableArray<SpatialClipboardItemPayload> items,
+        DateTime copiedAtUtc)
+        : this((IEnumerable<SpatialClipboardItemPayload>)items, copiedAtUtc)
+    {
+    }
+
     public static SpatialClipboardContainer FromItems(
         IEnumerable<GroveApp.Models.GridContentItem> items,
         Func<GroveApp.Models.GridContentItem, string>? rawPayload = null,
@@ -57,7 +72,7 @@ public sealed record SpatialClipboardContainer
         var source = items.ToArray();
         if (source.Length == 0)
         {
-            return new SpatialClipboardContainer([], copiedAtUtc ?? DateTime.UtcNow);
+            return new SpatialClipboardContainer(ImmutableArray<SpatialClipboardItemPayload>.Empty, copiedAtUtc ?? DateTime.UtcNow);
         }
 
         int originX = source.Min(item => item.CellX);
@@ -70,7 +85,10 @@ public sealed record SpatialClipboardContainer
                 item.CellX - originX,
                 item.CellY - originY,
                 item.CellWidth,
-                item.CellHeight)),
+                item.CellHeight,
+                item.MemoryId,
+                item.IntrinsicWidthPx,
+                item.IntrinsicHeightPx)),
             copiedAtUtc ?? DateTime.UtcNow);
     }
 
@@ -83,7 +101,10 @@ public sealed record SpatialClipboardContainer
                 targetOrigin.X + item.RelativeCellX,
                 targetOrigin.Y + item.RelativeCellY,
                 item.WidthCells,
-                item.HeightCells))).ToImmutableArray();
+                item.HeightCells),
+            item.MemoryId,
+            item.IntrinsicWidthPx,
+            item.IntrinsicHeightPx)).ToImmutableArray();
 
     private static string GetDefaultRawPayload(GroveApp.Models.GridContentItem item) => item switch
     {

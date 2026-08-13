@@ -1,6 +1,8 @@
 ---
 type: design-system-component
 status: active
+authority: derived-from-domain-model
+source_of_truth: ../../domain/Memory-Slate.md
 date: 2026-08-10
 component: Memory Slate
 plane: hud
@@ -10,9 +12,27 @@ tags: [grove, design-system, component]
 
 # Memory Slate
 
-Everything a person has kept, gathered in one place so they can look through it
-and pick one out. The surface names itself `Memories`, and that is the only name
-it shows.
+Every MemoryRecord made in Grove, whether it currently has Content or not,
+gathered in one place so a person can look through it and pick one out. The
+surface names itself `Memories`, and that is the only name it shows.
+
+## Identity contract
+
+- The gallery source is the Memory ledger, never a collection of Content
+  representatives.
+- The gallery has one card per MemoryRecord. Content and Anchors are metadata
+  on that card, not additional cards.
+- A Memory referenced by 50 Content instances appears once. Its card may show
+  derived Content/Anchor context, but those relationships are not owned by the
+  Memory record.
+- A Memory with zero Content instances appears normally. It is not omitted,
+  disabled, or represented by an empty Grid card.
+- `Place` creates a new Content instance referencing the selected Memory. An
+  Anchor is created only when the user supplies authored Content context. It
+  never creates a second Memory merely because the destination is different.
+- The Memory Slate is a browse and handoff surface. Text editing belongs to
+  Writing Slate; image inspection belongs to Gallery Slate. Opening a record
+  does not mutate the Memory or create Content.
 
 ## Anatomy
 
@@ -30,13 +50,13 @@ no token is a part with no contract.
 | Note card | yes | Fill `--surface-nested`; 1px `--edge-hairline`; `--r-sm`; padding `--sp-md`. The Note's complete text in `--f-ui` 400 at `--t-body`, `--lh-ui`, `--text-primary`. |
 | Picture card | yes | The complete source at its intrinsic proportions, corners `--r-sm`. No fill, no padding, no mat, no edge, and nothing drawn over it. |
 | Document card | yes | Fill `--surface-page`; `--r-sm`; padding `--sp-md`. Title `--f-ui` 500 at `--t-body`, `--tr-title`, `--lh-ui`, ink `--c-paper-ink`, in the source's own case. Front matter `--f-mono` 500 at `--t-label`, `--tr-caps`, uppercase, ink `--paper-label`, `--sp-xs` beneath the title. Abstract `--f-ui` 400 at `--t-dense`, `--lh-reading`, ink `--paper-body`, `--sp-sm` beneath the front matter, complete. |
-| Card metadata line | yes | One line, `--f-mono` 500 at `--t-label`, uppercase by `--tr-label`, ink `--text-meta`, `--sp-sm` beneath the card. Never over a card, never wrapped. |
+| Card metadata line | yes | One line, `--f-mono` 500 at `--t-label`, uppercase by `--tr-label`, ink `--text-meta`, `--sp-sm` beneath the card. It identifies payload form and the number of Content instances. Never over a card, never wrapped. |
 | Selection outline | Selected only | `2px` `--signal-interaction`, offset `3px` outside the card's box, drawn outside so no card moves. |
 | Focus ring | Focused only | `--focus-ring` at `--focus-ring-offset`; at `6px` offset when the card is also Selected, which leaves a 1px gap outside the selection outline. |
 | Anchor mark | Anchored only | The ribbon of `00-foundations/Marks.md` on a Note card and a Document card, its left edge `--sp-md` from the card's left edge; the diamond on a picture card, offset `-4px` on both axes from the frame's top-left corner. |
 | Unavailable frame | Only when a picture cannot be shown | The frame's box at the picture's own proportions, fill `--surface-nested`, 1px `--edge-found`, `--r-sm`; one sentence in `--f-ui` 400 at `--t-caption`, `--text-secondary`, centred at `--measure-reading` or narrower; the quiet control `Retry` `--sp-sm` beneath it. No refusal hue. |
 | Quiet control | yes | `--f-ui` 400 at `--t-caption`, `--text-secondary`; 1px `--edge-control`; `--r-sm`; padding `--sp-sm` top and bottom, `--sp-md` at the sides. Carries `Back`, `Show all`, and `Retry`. |
-| Primary action | Record only | Fill `--signal-interaction`, label `--c-paper-ink` in `--f-ui` 400 at `--t-caption`, `--r-sm`, the same padding as the quiet control, no border. One per surface. |
+| Primary action | Record only | `Open` — routes text to Writing Slate and media to Gallery Slate. Fill `--signal-interaction`, label `--c-paper-ink` in `--f-ui` 400 at `--t-caption`, `--r-sm`, the same padding as the quiet control, no border. One per record surface. |
 | Record: canonical Memory | Record only | The Memory at the largest size the body allows, complete and at its own proportions, with the card's metadata line beneath it extended by the picture's dimensions and file size in the same type role. |
 | Record: title | Record only | The Memory's own name in `--f-ui` 500 at `--t-title-small`, `--tr-title`, `--lh-ui`, `--text-primary`, in the source's own case. |
 | Record: description | Record only | The words a person wrote about it, `--f-ui` 400 at `--t-dense`, `--lh-reading`, `--text-secondary`, at `--measure-reading`, `--sp-sm` beneath the title. |

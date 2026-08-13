@@ -1,0 +1,2177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trace — The Memory Slate (Prototype 23-Memory-Slate)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./base/trace-proto-base.css">
+
+  <style>
+    /*
+     * Variant CSS: Memory Slate Prototype (Right-Docked, Above-Grid, Pinterest-Masonry)
+     * Follows Gen-17 aesthetic: graphite, mono micro-labels, warm amber selections, copper machine tags.
+     */
+
+    :root {
+      --c-slate-bg: #0E0E10;
+      --c-card-bg: #161618;
+      --c-card-bg-hover: #1e1e21;
+      --c-border: #242428;
+      --c-border-active: rgba(234, 234, 234, 0.45);
+      --c-copper: 196 130 92; /* #C4824A — copper agent color */
+    }
+
+    body {
+      display: flex;
+      flex-direction: row;
+      overflow: hidden;
+      background: var(--c-base);
+    }
+
+    /* ── Layout & Viewport Configuration ── */
+    #viewport {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100vh;
+      z-index: 1;
+      cursor: none;
+      user-select: none;
+      transition: opacity 300ms var(--ease);
+    }
+
+    /* ── Floating Slate Frame Container (Right Side, Above Grid) ── */
+    .slate-frame-container {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100vh;
+      background: var(--c-slate-bg);
+      border-left: 1px solid var(--c-border);
+      z-index: 100; /* Distinct layer above the grid */
+      display: flex;
+      flex-direction: row;
+      box-shadow: -8px 0 32px rgba(0, 0, 0, 0.55);
+      overflow: hidden;
+      transform: translateX(0%);
+      transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1),
+                  transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
+                  border-left-width 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Width variations and closed state */
+    .slate-frame-container.closed {
+      transform: translateX(100%);
+      border-left-width: 0px;
+      box-shadow: none;
+    }
+    .slate-frame-container.w-25 { width: 25vw; min-width: 340px; }
+    .slate-frame-container.w-50 { width: 50vw; min-width: 620px; }
+    .slate-frame-container.w-100 { width: 100vw; border-left-width: 0px; }
+
+    /* ── Sidebar Layout (Collapses at 25%) ── */
+    .slate-sidebar {
+      width: 220px;
+      height: 100%;
+      border-right: 1px solid var(--c-border);
+      background: #09090b;
+      display: flex;
+      flex-direction: column;
+      padding: 24px 16px;
+      flex-shrink: 0;
+      transition: width 300ms var(--ease), padding 300ms var(--ease), opacity 200ms var(--ease);
+      opacity: 1;
+      overflow: hidden;
+    }
+    .slate-frame-container.w-25 .slate-sidebar {
+      width: 0px;
+      padding: 24px 0px;
+      opacity: 0;
+      border-right-width: 0px;
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 24px;
+      color: var(--c-text);
+    }
+    .sidebar-brand .arrow-back {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+      border-radius: 4px;
+      border: 1px solid var(--c-border);
+      background: var(--c-card-bg);
+      color: rgba(234, 234, 234, 0.7);
+      font-size: 11px;
+      font-family: var(--f-mono);
+      transition: background 150ms, color 150ms;
+    }
+    .sidebar-brand .arrow-back:hover {
+      background: var(--c-border);
+      color: var(--c-text);
+    }
+    .sidebar-brand span {
+      font-family: var(--f-display);
+      font-weight: 500;
+      font-size: 18px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .sidebar-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      color: rgba(234, 234, 234, 0.55);
+      font-family: var(--f-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      user-select: none;
+      transition: background 150ms, color 150ms;
+    }
+    .menu-item:hover, .menu-item.active {
+      background: rgba(234, 234, 234, 0.06);
+      color: var(--c-text);
+    }
+    .menu-item.active {
+      border-left: 2px solid rgb(var(--c-sel));
+      padding-left: 10px;
+    }
+    .menu-item .item-symbol {
+      font-size: 13px;
+      width: 16px;
+      text-align: center;
+    }
+
+    .sidebar-footer {
+      border-top: 1px solid var(--c-border);
+      padding-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* ── Main Slate Content Panel ── */
+    .slate-main {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      background: var(--c-slate-bg);
+      position: relative;
+    }
+
+    /* ── Header Area ── */
+    .slate-header {
+      padding: 24px 28px 16px;
+      border-bottom: 1px solid var(--c-border);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .search-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+    }
+
+    .search-capsule {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      background: rgba(16, 16, 18, 0.86);
+      border: 1px solid var(--c-border);
+      border-radius: 99px;
+      padding: 8px 16px;
+      gap: 10px;
+      backdrop-filter: blur(18px);
+      transition: border-color 200ms;
+    }
+    .search-capsule:focus-within {
+      border-color: rgb(var(--c-sel));
+    }
+    .search-capsule span.icon {
+      color: rgba(234, 234, 234, 0.4);
+      font-size: 13px;
+    }
+    .search-capsule input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      outline: none;
+      color: var(--c-text);
+      font-family: var(--f-mono);
+      font-size: 12px;
+      caret-color: rgb(var(--c-sel));
+    }
+    .search-capsule input::placeholder {
+      color: rgba(234, 234, 234, 0.3);
+    }
+
+    .action-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid var(--c-border);
+      background: rgba(16, 16, 18, 0.86);
+      color: rgba(234, 234, 234, 0.6);
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 150ms, color 150ms, border-color 150ms;
+    }
+    .action-btn:hover, .action-btn.active {
+      background: var(--c-border);
+      color: var(--c-text);
+      border-color: rgba(234, 234, 234, 0.3);
+    }
+    .action-btn.active {
+      color: rgb(var(--c-sel));
+      border-color: rgb(var(--c-sel));
+    }
+
+    /* Color Swatches Flyout (Hue Facet) */
+    .color-flyout {
+      position: absolute;
+      top: 48px;
+      right: 48px;
+      background: #141416;
+      border: 1px solid var(--c-border);
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      gap: 8px;
+      z-index: 110;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      display: none;
+    }
+    .color-flyout.open {
+      display: flex;
+    }
+    .color-swatch {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 1.5px solid transparent;
+      transition: transform 150ms, border-color 150ms;
+    }
+    .color-swatch:hover {
+      transform: scale(1.15);
+    }
+    .color-swatch.selected {
+      border-color: var(--c-text);
+      transform: scale(1.1);
+    }
+
+    /* Saved searches / Category row */
+    .chips-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      padding-bottom: 2px;
+    }
+    .chips-row::-webkit-scrollbar { display: none; }
+    .category-chip {
+      font-family: var(--f-mono);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(234, 234, 234, 0.5);
+      background: rgba(234, 234, 234, 0.03);
+      border: 1px solid var(--c-border);
+      padding: 6px 12px;
+      border-radius: 99px;
+      cursor: pointer;
+      white-space: nowrap;
+      user-select: none;
+      transition: color 150ms, border-color 150ms, background 150ms;
+    }
+    .category-chip:hover {
+      border-color: rgba(234, 234, 234, 0.25);
+      color: rgba(234, 234, 234, 0.85);
+    }
+    .category-chip.active {
+      color: rgb(var(--c-sel));
+      border-color: rgb(var(--c-sel));
+      background: rgb(var(--c-sel) / 0.08);
+      box-shadow: 0 0 10px rgb(var(--c-sel) / 0.05);
+    }
+
+    /* Status indicator */
+    .status-line {
+      font-family: var(--f-mono);
+      font-size: 9.5px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(234, 234, 234, 0.32);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid rgba(234, 234, 234, 0.04);
+      padding-top: 10px;
+    }
+
+    /* ── Masonry Grid Layout (Pinterest Inspired) ── */
+    .slate-masonry-wrapper {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 28px 30px;
+      scroll-behavior: smooth;
+    }
+
+    /* CSS Columns approach for perfect masonry performance */
+    .slate-masonry {
+      width: 100%;
+      transition: column-count 300ms;
+    }
+
+    /* Responsive columns mapped to width state classes on parent */
+    .slate-frame-container.w-25 .slate-masonry {
+      column-count: 1;
+      column-gap: 0px;
+    }
+    .slate-frame-container.w-50 .slate-masonry {
+      column-count: 2;
+      column-gap: 16px;
+    }
+    .slate-frame-container.w-100 .slate-masonry {
+      column-count: 4;
+      column-gap: 20px;
+    }
+
+    /* ── Pinterest Card Design ── */
+    .card {
+      break-inside: avoid;
+      margin-bottom: 18px;
+      background: var(--c-card-bg);
+      border: 1px solid var(--c-border);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      cursor: grab;
+      user-select: none;
+      transition: border-color 200ms, box-shadow 200ms, transform 200ms var(--ease);
+    }
+    .card:hover {
+      border-color: var(--c-border-active);
+      background: var(--c-card-bg-hover);
+    }
+    .card:active {
+      cursor: grabbing;
+    }
+    .card.selected {
+      outline: 2px solid rgb(var(--c-sel));
+      border-color: transparent;
+      box-shadow: 0 0 16px rgb(var(--c-sel) / 0.18);
+    }
+    .card.dragging {
+      opacity: 0.4;
+      transform: scale(0.96);
+    }
+
+    /* Image header container */
+    .card-media {
+      width: 100%;
+      overflow: hidden;
+      position: relative;
+      background: #101012;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card-media img {
+      width: 100%;
+      height: auto;
+      display: block;
+      transition: transform 300ms var(--ease);
+    }
+    .card:hover .card-media img {
+      transform: scale(1.03);
+    }
+
+    /* Card Details */
+    .card-details {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .card-header-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-kind {
+      font-family: var(--f-mono);
+      font-size: 8px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(234, 234, 234, 0.32);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .card-kind .kind-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: rgba(234, 234, 234, 0.4);
+    }
+
+    .card-title {
+      font-family: var(--f-ui);
+      font-weight: 500;
+      font-size: 13.5px;
+      color: rgba(234, 234, 234, 0.85);
+      line-height: 1.35;
+      word-wrap: break-word;
+    }
+    .card:hover .card-title {
+      color: var(--c-text);
+    }
+
+    .card-snippet {
+      font-family: var(--f-ui);
+      font-size: 11.5px;
+      line-height: 1.5;
+      color: rgba(234, 234, 234, 0.48);
+      max-height: 80px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+    }
+
+    /* Layer / zero current Placements Tag */
+    .card-tag {
+      font-family: var(--f-mono);
+      font-size: 9px;
+      padding: 3px 6px;
+      border-radius: 3px;
+      background: rgba(234, 234, 234, 0.05);
+      border: 1px solid var(--c-border);
+      color: rgba(234, 234, 234, 0.4);
+      width: fit-content;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .card-tag.no-placement {
+      color: rgba(234, 234, 234, 0.48);
+      border-color: rgba(234, 234, 234, 0.12);
+      background: rgba(234, 234, 234, 0.03);
+    }
+    .card-tag.placed {
+      color: rgb(var(--c-sel));
+      border-color: rgb(var(--c-sel) / 0.35);
+      background: rgb(var(--c-sel) / 0.06);
+    }
+
+    /* Card color dots palette row - Pinterest inspiration visual signature */
+    .card-palette {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      margin-top: 4px;
+    }
+    .card-palette-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      opacity: 0.72;
+      border: 0.5px solid rgba(0,0,0,0.25);
+    }
+
+    /* ── Special Card Interiors ── */
+
+    /* Audio card */
+    .audio-waveform-container {
+      background: #0f0f11;
+      padding: 16px 14px 10px;
+      border-radius: 8px 8px 0 0;
+      border-bottom: 1px solid var(--c-border);
+    }
+    .audio-player-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .play-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 1px solid rgba(234, 234, 234, 0.2);
+      background: transparent;
+      color: var(--c-text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      transition: background 150ms, border-color 150ms;
+    }
+    .play-btn:hover {
+      background: rgba(234,234,234,0.08);
+      border-color: var(--c-text);
+    }
+    .audio-timeline {
+      flex: 1;
+      height: 2px;
+      background: rgba(234, 234, 234, 0.1);
+      position: relative;
+      border-radius: 1px;
+    }
+    .audio-progress {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 0%;
+      background: rgb(var(--c-sel));
+      transition: width 100ms linear;
+    }
+    .audio-duration {
+      font-family: var(--f-mono);
+      font-size: 8.5px;
+      color: rgba(234, 234, 234, 0.35);
+    }
+    .waveform-svg {
+      width: 100%;
+      height: 36px;
+      stroke: rgba(234, 234, 234, 0.3);
+      fill: none;
+      stroke-width: 1;
+      stroke-linecap: round;
+    }
+    .playing .waveform-svg {
+      stroke: rgb(var(--c-sel) / 0.7);
+    }
+
+    /* Agent Card copper styling */
+    .card.agent-card {
+      border-color: rgb(var(--c-copper) / 0.35);
+      background: rgb(var(--c-copper) / 0.02);
+    }
+    .card.agent-card:hover {
+      border-color: rgb(var(--c-copper) / 0.65);
+    }
+    .agent-corner-tag {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: rgb(var(--c-copper));
+      color: #0E0E10;
+      font-family: var(--f-mono);
+      font-size: 7.5px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      padding: 2.5px 7px;
+      text-transform: uppercase;
+      border-bottom-left-radius: 6px;
+      z-index: 5;
+    }
+    .agent-ember {
+      width: 6px;
+      height: 6px;
+      background: rgb(var(--c-copper));
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgb(var(--c-copper));
+      display: inline-block;
+      margin-left: 6px;
+      transition: opacity 300ms;
+    }
+
+    /* Sketch card canvas preview */
+    .sketch-preview {
+      width: 100%;
+      height: 120px;
+      background: #0f1012;
+      border-bottom: 1px solid var(--c-border);
+      position: relative;
+    }
+
+    /* ── Width Controller Buttons at Top Right of Slate ── */
+    .layout-controller {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: auto;
+    }
+    .layout-btn {
+      font-family: var(--f-mono);
+      font-size: 9px;
+      font-weight: 600;
+      color: rgba(234, 234, 234, 0.35);
+      border: 1px solid var(--c-border);
+      background: transparent;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 120ms;
+    }
+    .layout-btn:hover {
+      color: var(--c-text);
+      border-color: var(--c-border-active);
+    }
+    .layout-btn.active {
+      color: var(--c-slate-bg);
+      background: var(--c-text);
+      border-color: var(--c-text);
+    }
+
+    /* ── Close Overlay Drop Zone (Grid -> Slate Traffic) ── */
+    .slate-drop-zone {
+      position: absolute;
+      inset: 0;
+      background: rgba(14, 14, 16, 0.94);
+      border: 2px dashed rgb(var(--c-sel) / 0.4);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 105;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 200ms var(--ease);
+    }
+    .slate-drop-zone.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .slate-drop-zone .drop-symbol {
+      font-size: 32px;
+      color: rgb(var(--c-sel));
+      margin-bottom: 12px;
+      animation: drop-pulse 1.2s infinite;
+    }
+    .slate-drop-zone .drop-label {
+      font-family: var(--f-mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--c-text);
+      text-align: center;
+    }
+    .slate-drop-zone .drop-sublabel {
+      font-family: var(--f-mono);
+      font-size: 9px;
+      color: rgba(234, 234, 234, 0.4);
+      margin-top: 6px;
+    }
+
+    @keyframes drop-pulse {
+      0%, 100% { transform: translateY(0); opacity: 0.8; }
+      50% { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* ── Custom Drag Ghost Representation (Carried Treatment) ── */
+    .obj.carried {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      transform: scale(1.03);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.65);
+      border: 2px solid rgb(var(--c-carry));
+      background: #1c1c1f;
+      color: #EAEAEA;
+      opacity: 0.86;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      padding: 12px 14px;
+      gap: 6px;
+      width: 180px;
+    }
+    .obj.carried::before, .obj.carried::after {
+      content: '▲';
+      position: absolute;
+      color: rgb(var(--c-carry));
+      font-size: 7px;
+      top: -3px;
+    }
+    .obj.carried::before { left: 8px; }
+    .obj.carried::after { right: 8px; }
+
+    .obj.carried.invalid {
+      border-color: rgb(var(--c-invalid));
+      box-shadow: 0 10px 20px rgba(226, 98, 92, 0.18);
+      opacity: 0.58;
+    }
+    .obj.carried.invalid::before, .obj.carried.invalid::after {
+      content: '▼';
+      color: rgb(var(--c-invalid));
+    }
+
+    /* Grid layout preview footprint on drag over cell */
+    .grid-drop-preview {
+      position: absolute;
+      width: var(--cell-size);
+      height: var(--cell-size);
+      border: 2px dashed rgb(var(--c-sel) / 0.8);
+      background: rgb(var(--c-sel) / 0.1);
+      pointer-events: none;
+      z-index: 2;
+      display: none;
+    }
+    .grid-drop-preview.invalid {
+      border-color: rgb(var(--c-invalid));
+      background: rgb(var(--c-invalid) / 0.1);
+    }
+
+    /* ── Detail Focus Modal ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 8, 10, 0.84);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 220ms var(--ease);
+    }
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .modal-content {
+      background: #141416;
+      border: 1px solid var(--c-border);
+      border-radius: 16px;
+      width: 580px;
+      max-width: 90vw;
+      max-height: 85vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.8);
+      transform: scale(0.96);
+      transition: transform 220ms var(--ease);
+    }
+    .modal-overlay.open .modal-content {
+      transform: scale(1);
+    }
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--c-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-body {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .modal-img {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--c-border);
+    }
+    .modal-close {
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: rgba(234, 234, 234, 0.5);
+      font-size: 18px;
+    }
+    .modal-close:hover {
+      color: var(--c-text);
+    }
+
+    /* ── Custom placement skin overrides on the grid ── */
+    .obj-image-placement {
+      width: 100%; height: 100%;
+      border-radius: 8px;
+      border: 1px solid rgba(234, 234, 234, 0.15);
+      background: #111113;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .obj-image-placement img {
+      flex: 1;
+      width: 100%;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    .obj-image-label {
+      font-family: var(--f-mono);
+      font-size: 9px;
+      color: rgba(234, 234, 234, 0.4);
+      margin-top: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .obj-audio-placement {
+      width: 100%; height: 100%;
+      background: #0f0f11;
+      border: 1px solid rgba(234, 234, 234, 0.15);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .obj-agent-placement {
+      width: 100%; height: 100%;
+      background: rgb(var(--c-copper) / 0.03);
+      border: 1.5px solid rgb(var(--c-copper) / 0.4);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .obj-agent-label {
+      font-family: var(--f-mono);
+      font-size: 9px;
+      color: rgb(var(--c-copper) / 0.85);
+      text-transform: uppercase;
+    }
+
+    /* Quick status overlay for active selection */
+    .hud-slate-status {
+      border-top: 1px solid rgba(234,234,234,0.08);
+      margin-top: 8px;
+      padding-top: 8px;
+      font-family: var(--f-mono);
+      font-size: 9.5px;
+      color: rgb(var(--c-sel));
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       CANVAS VIEWPORT
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="viewport" id="viewport">
+    <div class="world" id="world">
+      <!-- Placement grid objects will live here -->
+
+      <!-- Visual cursor drop highlight -->
+      <div class="grid-drop-preview" id="grid-drop-preview"></div>
+    </div>
+  </div>
+
+  <!-- Passive background watermark (bottom-right of field) -->
+  <div class="watermark" style="right: auto; left: 30px;">
+    <span class="wk-name">Trace</span>
+    <span class="wk-num" id="wk-num">23</span>
+  </div>
+
+  <!-- Cursor dot (replaces OS cursor over canvas) -->
+  <div class="cursor-dot" id="cursor-dot"></div>
+
+  <!-- ── Floating Slate Drop Zone for Unplacements (Grid -> Slate Traffic) ── -->
+  <div class="slate-drop-zone" id="slate-unplace-dropzone">
+    <div class="drop-symbol">⌵</div>
+    <div class="drop-label">Remove current Placement</div>
+    <div class="drop-sublabel">Lifts position from layer, retains relationships</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       THE MEMORY SLATE DOCKED PANEL (Right dock, above the grid)
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="slate-frame-container w-25" id="memory-slate">
+
+    <!-- Sidebar: collapses in w-25 (tray) mode, visible in 50% and 100% -->
+    <div class="slate-sidebar">
+      <div class="sidebar-brand">
+        <div class="arrow-back" id="sidebar-close-btn" title="Close Slate">&larr; FIELD</div>
+        <span>Recall</span>
+      </div>
+
+      <div class="sidebar-menu">
+        <div class="menu-item active" data-filter="all">
+          <span class="item-symbol">▤</span>
+          <span>The Drift</span>
+        </div>
+        <div class="menu-item" data-filter="no-placement">
+          <span class="item-symbol">◇</span>
+          <span>Memories zero current Placements</span>
+        </div>
+        <div class="menu-item" data-filter="placed">
+          <span class="item-symbol">⌖</span>
+          <span>Placed Set</span>
+        </div>
+        <div class="menu-item" data-filter="agent">
+          <span class="item-symbol">⟐</span>
+          <span>Agent Logs</span>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="menu-item" id="sidebar-settings-btn">
+          <span class="item-symbol">⚙</span>
+          <span>Settings</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Slate Panel (holds search + masonry grid) -->
+    <div class="slate-main">
+
+      <!-- Slate Header -->
+      <div class="slate-header">
+        <div class="search-row">
+          <div class="search-capsule">
+            <span class="icon">⌕</span>
+            <input type="text" id="slate-search-input" placeholder="call the field…" autocomplete="off">
+          </div>
+
+          <!-- Hue Facet button -->
+          <button class="action-btn" id="hue-facet-btn" title="Filter by dominant color">●</button>
+
+          <!-- Width Cycler button -->
+          <button class="action-btn" id="width-cycle-btn" title="Cycle layout (Ctrl+\)">◧</button>
+
+          <!-- Add/Mint Button -->
+          <button class="action-btn" id="mint-memory-btn" title="Mint new memory">+</button>
+
+          <!-- Dominant Color Swatches Flyout -->
+          <div class="color-flyout" id="color-flyout">
+            <div class="color-swatch" style="background: #3e9c73;" data-hue="green" title="Green Hue"></div>
+            <div class="color-swatch" style="background: #8c6e4d;" data-hue="sepia" title="Sepia/Brown Hue"></div>
+            <div class="color-swatch" style="background: #46464c;" data-hue="charcoal" title="Charcoal Hue"></div>
+            <div class="color-swatch" style="background: #947833;" data-hue="gold" title="Gold/Yellow Hue"></div>
+            <div class="color-swatch" style="background: #7c51a9;" data-hue="purple" title="Purple/Indigo Hue"></div>
+            <div class="color-swatch" style="background: #8c4d4d;" data-hue="red" title="Red/Coral Hue"></div>
+            <div class="color-swatch" style="background: #333; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 8px; font-family: var(--f-mono);" data-hue="clear" title="Clear color filter">✖</div>
+          </div>
+        </div>
+
+        <!-- Saved Search / Category chips row -->
+        <div class="chips-row">
+          <div class="category-chip active" data-query="">All Drift</div>
+          <div class="category-chip" data-query="lights">Jamie's Bday</div>
+          <div class="category-chip" data-query="sketch">Botanicals</div>
+          <div class="category-chip" data-query="dwelling">Blueprints</div>
+          <div class="category-chip" data-query="agent">Agent Traces</div>
+          <div class="category-chip" data-query="concept">Origami</div>
+        </div>
+
+        <!-- Status strip line -->
+        <div class="status-line">
+          <span id="status-indicator">all memories chronological (Drift)</span>
+          <div class="layout-controller">
+            <button class="layout-btn active" data-width="w-25">25%</button>
+            <button class="layout-btn" data-width="w-50">50%</button>
+            <button class="layout-btn" data-width="w-100">100%</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Masonry scroll area -->
+      <div class="slate-masonry-wrapper">
+        <div class="slate-masonry" id="slate-masonry-container">
+          <!-- Masonry items will be dynamically rendered here -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       HUD LEGEND SKELETON
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="hud" id="hud" style="display: none !important;">
+    <div class="hud-head">
+      <span>Controls</span>
+      <button class="hud-x" id="hud-close" title="Collapse">−</button>
+    </div>
+    <div class="hud-rows">
+      <div><span class="dot" style="background:var(--k-slate)"></span>\ — toggle memory slate</div>
+      <div><span class="dot" style="background:var(--k-slate)"></span>Ctrl+\ — cycle slate width (25 / 50 / 100)</div>
+      <div><span class="dot" style="background:var(--k-tool)"></span>1–3 — seed objects into the field</div>
+      <div><span class="dot" style="background:var(--k-view)"></span>scroll — zoom · mid-drag — pan field</div>
+      <div><span class="dot" style="background:var(--k-edit)"></span>f — frame all &nbsp;·&nbsp; Esc — neutral focus</div>
+    </div>
+    <div class="hud-legend" id="hud-slate-legend">
+      <div><b>Memory Slate Actions:</b></div>
+      <div><span class="dot" style="background:var(--c-sel)"></span>Drag card to grid — PLACES it (gold burst)</div>
+      <div><span class="dot" style="background:var(--c-sel)"></span>Drag placement to slate — UNPLACES it</div>
+      <div><span class="dot" style="background:var(--k-slate)"></span>P (card selected) — place at viewport center</div>
+      <div><span class="dot" style="background:var(--c-agent)"></span>Double-click card — open detail modal</div>
+    </div>
+    <div class="hud-hint">
+      <b>Memory Slate docked on the right side</b> (sub-app above the grid canvas)
+    </div>
+  </div>
+  <button class="hud-pip" id="hud-pip" title="Controls" style="display: none;">?</button>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       DETAIL MODAL
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="detail-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span id="modal-kind-tag" style="font-family: var(--f-mono); font-size: 10px; color: rgb(var(--c-sel));">IMAGE MEMORY</span>
+        <button class="modal-close" id="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <h2 id="modal-title" style="font-family: var(--f-display); font-size: 26px; text-transform: uppercase; color: var(--c-text);">Memory Title</h2>
+        <div id="modal-media-container"></div>
+        <p id="modal-text-content" style="font-family: var(--f-ui); font-size: 14px; line-height: 1.6; color: rgba(234,234,234,0.7);"></p>
+        <div id="modal-metadata-strip" style="font-family: var(--f-mono); font-size: 10px; border-top: 1px solid var(--c-border); padding-top: 12px; display: flex; gap: 16px; color: rgba(234,234,234,0.4);">
+          <span>Placement count: <span id="modal-state" style="color: #fff;">placed</span></span>
+          <span>Last Touch: <span style="color: #fff;">Just now</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       BASE RUNTIME
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <script src="./base/trace-proto-base.js"></script>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       VARIANT SCRIPT
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <script>
+    // ── DATA REPRESENTATION OF MEMORIES ────────────────────────────────────
+    const MEMORY_DATA = [
+      {
+        id: "m-aurora",
+        title: "Northern Lights Study",
+        kind: "image",
+        media: "./assets/aurora_landscape.jpg",
+        snippet: "Green aurora borealis curtains reflecting over the forest lake, captured in high-detail raw format during the July geomagnetic storms.",
+        placementCount: 1,
+        layer: "L1",
+        col: -2,
+        row: -2,
+        size: 2,
+        hue: "green",
+        colors: ["#0e261d", "#1b4e39", "#3e9c73", "#83cf9c"],
+        lastTouch: "2026-07-08T12:00:00Z"
+      },
+      {
+        id: "m-botanical",
+        title: "Botanical Sketch Sepia",
+        kind: "image",
+        media: "./assets/botanical_sketch.jpg",
+        snippet: "Wild herb drawings with custom calligraphic annotations. Sepia-toned historical collection retrieved from research volume 3.",
+        placementCount: 0,
+        layer: null,
+        col: null,
+        row: null,
+        size: 2,
+        hue: "sepia",
+        colors: ["#3e3025", "#5d4734", "#8c6e4d", "#c0a684"],
+        lastTouch: "2026-07-08T10:45:00Z"
+      },
+      {
+        id: "m-blueprint",
+        title: "Modular Dwelling Blueprint v2",
+        kind: "sketch",
+        media: "./assets/architecture_blueprint.jpg",
+        snippet: "Minimalist modular dwelling floor plans. Section elevations and layout lines drawn in clean architectural white-on-charcoal ink.",
+        placementCount: 1,
+        layer: "L0",
+        col: 1,
+        row: -1,
+        size: 2,
+        hue: "charcoal",
+        colors: ["#1a1a1c", "#2c2c30", "#46464c", "#e2e2e5"],
+        lastTouch: "2026-07-08T11:15:00Z"
+      },
+      {
+        id: "m-cranes",
+        title: "Origami Crane Concept",
+        kind: "image",
+        media: "./assets/origami_cranes.jpg",
+        snippet: "Delicate paper cranes hanging against warm, diffuse backdrop illumination, demonstrating yellow and blue paper fibers.",
+        placementCount: 0,
+        layer: null,
+        col: null,
+        row: null,
+        size: 2,
+        hue: "gold",
+        colors: ["#4d3d1a", "#947833", "#2b4c5e", "#efdfbb"],
+        lastTouch: "2026-07-07T18:30:00Z"
+      },
+      {
+        id: "m-audio",
+        title: "Ambient Field Recording",
+        kind: "audio",
+        waveform: [12, 28, 45, 10, 5, 23, 64, 40, 80, 20, 15, 33, 56, 12, 45, 78, 22, 10, 5, 34, 12, 18, 45, 30, 75, 12],
+        duration: "2:55",
+        snippet: "Binaural forest environment recording with soft wind and distant water stream, processed at 96kHz, 24-bit PCM mono.",
+        placementCount: 1,
+        layer: "L0",
+        col: 0,
+        row: 2,
+        size: 1,
+        hue: "purple",
+        colors: ["#2d233c", "#7c51a9", "#d8b9f3"],
+        lastTouch: "2026-07-08T09:20:00Z"
+      },
+      {
+        id: "m-checklist",
+        title: "Jamie's Bday Checklist",
+        kind: "text",
+        snippet: "• Pre-bake vanilla buttercream sponge cakes\n• Procure warm LED fairy light strings\n• Backup RAW photo captures from camera cards\n• Setup folding origami cranes lamp fixture",
+        placementCount: 0,
+        layer: null,
+        col: null,
+        row: null,
+        size: 1,
+        hue: "red",
+        colors: ["#4a2c2b", "#8c4d4d", "#e2bbbb"],
+        lastTouch: "2026-07-08T13:10:00Z"
+      },
+      {
+        id: "m-agent",
+        title: "Summarize · Claude 3.5 Sonnet",
+        kind: "agent",
+        snippet: "Executed skill 'Document Summarizer' on source file 'thesis_outline.md' (3.2k words). Mapped 4 main conceptual anchors and bound 12 co-placement edges.",
+        placementCount: 1,
+        layer: "L0",
+        col: 3,
+        row: 1,
+        size: 2,
+        hue: "gold",
+        colors: ["#4a301f", "#8c5d3d", "#e5cbb3"],
+        unread: true,
+        lastTouch: "2026-07-08T08:15:00Z"
+      },
+      {
+        id: "m-layout",
+        title: "Layout Diagram",
+        kind: "sketch",
+        snippet: "Minimalist spatial composition wireframe schema demonstrating nodes, connections, and flow vectors.",
+        placementCount: 1,
+        layer: "L0",
+        col: -3,
+        row: 1,
+        size: 1,
+        hue: "charcoal",
+        colors: ["#242428", "#eaeaea"],
+        lastTouch: "2026-07-07T14:40:00Z"
+      },
+      {
+        id: "m-theory",
+        title: "Ref: Spatial Composition",
+        kind: "text",
+        snippet: "The grid is home. The slate is a recall lens. Do not fork the retrieval engine. Organization is naturally occurring recency in the Drift.",
+        placementCount: 0,
+        layer: null,
+        col: null,
+        row: null,
+        size: 1,
+        hue: "charcoal",
+        colors: ["#242428", "#eaeaea"],
+        lastTouch: "2026-07-06T10:00:00Z"
+      }
+    ];
+
+    // ── FILTER VARIABLES ────────────────────────────────────────────────────
+    let activeFilter = 'all'; // all, zero current Placements, placed, agent
+    let searchQuery = '';
+    let selectedColor = null;
+    let selectedChipQuery = '';
+    let selectedMemoryId = null;
+    let currentWidthState = 'w-25'; // w-25, w-50, w-100
+    let activeAudio = null;
+
+    // ── DOM ELEMENTS ───────────────────────────────────────────────────────
+    const memorySlate = document.getElementById('memory-slate');
+    const masonryContainer = document.getElementById('slate-masonry-container');
+    const searchInput = document.getElementById('slate-search-input');
+    const statusText = document.getElementById('status-indicator');
+    const widthCycleBtn = document.getElementById('width-cycle-btn');
+    const hueFacetBtn = document.getElementById('hue-facet-btn');
+    const colorFlyout = document.getElementById('color-flyout');
+    const unplaceDropzone = document.getElementById('slate-unplace-dropzone');
+    const detailModal = document.getElementById('detail-modal');
+
+    // Grid drop preview
+    const dropPreview = document.getElementById('grid-drop-preview');
+    const worldEl = document.getElementById('world');
+
+    // ── INITIALIZATION ─────────────────────────────────────────────────────
+    TraceProto.init({
+      viewport:   document.getElementById('viewport'),
+      world:      worldEl,
+      initialPan: {
+        x: (window.innerWidth - 300) / 2, // offset slightly to the left to account for right slate
+        y: window.innerHeight / 2
+      },
+      initialZoom: 0.95
+    });
+
+    // Populate seed placements on the canvas
+    initializeGridPlacements();
+
+    // Render cards initially
+    renderSlateCards();
+
+    // ── EVENT LISTENERS ────────────────────────────────────────────────────
+
+    // Backslash keyboard toggle Memory Slate
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      if (e.key === '\\') {
+        e.preventDefault();
+        toggleSlate();
+      }
+
+      // Ctrl+\ cycles width states
+      if (e.key === '\\' && e.ctrlKey) {
+        e.preventDefault();
+        cycleWidth();
+      }
+
+      // Keyboard place shortcut: 'P'
+      if (e.key === 'p' || e.key === 'P') {
+        if (selectedMemoryId) {
+          const mem = MEMORY_DATA.find(m => m.id === selectedMemoryId);
+          if (mem) {
+            e.preventDefault();
+            placeMemoryOnGridCenter(mem);
+          }
+        }
+      }
+    });
+
+    // Toggle slate width from buttons
+    document.querySelectorAll('.layout-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const widthState = btn.dataset.width;
+        setSlateWidth(widthState);
+      });
+    });
+
+    // Cycle Width Button
+    widthCycleBtn.addEventListener('click', cycleWidth);
+
+    // Sidebar close button -> toggle slate closed
+    document.getElementById('sidebar-close-btn').addEventListener('click', toggleSlate);
+
+    // Sidebar filter item click
+    document.querySelectorAll('.menu-item[data-filter]').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        activeFilter = item.dataset.filter;
+        renderSlateCards();
+      });
+    });
+
+    // Category chips row click
+    document.querySelectorAll('.category-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+
+        selectedChipQuery = chip.dataset.query;
+        renderSlateCards();
+      });
+    });
+
+    // Search bar input filter
+    searchInput.addEventListener('input', (e) => {
+      searchQuery = e.target.value.toLowerCase();
+      renderSlateCards();
+    });
+
+    // Hue filter button toggle
+    hueFacetBtn.addEventListener('click', () => {
+      colorFlyout.classList.toggle('open');
+      hueFacetBtn.classList.toggle('active');
+    });
+
+    // Color Swatches Selection
+    document.querySelectorAll('.color-swatch').forEach(swatch => {
+      swatch.addEventListener('click', (e) => {
+        document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+        const hue = swatch.dataset.hue;
+        if (hue === 'clear') {
+          selectedColor = null;
+          colorFlyout.classList.remove('open');
+          hueFacetBtn.classList.remove('active');
+        } else {
+          selectedColor = hue;
+          swatch.classList.add('selected');
+        }
+        renderSlateCards();
+      });
+    });
+
+    // Mint / Add memory placeholder action
+    document.getElementById('mint-memory-btn').addEventListener('click', () => {
+      const text = prompt("Mint new text memory:", "Drafting notes regarding spatial canvas compositing...");
+      if (text) {
+        const newMem = {
+          id: "m-" + Date.now(),
+          title: "New Note Capture",
+          kind: "text",
+          snippet: text,
+          placementCount: 0,
+          layer: null,
+          col: null,
+          row: null,
+          size: 1,
+          hue: "sepia",
+          colors: ["#8c6e4d", "#eaeaea"],
+          lastTouch: new Date().toISOString()
+        };
+        MEMORY_DATA.unshift(newMem);
+        renderSlateCards();
+        TraceProto.spawnRipple(window.innerWidth - 300, 100);
+      }
+    });
+
+    // Modal Close
+    document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+    document.getElementById('detail-modal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('detail-modal')) closeModal();
+    });
+
+    // ── CORE INTERACTION LOGIC FUNCTIONS ───────────────────────────────────
+
+    function toggleSlate() {
+      if (memorySlate.classList.contains('closed')) {
+        memorySlate.classList.remove('closed');
+        // If 100% Gallery is opened, suspend grid
+        if (currentWidthState === 'w-100') {
+          document.getElementById('viewport').style.opacity = '0';
+          document.getElementById('viewport').style.pointerEvents = 'none';
+        }
+      } else {
+        memorySlate.classList.add('closed');
+        document.getElementById('viewport').style.opacity = '1';
+        document.getElementById('viewport').style.pointerEvents = 'all';
+      }
+    }
+
+    function setSlateWidth(widthState) {
+      memorySlate.classList.remove('w-25', 'w-50', 'w-100');
+      memorySlate.classList.add(widthState);
+      currentWidthState = widthState;
+
+      // Update active layout button styling
+      document.querySelectorAll('.layout-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.width === widthState);
+      });
+
+      // Handle suspended render loop at 100%
+      if (widthState === 'w-100') {
+        document.getElementById('viewport').style.opacity = '0';
+        document.getElementById('viewport').style.pointerEvents = 'none';
+      } else {
+        document.getElementById('viewport').style.opacity = '1';
+        document.getElementById('viewport').style.pointerEvents = 'all';
+      }
+
+      // Re-trigger rendering to adjust columns
+      renderSlateCards();
+    }
+
+    function cycleWidth() {
+      if (memorySlate.classList.contains('closed')) {
+        memorySlate.classList.remove('closed');
+        setSlateWidth('w-25');
+        return;
+      }
+
+      if (currentWidthState === 'w-25') {
+        setSlateWidth('w-50');
+      } else if (currentWidthState === 'w-50') {
+        setSlateWidth('w-100');
+      } else {
+        setSlateWidth('w-25');
+      }
+    }
+
+    // Initialize placements that are pre-bound to the grid
+    function initializeGridPlacements() {
+      // Find placed memories
+      const placedMemories = MEMORY_DATA.filter(m => m.placementCount > 0);
+
+      for (const mem of placedMemories) {
+        renderPlacementOnGrid(mem);
+      }
+    }
+
+    function renderPlacementOnGrid(mem) {
+      let innerHTML = '';
+      if (mem.kind === 'image') {
+        innerHTML = `<div class="obj-image-placement">
+          <img src="${mem.media}" alt="${mem.title}">
+          <div class="obj-image-label">${mem.title}</div>
+        </div>`;
+      } else if (mem.kind === 'audio') {
+        innerHTML = `<div class="obj-audio-placement">
+          <div class="obj-image-label" style="color:rgb(var(--c-sel))">🔊 AUDIO FIELD</div>
+          <div style="font-family:var(--f-mono); font-size:10px; color:#eaeaea;">${mem.title}</div>
+        </div>`;
+      } else if (mem.kind === 'agent') {
+        innerHTML = `<div class="obj-agent-placement">
+          <div class="obj-agent-label">⟐ AGENT TRACE</div>
+          <div style="font-family:var(--f-mono); font-size:10px; color:rgba(234, 234, 234, 0.85);">${mem.title}</div>
+        </div>`;
+      } else {
+        // Text / sticky notes
+        innerHTML = `<div class="sheet" style="width:100%;height:100%;">
+          <span class="sheet__label">${mem.kind} memory</span>
+          <div class="sheet__title" style="font-size: 16px; margin-top: 4px;">${mem.title}</div>
+          <div class="sheet__rule" style="margin: 8px 0;"></div>
+          <div class="sheet__body" style="font-size: 11px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow:hidden;">${mem.snippet}</div>
+        </div>`;
+      }
+
+      const el = TraceProto.makePlacementEl(mem.col, mem.row, mem.size, innerHTML);
+
+      // Store the memory ID reference on the element so we can drag it back
+      el.dataset.memoryId = mem.id;
+
+      // Drag placement triggers (Grid -> Slate Traffic)
+      el.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return; // Left click only
+        setupGridToSlateDrag(e, el, mem);
+      });
+
+      // Selection click synchronization
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectCard(mem.id);
+      });
+
+      // Double click opens modal
+      el.addEventListener('dblclick', () => {
+        openModal(mem);
+      });
+
+      // Add context menu delete
+      el.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        unplaceMemory(mem);
+      });
+
+      mem.placementObj = TraceProto.addPlacement({
+        col: mem.col,
+        row: mem.row,
+        size: mem.size,
+        el: el
+      });
+    }
+
+    // ── RENDER SLATE CARDS ──
+    function renderSlateCards() {
+      masonryContainer.innerHTML = '';
+
+      // Filter memories
+      let filtered = MEMORY_DATA;
+
+      // Sidebar filtering
+      if (activeFilter === 'no-placement') {
+        filtered = filtered.filter(m => m.placementCount === 0);
+      } else if (activeFilter === 'placed') {
+        filtered = filtered.filter(m => m.placementCount > 0);
+      } else if (activeFilter === 'agent') {
+        filtered = filtered.filter(m => m.kind === 'agent');
+      }
+
+      // Saved chip filtering
+      if (selectedChipQuery) {
+        filtered = filtered.filter(m =>
+          m.title.toLowerCase().includes(selectedChipQuery) ||
+          m.snippet.toLowerCase().includes(selectedChipQuery) ||
+          m.kind === selectedChipQuery
+        );
+      }
+
+      // Search bar filtering
+      if (searchQuery) {
+        filtered = filtered.filter(m =>
+          m.title.toLowerCase().includes(searchQuery) ||
+          m.snippet.toLowerCase().includes(searchQuery)
+        );
+      }
+
+      // Color facet filtering
+      if (selectedColor) {
+        filtered = filtered.filter(m => m.hue === selectedColor);
+      }
+
+      // Update status text
+      if (selectedChipQuery || searchQuery || selectedColor) {
+        const litCount = filtered.filter(m => m.placementCount > 0).length;
+        const noPlacementCount = filtered.filter(m => m.placementCount === 0).length;
+        statusText.innerHTML = `${litCount} lit · ${noPlacementCount} zero current Placements · constellation hop 1`;
+        statusText.style.color = 'rgb(var(--c-sel))';
+      } else {
+        statusText.innerHTML = 'all memories chronological (Drift)';
+        statusText.style.color = 'rgba(234, 234, 234, 0.32)';
+      }
+
+      if (filtered.length === 0) {
+        masonryContainer.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; text-align: center; font-family: var(--f-mono); font-size: 11px; color: rgba(234,234,234,0.3);">No memories match query</div>`;
+        return;
+      }
+
+      // Build cards
+      for (const mem of filtered) {
+        const card = document.createElement('div');
+        card.className = `card ${mem.kind}-card`;
+        if (mem.id === selectedMemoryId) card.classList.add('selected');
+        card.dataset.memoryId = mem.id;
+
+        // Custom corners for agent cards
+        if (mem.kind === 'agent') {
+          card.classList.add('agent-card');
+          const copperTag = document.createElement('div');
+          copperTag.className = 'agent-corner-tag';
+          copperTag.innerHTML = `SKILL ${mem.unread ? '<span class="agent-ember" id="ember-'+mem.id+'"></span>' : ''}`;
+          card.appendChild(copperTag);
+        }
+
+        // Card Image Bleed (Pinterest style)
+        if (mem.media && (mem.kind === 'image' || mem.kind === 'sketch')) {
+          const mediaDiv = document.createElement('div');
+          mediaDiv.className = 'card-media';
+
+          // Image heights are naturally responsive in column layouts
+          const img = document.createElement('img');
+          img.src = mem.media;
+          img.alt = mem.title;
+          img.loading = "lazy";
+
+          mediaDiv.appendChild(img);
+          card.appendChild(mediaDiv);
+        }
+
+        // Audio waveform header
+        if (mem.kind === 'audio') {
+          const audioDiv = document.createElement('div');
+          audioDiv.className = 'audio-waveform-container';
+          if (activeAudio && activeAudio.memId === mem.id) {
+            audioDiv.classList.add('playing');
+          }
+
+          // Construct custom waveform drawing
+          let svgContent = '';
+          const barsCount = mem.waveform.length;
+          mem.waveform.forEach((h, idx) => {
+            const x = (idx / barsCount) * 100;
+            svgContent += `<line x1="${x}%" y1="${50 - h/2}%" x2="${x}%" y2="${50 + h/2}%" />`;
+          });
+
+          audioDiv.innerHTML = `
+            <svg class="waveform-svg">${svgContent}</svg>
+            <div class="audio-player-controls">
+              <button class="play-btn" data-id="${mem.id}">▸</button>
+              <div class="audio-timeline">
+                <div class="audio-progress" id="progress-${mem.id}" style="width: ${activeAudio && activeAudio.memId === mem.id ? activeAudio.progress : 0}%"></div>
+              </div>
+              <span class="audio-duration">${mem.duration}</span>
+            </div>
+          `;
+
+          card.appendChild(audioDiv);
+        }
+
+        // Details Container
+        const details = document.createElement('div');
+        details.className = 'card-details';
+
+        // Header Metadata
+        const meta = document.createElement('div');
+        meta.className = 'card-header-meta';
+
+        const kindSpan = document.createElement('span');
+        kindSpan.className = 'card-kind';
+        kindSpan.innerHTML = `<span class="kind-dot"></span>${mem.kind}`;
+        meta.appendChild(kindSpan);
+
+        const stateSpan = document.createElement('span');
+        stateSpan.className = `card-tag ${mem.placementCount > 0 ? 'placed' : 'no-placement'}`;
+        stateSpan.innerText = mem.placementCount > 0 ? mem.layer : 'zero current Placements';
+        meta.appendChild(stateSpan);
+
+        details.appendChild(meta);
+
+        // Title
+        const title = document.createElement('div');
+        title.className = 'card-title';
+        title.innerText = mem.title;
+        details.appendChild(title);
+
+        // Snippet (if text or description)
+        if (mem.snippet && mem.kind !== 'image') {
+          const snippet = document.createElement('div');
+          snippet.className = 'card-snippet';
+          snippet.innerText = mem.snippet;
+          details.appendChild(snippet);
+        }
+
+        // Color Dots Palette (Pinterest inspired color matching)
+        if (mem.colors && mem.colors.length > 0) {
+          const palette = document.createElement('div');
+          palette.className = 'card-palette';
+          mem.colors.forEach(col => {
+            const dot = document.createElement('span');
+            dot.className = 'card-palette-dot';
+            dot.style.background = col;
+            palette.appendChild(dot);
+          });
+          details.appendChild(palette);
+        }
+
+        card.appendChild(details);
+        masonryContainer.appendChild(card);
+
+        // Wiring events for this card
+        card.addEventListener('mousedown', (e) => {
+          if (e.target.closest('.play-btn')) return; // Ignore click on audio play button
+          if (e.button !== 0) return; // Left click only
+          setupSlateToGridDrag(e, card, mem);
+        });
+
+        card.addEventListener('click', (e) => {
+          if (e.target.closest('.play-btn')) return;
+          selectCard(mem.id);
+        });
+
+        card.addEventListener('dblclick', () => {
+          openModal(mem);
+        });
+      }
+
+      // Wire play button clicks
+      document.querySelectorAll('.play-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const memId = btn.dataset.id;
+          toggleAudioPlayback(memId);
+        });
+      });
+    }
+
+    // ── MOUSE DRAG DECORATORS & ACTIONS ──
+
+    // 1. Dragging FROM Slate TO Grid (Outbound drag traffic)
+    function setupSlateToGridDrag(e, cardEl, mem) {
+      const startX = e.clientX;
+      const startY = e.clientY;
+      let dragInitiated = false;
+      let ghostEl = null;
+
+      function onMouseMove(moveEvt) {
+        if (!dragInitiated) {
+          const dist = Math.hypot(moveEvt.clientX - startX, moveEvt.clientY - startY);
+          if (dist > 6) {
+            dragInitiated = true;
+            cardEl.classList.add('dragging');
+
+            // Create carried preview ghost
+            ghostEl = document.createElement('div');
+            ghostEl.className = 'obj carried';
+            ghostEl.innerHTML = `
+              <div style="font-family:var(--f-mono); font-size:8px; text-transform:uppercase; color:rgba(234,234,234,0.4)">${mem.kind} memory</div>
+              <div style="font-family:var(--f-ui); font-size:12px; font-weight:600; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${mem.title}</div>
+              <div style="font-family:var(--f-mono); font-size:9px; color:rgb(var(--c-carry))">⧉ Size ${mem.size}×${mem.size}</div>
+            `;
+            document.body.appendChild(ghostEl);
+
+            // Active layout checking: hide/suspend grid only if w-100. If we pull out, resume grid visibility
+            if (currentWidthState === 'w-100') {
+              document.getElementById('viewport').style.opacity = '1';
+            }
+          }
+          return;
+        }
+
+        // Position the ghost at mouse cursor
+        ghostEl.style.left = (moveEvt.clientX - 90) + 'px';
+        ghostEl.style.top = (moveEvt.clientY - 25) + 'px';
+
+        // Check if mouse is over the grid (left of Memory Slate)
+        const slateBounds = memorySlate.getBoundingClientRect();
+        const overGrid = moveEvt.clientX < slateBounds.left;
+
+        if (overGrid) {
+          dropPreview.style.display = 'block';
+          const cell = TraceProto.screenToCell(moveEvt.clientX, moveEvt.clientY);
+          dropPreview.style.left = (cell.col * 220) + 'px';
+          dropPreview.style.top = (cell.row * 220) + 'px';
+          dropPreview.style.width = (mem.size * 220) + 'px';
+          dropPreview.style.height = (mem.size * 220) + 'px';
+
+          // Detect overlap / invalid drops
+          const isOverlap = checkFootprintOverlap(cell.col, cell.row, mem.size, mem.id);
+          if (isOverlap) {
+            dropPreview.classList.add('invalid');
+            ghostEl.classList.add('invalid');
+          } else {
+            dropPreview.classList.remove('invalid');
+            ghostEl.classList.remove('invalid');
+          }
+        } else {
+          dropPreview.style.display = 'none';
+          ghostEl.classList.remove('invalid');
+        }
+      }
+
+      function onMouseUp(upEvt) {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+
+        cardEl.classList.remove('dragging');
+
+        if (!dragInitiated) return;
+
+        const slateBounds = memorySlate.getBoundingClientRect();
+        const overGrid = upEvt.clientX < slateBounds.left;
+
+        let dropSuccess = false;
+
+        if (overGrid) {
+          const cell = TraceProto.screenToCell(upEvt.clientX, upEvt.clientY);
+          const isOverlap = checkFootprintOverlap(cell.col, cell.row, mem.size, mem.id);
+
+          if (!isOverlap) {
+            // Commit drop!
+            dropSuccess = true;
+
+            // Remove previous placement if it was placed elsewhere
+            if (mem.placementCount > 0 && mem.placementObj) {
+              TraceProto.removePlacement(mem.placementObj);
+            }
+
+            mem.placementCount = 1;
+            mem.layer = 'L0';
+            mem.col = cell.col;
+            mem.row = cell.row;
+            mem.lastTouch = new Date().toISOString();
+
+            // Render placement on the grid
+            renderPlacementOnGrid(mem);
+
+            // Animate grid burst feedback
+            const pEl = mem.placementObj.el;
+            TraceProto.spawnBurst(pEl);
+            TraceProto.spawnRipple(upEvt.clientX, upEvt.clientY);
+
+            // Highlight card selection
+            selectCard(mem.id);
+          }
+        }
+
+        // Cleanup ghost
+        if (ghostEl) {
+          if (!dropSuccess) {
+            // Snapback animation to slate
+            ghostEl.style.transition = 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)';
+            const cardBounds = cardEl.getBoundingClientRect();
+            ghostEl.style.left = cardBounds.left + 'px';
+            ghostEl.style.top = cardBounds.top + 'px';
+            ghostEl.style.opacity = '0';
+
+            setTimeout(() => {
+              ghostEl.remove();
+              // If width is w-100, return grid opacity to 0
+              if (currentWidthState === 'w-100') {
+                document.getElementById('viewport').style.opacity = '0';
+              }
+            }, 300);
+          } else {
+            ghostEl.remove();
+          }
+        }
+
+        dropPreview.style.display = 'none';
+        renderSlateCards();
+      }
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    }
+
+    // 2. Dragging FROM Grid TO Slate (Inbound unplace traffic)
+    function setupGridToSlateDrag(e, placementEl, mem) {
+      const startX = e.clientX;
+      const startY = e.clientY;
+      let dragInitiated = false;
+      let dragOffset = { x: 0, y: 0 };
+      let peelTimer = null;
+      let wasPeeled = false;
+
+      const rect = placementEl.getBoundingClientRect();
+      const initialLeft = placementEl.offsetLeft;
+      const initialTop = placementEl.offsetTop;
+
+      function onMouseMove(moveEvt) {
+        if (!dragInitiated) {
+          const dist = Math.hypot(moveEvt.clientX - startX, moveEvt.clientY - startY);
+          if (dist > 6) {
+            dragInitiated = true;
+            placementEl.classList.add('dragging');
+            placementEl.style.zIndex = '9999';
+            // Compute mouse offset relative to placement top-left
+            const worldCoords = TraceProto.screenToCell(startX, startY);
+            dragOffset.x = moveEvt.clientX - rect.left;
+            dragOffset.y = moveEvt.clientY - rect.top;
+          }
+          return;
+        }
+
+        // Manual drag in screen space to follow cursor
+        // Convert screen position back to world offset coordinates
+        const viewportEl = document.getElementById('viewport');
+        const panX = parseFloat(viewportEl.style.getPropertyValue('--pan-x') || 0);
+        const panY = parseFloat(viewportEl.style.getPropertyValue('--pan-y') || 0);
+        const zoom = parseFloat(viewportEl.style.getPropertyValue('--zoom') || 1);
+
+        const worldX = (moveEvt.clientX - panX - dragOffset.x * zoom) / zoom;
+        const worldY = (moveEvt.clientY - panY - dragOffset.y * zoom) / zoom;
+
+        placementEl.style.left = worldX + 'px';
+        placementEl.style.top = worldY + 'px';
+
+        // Check if mouse crossed into Memory Slate boundary
+        const slateBounds = memorySlate.getBoundingClientRect();
+        const isClosed = memorySlate.classList.contains('closed');
+
+        // Edge peel detection (drag to edge, hold 250ms opens tray 25%)
+        if (isClosed) {
+          if (moveEvt.clientX >= window.innerWidth - 40) {
+            if (!peelTimer) {
+              peelTimer = setTimeout(() => {
+                memorySlate.classList.remove('closed');
+                setSlateWidth('w-25');
+                wasPeeled = true;
+                unplaceDropzone.classList.add('active');
+                peelTimer = null;
+              }, 250);
+            }
+          } else {
+            if (peelTimer) {
+              clearTimeout(peelTimer);
+              peelTimer = null;
+            }
+          }
+        }
+
+        const overSlate = moveEvt.clientX >= (isClosed && !wasPeeled ? window.innerWidth - 40 : slateBounds.left);
+
+        if (overSlate && (!isClosed || wasPeeled)) {
+          unplaceDropzone.classList.add('active');
+          placementEl.style.opacity = '0.5';
+          placementEl.style.outline = '2px solid rgb(var(--c-invalid))';
+        } else {
+          unplaceDropzone.classList.remove('active');
+          placementEl.style.opacity = '1';
+          placementEl.style.outline = '';
+        }
+      }
+
+      function onMouseUp(upEvt) {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+
+        if (peelTimer) {
+          clearTimeout(peelTimer);
+          peelTimer = null;
+        }
+
+        unplaceDropzone.classList.remove('active');
+        placementEl.classList.remove('dragging');
+        placementEl.style.zIndex = '4';
+        placementEl.style.outline = '';
+        placementEl.style.opacity = '1';
+
+        if (!dragInitiated) return;
+
+        const slateBounds = memorySlate.getBoundingClientRect();
+        const isClosed = memorySlate.classList.contains('closed');
+        const overSlate = upEvt.clientX >= (isClosed && !wasPeeled ? window.innerWidth - 40 : slateBounds.left);
+
+        if (overSlate && (!isClosed || wasPeeled)) {
+          // Unplace memory!
+          unplaceMemory(mem);
+          TraceProto.spawnRipple(upEvt.clientX, upEvt.clientY);
+
+          if (wasPeeled) {
+            setTimeout(() => {
+              memorySlate.classList.add('closed');
+              wasPeeled = false;
+            }, 600);
+          }
+        } else {
+          // Re-snap to original cell
+          placementEl.style.left = initialLeft + 'px';
+          placementEl.style.top = initialTop + 'px';
+
+          if (wasPeeled) {
+            setTimeout(() => {
+              memorySlate.classList.add('closed');
+              wasPeeled = false;
+            }, 600);
+          }
+        }
+      }
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    }
+
+    // Helper: check if footprint cell is occupied
+    function checkFootprintOverlap(col, row, size, exceptMemId) {
+      for (const m of MEMORY_DATA) {
+        if (m.placementCount > 0 && m.id !== exceptMemId) {
+          // Check overlap of squares
+          const overlapCol = (col < m.col + m.size) && (col + size > m.col);
+          const overlapRow = (row < m.row + m.size) && (row + size > m.row);
+          if (overlapCol && overlapRow) return true;
+        }
+      }
+      return false;
+    }
+
+    // Unplace memory operation (removes grid placement, removes the current Placement)
+    function unplaceMemory(mem) {
+      if (mem.placementCount === 0) return;
+
+      if (mem.placementObj) {
+        TraceProto.removePlacement(mem.placementObj);
+        mem.placementObj = null;
+      }
+
+      mem.placementCount = 0;
+      mem.layer = null;
+      mem.col = null;
+      mem.row = null;
+      mem.lastTouch = new Date().toISOString();
+
+      renderSlateCards();
+    }
+
+    // Keyboard-only placing at viewport center: P
+    function placeMemoryOnGridCenter(mem) {
+      // Unplace first if placed elsewhere
+      if (mem.placementCount > 0 && mem.placementObj) {
+        TraceProto.removePlacement(mem.placementObj);
+      }
+
+      // Compute camera center in world coordinates
+      const viewportEl = document.getElementById('viewport');
+      const panX = parseFloat(viewportEl.style.getPropertyValue('--pan-x') || window.innerWidth/2);
+      const panY = parseFloat(viewportEl.style.getPropertyValue('--pan-y') || window.innerHeight/2);
+      const zoom = parseFloat(viewportEl.style.getPropertyValue('--zoom') || 1);
+
+      const centerScreenX = window.innerWidth / 2;
+      const centerScreenY = window.innerHeight / 2;
+
+      // Convert to grid cell
+      const cell = TraceProto.screenToCell(centerScreenX, centerScreenY);
+
+      // Walk to find first unoccupied cell clockwise if center is occupied
+      let col = cell.col;
+      let row = cell.row;
+      let spiralWalk = [[0,0], [1,0], [1,1], [0,1], [-1,1], [-1,0], [-1,-1], [0,-1], [1,-1]];
+      let foundCell = false;
+
+      for (const offset of spiralWalk) {
+        const testCol = col + offset[0];
+        const testRow = row + offset[1];
+        if (!checkFootprintOverlap(testCol, testRow, mem.size, mem.id)) {
+          col = testCol;
+          row = testRow;
+          foundCell = true;
+          break;
+        }
+      }
+
+      mem.placementCount = 1;
+      mem.layer = 'L0';
+      mem.col = col;
+      mem.row = row;
+      mem.lastTouch = new Date().toISOString();
+
+      renderPlacementOnGrid(mem);
+
+      // Spawn burst
+      if (mem.placementObj && mem.placementObj.el) {
+        TraceProto.spawnBurst(mem.placementObj.el);
+      }
+
+      // Close/minimize slate if at 100% Gallery to return to field
+      if (currentWidthState === 'w-100') {
+        setSlateWidth('w-50');
+      }
+
+      renderSlateCards();
+    }
+
+    // Select Card & synchronize UI
+    function selectCard(memId) {
+      selectedMemoryId = memId;
+
+      // Highlight card in slate
+      document.querySelectorAll('.card').forEach(card => {
+        card.classList.toggle('selected', card.dataset.memoryId === memId);
+      });
+
+      // Highlight corresponding placement on grid
+      const memories = MEMORY_DATA.find(m => m.id === memId);
+
+      // Remove outline from all placements
+      document.querySelectorAll('.obj').forEach(obj => {
+        obj.classList.remove('selected');
+      });
+
+      if (memories && memories.placementObj && memories.placementObj.el) {
+        memories.placementObj.el.classList.add('selected');
+        // Flare grid lighting in base runtime
+        TraceProto.spawnRipple(
+          memories.placementObj.el.getBoundingClientRect().left + 50,
+          memories.placementObj.el.getBoundingClientRect().top + 50
+        );
+      }
+
+      // Add a selection info overlay row to the HUD Controls dynamically
+      const hudControls = document.getElementById('hud-slate-legend');
+      let statusEl = document.getElementById('selected-status-row');
+      if (!statusEl) {
+        statusEl = document.createElement('div');
+        statusEl.id = 'selected-status-row';
+        statusEl.className = 'hud-slate-status';
+        hudControls.appendChild(statusEl);
+      }
+
+      const activeMem = MEMORY_DATA.find(m => m.id === memId);
+      if (activeMem) {
+        statusEl.innerHTML = `Active selection: [${activeMem.title}] · ${activeMem.placementCount} current Placements`;
+      } else {
+        statusEl.innerHTML = '';
+      }
+    }
+
+    // Detail Modal Actions
+    function openModal(mem) {
+      selectedMemoryId = mem.id;
+      selectCard(mem.id);
+
+      // Remove copper unvisited ember if present
+      if (mem.kind === 'agent' && mem.unread) {
+        mem.unread = false;
+        const ember = document.getElementById('ember-' + mem.id);
+        if (ember) ember.style.opacity = '0';
+      }
+
+      document.getElementById('modal-kind-tag').innerText = `${mem.kind.toUpperCase()} MEMORY`;
+      document.getElementById('modal-title').innerText = mem.title;
+      document.getElementById('modal-state').innerText = mem.placementCount > 0 ? `placed on layer ${mem.layer} [${mem.col}, ${mem.row}]` : 'zero current Placements';
+
+      const mediaContainer = document.getElementById('modal-media-container');
+      mediaContainer.innerHTML = '';
+
+      if (mem.media) {
+        const img = document.createElement('img');
+        img.src = mem.media;
+        img.className = 'modal-img';
+        mediaContainer.appendChild(img);
+      }
+
+      const textContainer = document.getElementById('modal-text-content');
+      textContainer.innerText = mem.snippet || '';
+
+      detailModal.classList.add('open');
+    }
+
+    function closeModal() {
+      detailModal.classList.remove('open');
+    }
+
+    // Audio Playback simulation
+    function toggleAudioPlayback(memId) {
+      const mem = MEMORY_DATA.find(m => m.id === memId);
+      if (!mem || mem.kind !== 'audio') return;
+
+      const audioCard = document.querySelector(`.card[data-memory-id="${memId}"] .audio-waveform-container`);
+      const playBtn = document.querySelector(`.card[data-memory-id="${memId}"] .play-btn`);
+      const progressEl = document.getElementById(`progress-${memId}`);
+
+      if (activeAudio && activeAudio.memId === memId) {
+        // Pause active audio
+        clearInterval(activeAudio.interval);
+        activeAudio = null;
+        if (audioCard) audioCard.classList.remove('playing');
+        if (playBtn) playBtn.innerText = '▸';
+      } else {
+        // If another audio is playing, pause it first
+        if (activeAudio) {
+          toggleAudioPlayback(activeAudio.memId);
+        }
+
+        // Start playing this one
+        if (audioCard) audioCard.classList.add('playing');
+        if (playBtn) playBtn.innerText = 'II';
+
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += 2.5;
+          if (progressEl) progressEl.style.width = progress + '%';
+          if (activeAudio) activeAudio.progress = progress;
+
+          if (progress >= 100) {
+            toggleAudioPlayback(memId);
+            if (progressEl) progressEl.style.width = '0%';
+          }
+        }, 300);
+
+        activeAudio = {
+          memId: memId,
+          interval: interval,
+          progress: progress
+        };
+      }
+    }
+  </script>
+</body>
+</html>

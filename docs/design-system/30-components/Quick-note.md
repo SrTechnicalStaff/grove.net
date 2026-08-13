@@ -4,7 +4,7 @@ status: active
 date: 2026-08-09
 component: Quick Note
 plane: information
-surface_class: slate
+surface_class: overlay
 tags: [grove, design-system, component]
 ---
 
@@ -120,8 +120,8 @@ distinction is carried by two parts at once. A local editor takes an operation
 role edge — `--c-edit-edge` where it writes, `--c-view-edge` where it only
 looks — and sits beside the thing it serves; this surface takes `--k-slate-b`
 and `--c-slate` on its identity line, and sits in the middle of the viewport.
-An operation tint means *this belongs to something over there*; the Slate edge
-means *this belongs to the Grid*. A person reads which one they are
+An operation tint means *this belongs to something over there*; the capture
+overlay edge means *this belongs to the Grid*. A person reads which one they are
 looking at from the border alone, without reading a word.
 
 ## States
@@ -136,7 +136,7 @@ All nine.
 | Selected | Not reachable. Nothing on this surface is selectable. | Choosing a saved Note moves it into the capture field rather than marking it, so there is no state between looking at a Note and editing it. |
 | Engaged | The capture field holds a saved Note pulled back for editing: that item leaves the feed, the field carries its whole text, the action row appears, and the hint line changes to the two keys that leave the edit. Pointer-down on any control takes the pressed appearance over `--d-press`. | Nothing durable changes while the edit is open; the saved Note is unchanged until the change is committed, and leaving the edit restores it exactly. |
 | Pending | The draft stays exactly as typed and stays editable, the caret keeps its position, and the committing action goes `--text-unavailable` on a `--edge-hairline` border. | Nothing is blanked and nothing spins; a person may keep typing while a save is in flight, because input is never held. |
-| Refused | The inline confirm's refusal form appears above the capture field: full width of the field's region, `--surface-nested`, `--r-sm`, `1px` `--signal-refusal`, one sentence left, a retry and a dismissal right. The draft is untouched. | `30-components/Refusal.md` sends a refusal raised inside a Slate to this form; the 45° hatch belongs to Grid cells and is drawn nowhere on this surface. |
+| Refused | The inline confirm's refusal form appears above the capture field: full width of the field's region, `--surface-nested`, `--r-sm`, `1px` `--signal-refusal`, one sentence left, a retry and a dismissal right. The draft is untouched. | `30-components/Refusal.md` sends a refusal raised inside an overlay to this form; the 45° hatch belongs to Grid cells and is drawn nowhere on this surface. |
 | Unavailable | The committing action while the capture field holds no text; `Edit` and `Discard` on every other saved item while the field holds an edit. `--text-unavailable` on a `--edge-hairline` border, in place. | There is one editing place on this surface and it is the capture field, so the other items keep their actions in position and say they cannot be reached now. |
 | Anchored | The anchor diamond sits outside the feed item's top-left corner, and the item is otherwise untouched. | The diamond rather than the ribbon, because the item reserves only `--sp-sm` at its top edge and a ribbon's `17px` descent would land on the timestamp; `00-foundations/Marks.md`'s own test — does the form reserve margin at its top edge — answers diamond. |
 
@@ -266,7 +266,7 @@ modal: a person can watch the field simplify behind it while they type.
   field, and an action row that was absent. Pending: the committing action's
   retained position and hairline border. Refused: a bordered row that was not
   there, holding one plain sentence. Unavailable: a retained position and a
-  hairline border. Anchored: the diamond's silhouette. The Slate edge and the
+  hairline border. Anchored: the diamond's silhouette. The capture overlay edge and the
   identity line's hue are the surface's class mark and carry no state, so
   greyscale loses nothing Grove said.
 - **Forced colours** — the frame fill and border, the identity line, the
@@ -347,7 +347,7 @@ already a designed state with a next step.
 - **A resize handle on the capture field** — the field already grows with the
   draft, and a handle makes the size of chrome a thing a person has to manage.
 - **A second surface opened from this one** — nothing here opens a viewer, an
-  editor, or a Slate; the only handoff is placement, and it closes this surface
+  editor, or a named Slate; the only handoff is placement, and it closes this surface
   first.
 - **A confirmation that a save happened** — the Note is in the feed, which is
   the result in the place that produced it; a banner that leaves would put the

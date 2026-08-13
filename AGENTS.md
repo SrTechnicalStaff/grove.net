@@ -12,6 +12,21 @@ Grove evaluates architectural changes, UI design tokens, and feature work throug
 - **Plain-English Measurement**: Outcomes are articulated strictly as plain-English shifts in user behavior without technical jargon.
 - **Durable Value Rule**: Code changes must directly support or preserve an established product outcome. Pure technical abstractions without clear behavioral intent are strictly avoided.
 
+- **Domain Model Source of Truth**: Product meaning is defined by the
+  individual concept documents indexed by [`docs/domain/`](file:///C:/dev/grove-v9/docs/domain/README.md).
+  `CONTEXT.md` is the short vocabulary guardrail; it is not a substitute for
+  the concept documents. Product definitions, UI specifications, reviews,
+  tickets, and code comments derive from the domain model and must not redefine
+  it.
+- **Memory Relationship Invariant**: `Memory` is an immutable semantic record;
+  `Content` is its placed spatial instance and references it through
+  `MemoryId`; `Anchor` is authored context attached to Content; `Placement` is
+  spatial state owned by Content. Never describe a Memory as placed, unplaced,
+  or owning Anchors.
+- **Visual Vocabulary Invariant**: `Layer` refers only to literal Grid Layers.
+  Use `Plane` for visual composition surfaces and `Tier` for presentation or
+  representation groupings.
+
 ---
 
 ## 2. Decision Router for Skill Selection
@@ -50,9 +65,9 @@ Grove v9 organizes the user experience across three strict, non-overlapping visu
 
 ```
 +-----------------------------------------------------------------------+
-|  Layer 2: HUD Plane (Viewport-Fixed Slates, Tools, Telemetry Bars)    |
+|  Plane 2: HUD Plane (Viewport-Fixed Overlays, Tools, Telemetry Bars)   |
 |  +-----------------------------------------------------------------+  |
-|  | Layer 1: Information Layer (Content Editors & Capture Slates)  |  |
+|  | Plane 1: Information Plane (Content Editors & Capture Overlays)|  |
 |  |  +-----------------------------------------------------------+  |  |
 |  |  | Plane 0: Spatial Grid Canvas (GPU Skia Vector Canvas)     |  |  |
 |  |  +-----------------------------------------------------------+  |  |
@@ -68,13 +83,13 @@ Grove v9 organizes the user experience across three strict, non-overlapping visu
 - **Trail Physics**: 18-step spent cell trail decay physics rendering historical movement inertia across the grid.
 - **Dynamic Fading**: Continuous 3-tier grid line fading spanning zoom scales from 1% to 1000%.
 
-#### Layer 1 — Information Layer
-- **Implementation**: [FluentNotepadEditor.axaml](file:///C:/dev/grove-v9/src/GroveApp/Controls/FluentNotepadEditor.axaml) (content-anchored local editors) and [QuickNoteOverlay.axaml](file:///C:/dev/grove-v9/src/GroveApp/Controls/QuickNoteOverlay.axaml) (viewport-centered capture/placement slates). These are separate flows: the local editor edits an existing placement; Quick Note captures or commits a new note.
+#### Plane 1 — Information Plane
+- **Implementation**: [FluentNotepadEditor.axaml](file:///C:/dev/grove-v9/src/GroveApp/Controls/FluentNotepadEditor.axaml) (content-anchored local editors) and [QuickNoteOverlay.axaml](file:///C:/dev/grove-v9/src/GroveApp/Controls/QuickNoteOverlay.axaml) (viewport-centered capture/placement overlay). These are separate flows: the local editor edits an existing placement; Quick Note captures or commits a new note.
 - **Surface Styling**: Surface chrome `--surface-chrome` (`#161618`) framed with role border `--k-edit-b` (`#7A3F3A`).
 - **Anchoring**: Dynamically anchored to spatial grid coordinates while handling focused text input and live preview rendering.
 
-#### Layer 2 — HUD Plane
-- **Scope**: Viewport-fixed tools, status indicators, scale readouts, layer controls, and operational slates anchored to screen space.
+#### Plane 2 — HUD Plane
+- **Scope**: Viewport-fixed tools, status indicators, scale readouts, grid layer controls, and operational overlays anchored to screen space.
 
 ---
 
@@ -93,7 +108,7 @@ The core engine is structured into decoupled modules with zero unnecessary inter
   - [NoteRenderModule.cs](file:///C:/dev/grove-v9/src/GroveApp/Engine/NoteRenderModule.cs): Direct Skia vector rendering of grid note cards, borders, and text blocks.
   - [CursorRenderModule.cs](file:///C:/dev/grove-v9/src/GroveApp/Engine/CursorRenderModule.cs): Grid cursor rendering, focus outlines, and motion trails.
   - [GridLineModule.cs](file:///C:/dev/grove-v9/src/GroveApp/Engine/GridLineModule.cs): Multi-scale 3-tier grid line rendering and LOD alpha calculations.
-  - [FieldLedgerModule.cs](file:///C:/dev/grove-v9/src/GroveApp/Engine/FieldLedgerModule.cs): Bridge between ledger energy data and canvas rendering layers.
+  - [FieldLedgerModule.cs](file:///C:/dev/grove-v9/src/GroveApp/Engine/FieldLedgerModule.cs): Bridge between ledger energy data and canvas rendering passes.
 
 ---
 
@@ -114,4 +129,4 @@ The design system provides a normative single source of truth for visual tokens:
 
 1. **Zero Compilation Warnings**: Code must compile cleanly with 0 warnings or errors via `dotnet build src/GroveApp/GroveApp.csproj`.
 2. **Empirical Diagnostics First**: Never guess root causes or swallow exceptions. Always read full build outputs and logs.
-3. **Strict Code Seams**: Maintain strict decoupling between engine modules (`CameraModule`, `FieldLedgerEngine`, `RichTextEngine`) and UI visual layers.
+3. **Strict Code Seams**: Maintain strict decoupling between engine modules (`CameraModule`, `FieldLedgerEngine`, `RichTextEngine`) and UI visual planes.

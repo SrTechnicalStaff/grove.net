@@ -1,12 +1,17 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
+using GroveApp.DesignSystem;
 using GroveApp.Models;
+using GroveApp.Models.Interaction;
 
 namespace GroveApp.Engine
 {
@@ -199,6 +204,7 @@ namespace GroveApp.Engine
     /// </summary>
     public sealed class NativeClipboardService
     {
+        private const string SpatialClipboardFormat = "Grove.SpatialClipboard.v1";
         private readonly Func<IClipboard?> _getClipboardFunc;
 
         public NativeClipboardService(Func<IClipboard?> getClipboardFunc)
@@ -211,14 +217,18 @@ namespace GroveApp.Engine
             var clipboard = _getClipboardFunc();
             if (clipboard is null) return;
 
-            var (fragmentHtml, plainText) = AstHtmlConverter.SerializeItems(items);
+            GridContentItem[] sourceItems = items.ToArray();
+            var (fragmentHtml, plainText) = AstHtmlConverter.SerializeItems(sourceItems);
             if (string.IsNullOrEmpty(plainText) && string.IsNullOrEmpty(fragmentHtml)) return;
 
             string cfHtml = CfHtmlSerializer.SerializeToCfHtml(fragmentHtml);
+            string spatialContainer = JsonSerializer.Serialize(
+                SpatialClipboardContainer.FromItems(sourceItems, copiedAtUtc: DateTime.UtcNow));
 
             DataObject dataObject = new DataObject();
             dataObject.Set(DataFormats.Text, plainText);
             dataObject.Set("HTML Format", cfHtml);
+            dataObject.Set(SpatialClipboardFormat, spatialContainer);
 
             await clipboard.SetDataObjectAsync(dataObject);
         }
@@ -228,6 +238,25 @@ namespace GroveApp.Engine
             var clipboard = _getClipboardFunc();
             var results = new List<GridContentItem>();
             if (clipboard is null) return results;
+
+            try
+            {
+                object? structuredData = await clipboard.GetDataAsync(SpatialClipboardFormat);
+                if (structuredData is string serialized &&
+                    JsonSerializer.Deserialize<SpatialClipboardContainer>(serialized) is SpatialClipboardContainer container)
+                {
+                    foreach (SpatialClipboardPlacement placement in container.PlaceAt(
+                                 new GroveApp.Models.Interaction.CellCoordinate(dropOrigin.X, dropOrigin.Y)))
+                    {
+                        results.Add(CreateSpatialItem(placement));
+                    }
+
+                    return results;
+                }
+            }
+            catch (JsonException)
+            {
+            }
 
             // 1. Direct Bitmap Image Clipboard Paste (ADR-014)
             try
@@ -283,6 +312,47 @@ namespace GroveApp.Engine
             }
 
             return results;
+        }
+
+        private static GridContentItem CreateSpatialItem(SpatialClipboardPlacement placement)
+        {
+            GridContentItem item = placement.ContentType switch
+            {
+                nameof(ContentKind.Note) => new GridNote(
+                    placement.Footprint.X,
+                    placement.Footprint.Y,
+                    placement.RawPayload,
+                    NoteColor.Violet),
+                nameof(ContentKind.Document) => new GridDocument(
+                    placement.Footprint.X,
+                    placement.Footprint.Y,
+                    placement.Footprint.Width,
+                    placement.Footprint.Height,
+                    "Pasted Content",
+                    placement.RawPayload),
+                nameof(ContentKind.Image) => CreateImageFromSpatialPlacement(placement),
+                _ => throw new InvalidDataException($"Unsupported spatial clipboard content type '{placement.ContentType}'.")
+            };
+
+            item.ResizeTo(placement.Footprint);
+            item.MemoryId = placement.MemoryId;
+            return item;
+        }
+
+        private static GridImage CreateImageFromSpatialPlacement(SpatialClipboardPlacement placement)
+        {
+            int widthPx = placement.IntrinsicWidthPx > 0
+                ? placement.IntrinsicWidthPx
+                : checked(placement.Footprint.Width * (int)Tokens.GridCell);
+            int heightPx = placement.IntrinsicHeightPx > 0
+                ? placement.IntrinsicHeightPx
+                : checked(placement.Footprint.Height * (int)Tokens.GridCell);
+            return new GridImage(
+                placement.Footprint.X,
+                placement.Footprint.Y,
+                placement.RawPayload,
+                Math.Max(1, widthPx),
+                Math.Max(1, heightPx));
         }
     }
 }

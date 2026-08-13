@@ -4,7 +4,7 @@ status: active
 date: 2026-08-09
 component: Layers
 plane: hud
-surface_class: slate
+surface_class: overlay
 tags: [grove, design-system, component]
 ---
 
@@ -20,7 +20,7 @@ no token is a part with no contract.
 
 | Part | Required | Value |
 | --- | --- | --- |
-| Frame | yes | `--surface-chrome`, opaque; `--r-sm`; `1px` `--k-slate-b`; `--sp-lg` padding on every side; no shadow and no rounded corner, because a Slate fills the viewport edge to edge. |
+| Frame | yes | `--surface-chrome`, opaque; `--r-sm`; `1px` `--k-slate-b`; `--sp-lg` padding on every side; no shadow and no rounded corner, because the Layer Manager overlay fills the viewport edge to edge. |
 | Identity line | yes | `Layers` in `--f-display` at weight 500, `--t-title-small`, `--tr-label`, uppercase, ink `--k-slate`; `--sp-lg` beneath it. |
 | Close control | yes | At the right of the identity row. Label in `--f-ui` at `--t-caption`, `--text-primary`; `1px` `--edge-quiet`; `--r-sm`; padding `--sp-xs` top and bottom, `--sp-md` at the sides. |
 | Stack count | yes | `--f-mono` at weight 500, `--t-label`, `--tr-label`, uppercase, `--text-meta`; `--sp-sm` beneath it. |
@@ -46,13 +46,13 @@ lives on that Layer's row.
 **The Layer role hue does not appear here.** `--k-layer` identifies the Layer
 family of *controls* — it is on the Layer key caps in the Controls HUD, which
 is its only use in the product — while the identity of a composed surface is
-the Slate hue, which `10-grammar/Surface-classes.md` fixes for every Slate
-header. The shipped surface paints seven declarations in the Tool hue
+the viewport identity hue, which `10-grammar/Surface-classes.md` fixes for this
+overlay header. The shipped surface paints seven declarations in the Tool hue
 `#b3a9e0` / `#5b5288`, which is neither.
 
 ## Geometry
 
-- **Footprint** — this surface takes no cells. The Slate host composes it Full,
+- **Footprint** — this surface takes no cells. The HUD overlay host composes it Full,
   Left, or Right, and the pane's extent is the host's. Executed as a procedure:
   the frame fills the pane; the identity row, the count, and the filter field
   each take their own height at the top of the padding box in that order; the
@@ -84,9 +84,9 @@ All nine.
 | Selected | The current Layer's row carries a `2px` `--signal-interaction` outline offset `3px` outside its box, and its name goes `--text-primary`. | Exactly one row is ever marked. The ink step is reading hierarchy; the outline's offset is the carrier that survives without hue. |
 | Engaged | Pointer-down on a row, a menu row, or a control takes the pressed appearance over `--d-press`. An open rename field holds the caret and every typed character lands on the input frame. | There is no drag in this surface, so no gesture can be left half-open. |
 | Pending | No change from Rest. Every Layer command resolves on the frame it is asked for. | If a stack ever arrives from storage the list holds the rows it already has; it is never blank and never carries a progress mark. |
-| Refused | The inline confirm opens in its refusal form beneath the row: its frame border goes `--signal-refusal`, it states the condition in one sentence, `Keep it` stays available, and `Remove` is present and unavailable. | No hatch: `00-foundations/Marks.md` keeps the refusal hatch on Grid cells and never inside a Slate. The refusal form carries the dismissal and the unavailable committing action rather than a retry, because a second attempt at the same move would be answered identically and `10-grammar/States.md` requires the action that would commit to stay visible. |
+| Refused | The inline confirm opens in its refusal form beneath the row: its frame border goes `--signal-refusal`, it states the condition in one sentence, `Keep it` stays available, and `Remove` is present and unavailable. | No hatch: `00-foundations/Marks.md` keeps the refusal hatch on Grid cells and never inside an overlay. The refusal form carries the dismissal and the unavailable committing action rather than a retry, because a second attempt at the same move would be answered identically and `10-grammar/States.md` requires the action that would commit to stay visible. |
 | Unavailable | `Move up`, `Move down`, and `Remove` are drawn in `--text-unavailable` in their usual position in the menu when they cannot act. | `10-grammar/Surface-classes.md` narrows the state model for a menu row: the row keeps its place and takes the faint ink, and no border is added inside a menu that has none. |
-| Anchored | Not reachable. A person writes an Anchor onto a Memory or a placement, never onto a Layer, so nothing in this surface carries authored context. | The authored-context signal never appears here. |
+| Anchored | Not reachable. A person writes an Anchor onto Content, never onto a Grid Layer, so nothing in this surface carries authored context. | The authored-context signal never appears here. |
 
 Combination follows `10-grammar/States.md` without exception. Focused plus
 Selected is the one combination this surface draws often, and the two are told
@@ -235,8 +235,8 @@ zoom behind it change nothing about it, and it changes nothing about them.
   `--signal-refusal` fill at 5.08. `--text-unavailable` reaches 2.46 and is the
   documented exception, paired with a retained position. The frame's
   `--k-slate-b` border reaches 3.03 against `--surface-grid`, which is the
-  surface it separates the Slate from and the ratio that carries containment,
-  and 2.84 against the Slate's own fill. The confirm's `--edge-hairline` border
+  surface it separates the overlay from and the ratio that carries containment,
+  and 2.84 against the overlay's own fill. The confirm's `--edge-hairline` border
   is surface treatment rather than a meaning-bearing edge, because the
   `--surface-nested` fill against `--surface-chrome` is what states its extent.
 - **Without colour** — Approached: nothing changes, so nothing is lost. Focused:
@@ -310,12 +310,12 @@ has not written one.
   answer, and a picker in a confirm asks two.
 - **Drag to reorder** — a drag has no keyboard equal, and the grip that would
   advertise it is a refused mark.
-- **A role hue anywhere on this surface** — the Slate hue is the class's
+- **A role hue anywhere on this surface** — the overlay identity hue is the class's
   identity mark and it appears in the header and nowhere else.
 - **A translucent fill or a backdrop blur** — every fill in all four surface
   classes is opaque, because a surface that lets the Grid bleed through
   stops being readable at the moment it matters most.
-- **A toolbar, a footer, or a second title inside the surface** — a Slate holds
+- **A toolbar, a footer, or a second title inside the surface** — the overlay holds
   one identity, the host's commands, and content; every other command belongs on
   the row it acts on.
 - **A mark drawn on the Grid when a command cannot run** — a colour that

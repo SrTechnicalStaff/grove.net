@@ -63,7 +63,12 @@ public readonly record struct SpatialBoundingBox(
     }
 
     public static SpatialBoundingBox ForAnchor(in MemoryAnchor anchor) =>
-        new(anchor.CellX, anchor.CellY, anchor.CellX, anchor.CellY, anchor.LayerId);
+        new(
+            anchor.CellX,
+            anchor.CellY,
+            checked(anchor.CellX + Math.Max(1, anchor.CellWidth) - 1),
+            checked(anchor.CellY + Math.Max(1, anchor.CellHeight) - 1),
+            anchor.LayerId);
 }
 
 /// <summary>
@@ -651,6 +656,12 @@ public sealed class MemorySpatialIndex
     public SpatialQueryCache Cache => _cache;
 
     public MemoryAnchor[] Snapshot() => _tree.Snapshot();
+
+    public void Clear()
+    {
+        _tree.Clear();
+        _cache.Clear();
+    }
 
     public void Insert(in MemoryAnchor anchor)
     {

@@ -32,7 +32,7 @@ scope, journey, gate, iteration, backlog.
 
 **Prose that narrates the concept.** Any phrase that describes the idea behind
 a feature instead of naming what a person can do — "Store your context", "Your
-information layer", "Where your thinking lives", "Capture and organise".
+information", "Where your thinking lives", "Capture and organise".
 
 **Development residue.** Anything that reads as a note between people building
 the product: "coming soon", "not yet implemented", "TODO", "beta", version

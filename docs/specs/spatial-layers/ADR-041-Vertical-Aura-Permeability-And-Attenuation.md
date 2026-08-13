@@ -58,7 +58,7 @@ Where:
 
 ### 2.2 Composite Cell Energy Equation
 
-The total composite energy $E_{\text{total}}(c, L_{\text{active}})$ at cell coordinate $c(x,y)$ on target layer $L_{\text{active}}$ accumulates energy from all active and inactive layer sources across the workspace, added to baseline background energy $E_0 = 0.05$:
+The total composite energy $E_{\text{total}}(c, L_{\text{active}})$ at cell coordinate $c(x,y)$ on target layer $L_{\text{active}}$ accumulates energy from all active and inactive layer sources across the spatial field, added to baseline background energy $E_0 = 0.05$:
 
 $$E_{\text{total}}(c, L_{\text{active}}) = E_0 + \sum_{i \in \text{All Sources}} \left( \frac{M_i}{1 + 0.4 \cdot d_{i,c}^2} \cdot (0.5)^{|L_{\text{active}} - L_i|} \right)$$
 

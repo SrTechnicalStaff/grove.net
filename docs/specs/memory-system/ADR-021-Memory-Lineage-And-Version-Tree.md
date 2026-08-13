@@ -1,8 +1,12 @@
 ---
-status: "Normative / Accepted"
+status: "Normative / Accepted — reconciled with docs/domain/Memory-Version.md"
 ---
 
 # ADR-021: Memory Lineage and Version Tree Architecture
+
+> The canonical version concept is [`docs/domain/Memory-Version.md`](../../domain/Memory-Version.md).
+> Content reuse across Grid Layers is not a version branch. A new version is
+> created only by semantic editing or another explicit semantic transformation.
 
 | Property | Value |
 | :--- | :--- |
@@ -20,7 +24,7 @@ As defined in Grove's core principles (`docs/product/original-notes/Tracing.md` 
 
 ### Key Architectural Requirements
 1. **Non-Destructive Editing History**: Immutable append-only history preserving every historical snapshot of a Memory node.
-2. **Directed Acyclic Graph (DAG) Topology**: Support version branching and parallel forks (e.g. human edit vs. background AI agent generation vs. multi-layer trace variant).
+2. **Directed Acyclic Graph (DAG) Topology**: Support version branching and parallel forks (e.g. human edit vs. background AI agent generation). Reusing a Memory through multiple Content instances does not create a version branch.
 3. **Lineage Ancestry Pointers**: Every child memory explicitly reference its `ParentMemoryId`, `RootMemoryId`, and incremented `Generation` index ($g = g_{\text{parent}} + 1$).
 4. **Delta Compression & Chunk Tracking**: Compute and store forward/inverse payload deltas (`MemoryDelta`) using chunk-based diff algorithms to optimize storage while maintaining sub-millisecond head payload materialization.
 5. **3-Way Merge & LCA Traversal**: Provide fast Lowest Common Ancestor (LCA) graph algorithms to resolve branch divergence and support non-destructive 3-way text merging.
@@ -41,7 +45,7 @@ A Memory Lineage forms a Directed Acyclic Graph $\mathcal{G} = (\mathcal{V}, \ma
                     /           \
                    /             \
                   v               v
-    [ Branch A: v2 ]           [ Branch B: v3 ] (Gen 2 - Trace Variant)
+    [ Branch A: v2 ]           [ Branch B: v3 ] (Gen 2 - Independent Semantic Edit)
      (Human Edit)               (Agent Refinement)
           |                            |
           v                            v
@@ -374,7 +378,7 @@ memory_id: "018f3a5b-9c2d-7a1e-8f92-1c2d3e4f5a6b"
 parent_memory_id: "018f3a5a-1b2c-3d4e-5f6a-7b8c9d0e1f2a"
 root_memory_id: "018f3a50-0a1b-2c3d-4e5f-6a7b8c9d0e1f"
 generation: 3
-branch_name: "layer-2-variant"
+branch_name: "semantic-edit-variant"
 lineage_hash: "7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f80"
 ---
 # Derived Version Payload

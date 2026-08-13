@@ -8,8 +8,9 @@ tags: [grove, design-system, surface-classes]
 # Surface classes
 
 Everything in Grove that is drawn above the Grid belongs to one of four
-classes: **Slate**, **local editor**, **menu or flyout**, and **inline
-confirm**. Each class has one anatomy, one way in, and one way out.
+classes: **Slate**, **local editor**, **overlay**, and **inline
+confirm**. Menus, Quick Note, and Layer Manager are overlays. Each class has
+one anatomy, one way in, and one way out.
 
 Grove has no generic modal, no scrim, and no dialog box. The inline confirm is
 the replacement for all three.
@@ -20,7 +21,7 @@ and no fifth class is created to receive it.
 
 ## The four classes
 
-| | Slate | Local editor | Menu / flyout | Inline confirm |
+| | Slate | Local editor | Overlay | Inline confirm |
 | --- | --- | --- | --- | --- |
 | Plane | HUD | Information | Any — neutral chrome | The plane of the surface that raised it |
 | Fill | `--surface-chrome` | `--surface-chrome` | `--surface-chrome` | `--surface-nested` |
@@ -28,7 +29,7 @@ and no fifth class is created to receive it.
 | Radius | `--r-sm` | `--r-sm` | `--r-sm` | `--r-sm` |
 | Padding | `--sp-lg` | `--sp-md` | `--sp-xs` top and bottom, none at the sides | `--sp-sm` top and bottom, `--sp-md` at the sides |
 | Shadow | None | `--shadow-local` | `--shadow-local` | None |
-| Anchored to | The viewport, composed by the Slate host | Its source, beside it | The pointer or the control that opened it | The region of the surface that asked |
+| Anchored to | The viewport, composed by the Slate host | Its source, beside it | The pointer, viewport, or control that opened it | The region of the surface that asked |
 
 Every fill is opaque. Translucency, backdrop blur, and inset highlight lines
 are refused in all four classes, because a surface that lets the Grid
@@ -49,7 +50,7 @@ separated itself, and a second shadow would claim a second layer of depth.
 4. **Borders contain and locate; shadows only separate.** A border is 1px, a
    shadow is one of the two depth tokens, and a glow is neither.
 5. **Nothing floats centre-screen detached from what it serves.** Every
-   surface is composed by the Slate host, anchored beside its source, anchored
+   surface is composed by its host, anchored beside its source, anchored
    at its invoking point, or inside the surface that asked.
 6. **No scrim, ever.** The Grid behind stays fully lit, legible, and
    live, because dimming claims an interruption Grove does not make.
@@ -59,11 +60,12 @@ separated itself, and a second shadow would claim a second layer of depth.
 9. **Internal rhythm uses the space scale.** A class never introduces an
    off-scale gap to make a layout fit.
 
-## Slate
+## Slates
 
-A Slate is a viewport-fixed working surface with no single source: it holds a
-body of work — Memories, a Gallery, a Document being written, captured Notes —
-rather than serving one piece of content.
+Slates are viewport-fixed working surfaces with no single source. The three
+variants are Memory Slate, Gallery Slate, and Writing Slate; each
+holds its own archive, media collection, or document rather than serving one
+grid-placed piece of content.
 
 ### Anatomy
 
@@ -73,12 +75,10 @@ rather than serving one piece of content.
 | Border | `--k-slate-b` for a single pane; `--signal-interaction` for the active pane and `--edge-hairline` for the inactive pane when two are open. |
 | Header | The surface's own product name in `--f-display` at `--t-title-small`, `--tr-label`, uppercase, in `--c-slate`, with `--sp-lg` beneath it. |
 | Header controls | Quiet bordered controls at the right of the header — the host's commands only. |
-| Body | Content in neutral ink. The Slate hue appears in the header and nowhere else. |
+| Body | Content in neutral ink. The Slate identity hue appears in the header and nowhere else. |
 
-The Slate role hue is the class's identity mark, so every Slate header carries
-it. The Quick Note capture deck sets its header in `--text-primary`; that deck
-is corrected, because a Slate that drops the hue loses the one signal that
-says which class it is.
+The Slate role hue is the identity mark, so each Slate header carries it. Quick
+Note is a capture overlay and follows its own identity rule; it is not a Slate.
 
 A composed Slate carries no shadow. It fills the viewport edge to edge, so
 there is nothing beside it to separate from and nothing for a shadow to fall
@@ -98,10 +98,10 @@ title, a tab bar, a footer toolbar, a status bar, or a nested Slate.
 A Slate never floats free, never drags, never resizes the Grid viewport, and
 never dims what is behind it.
 
-**A fixed capture surface is a Slate.** It is viewport-fixed and has no source,
-which is the definition of the class; it differs from a local editor by having
-no role-tinted border, and that difference is the visual separation the
-contract root requires between capture and source-anchored chrome.
+**A fixed capture surface is an overlay, not a Slate.** It is
+viewport-fixed and has no source, and differs from a local editor by having no
+role-tinted border. That difference is the visual separation the contract root
+requires between capture and source-anchored chrome.
 
 ## Local editor
 
@@ -295,5 +295,5 @@ These never ship, whatever they are called.
 | Draggable or resizable floating window | Position must be a consequence of what a surface serves, never a thing to manage. |
 | Tooltip carrying an action | An action reachable only by hovering has no keyboard path. |
 | Coach mark, tour, or onboarding overlay | Interface that has to be narrated is interface that failed. |
-| Wizard or multi-step overlay | A sequence of questions is a task; tasks belong in a Slate. |
+| Wizard or multi-step overlay | A sequence of questions is a task; tasks belong in the overlay that owns the task. |
 | A second flyout level | Navigation wearing menu cloth; the digits stop saying which list they pick from. |

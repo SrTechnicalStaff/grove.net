@@ -48,9 +48,9 @@
 
 ## 4. Standards & Visual Plane Seam Audit
 
-- **Visual Plane Isolation (Plane 0 vs Layer 1 vs Plane 2)**:
+- **Visual Plane Isolation (Plane 0 vs Plane 1 vs Plane 2)**:
   - Spec mandates distinct glassmorphic material assignments across window planes ($z=0$ Main Grid Window `MicaBase`, $z=1$ Local Editor `MicaAlt`, $z=2$ HUD Slates `DesktopAcrylic`, $z=3$ Context Menus `InAppAcrylic`).
-  - Codebase reality: All window surfaces render over flat hex backgrounds (`#0E0E10`, `#161618`) without DWM material distinction or optical blur layering.
+  - Codebase reality: All window surfaces render over flat hex backgrounds (`#0E0E10`, `#161618`) without DWM material distinction or optical blur separation.
 - **Missing Win32 DWM Corner & Dark Mode Interop**:
   - Without calling `DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ...)` and `DWMWA_WINDOW_CORNER_PREFERENCE`, Windows 11 DWM non-client frame chrome does not properly adapt to the app's dark theme tokens.
 

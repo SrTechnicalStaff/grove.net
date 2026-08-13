@@ -4,6 +4,12 @@ status: "PARTIAL — verified arming and placement feedback"
 
 # ADR-057: Keybind Arming State Machine and Ghost Placement Preview
 
+> **Domain ownership rule.** A successful placement commits a Content instance
+> and its Placement state. If the armed tool represents a new source, it also
+> creates the source Memory; if it represents an existing Memory, it reuses
+> that `MemoryId`. The spatial index receives Content placement data. This
+> ADR must not describe a placed Memory or a Memory-owned spatial Anchor.
+
 | Property | Value |
 | :--- | :--- |
 | **Status** | PARTIAL — verified arming and placement feedback |
@@ -50,7 +56,7 @@ Rather than immediately instantiating a content item on keypress at an arbitrary
 |                         v              v                  v                       |
 |                  +--------------------------------------------------+             |
 |                  |                     PLACED                       |             |
-|                  | (Commit to Memory Ledger & R-Tree Spatial Index) |             |
+|                  | (Commit Content & Placement; index Content spatial state) |             |
 |                  +--------------------------------------------------+             |
 |                                         |                                         |
 |                                         | Auto-Transition                         |
@@ -68,7 +74,7 @@ Rather than immediately instantiating a content item on keypress at an arbitrary
 | `ARMED_NOTE` | Note tool armed. Ghost preview active. | $1 \times 1$ cell ($220 \times 220$ DIPs) | Commit Note, transition to `PLACED` | Disarm to `IDLE` |
 | `ARMED_QUICKNOTE` | Quick Note tool armed. Ghost preview active. | $1 \times 1$ cell ($220 \times 220$ DIPs) | Commit Note, focus `FocusedTextBox`, transition to `PLACED` | Disarm to `IDLE` |
 | `ARMED_DOCUMENT` | Document tool armed. Ghost preview active. | $2 \times 2$ cells ($440 \times 440$ DIPs) | Commit Document, transition to `PLACED` | Disarm to `IDLE` |
-| `PLACED` | Placement committed to memory ledger and R-Tree. | N/A (Transient state) | N/A | N/A |
+| `PLACED` | Content and Placement committed; Content spatial state indexed. | N/A (Transient state) | N/A | N/A |
 
 ### 2.2 Complete State Transition Matrix
 
@@ -81,7 +87,7 @@ Rather than immediately instantiating a content item on keypress at an arbitrary
 | `ARMED_*` | `Key_ShiftN` | Focus level == `Plane0Canvas` | `ARMED_QUICKNOTE` | Switch armed tool to `QuickNote` ($1 \times 1$) |
 | `ARMED_*` | `Key_D` | Focus level == `Plane0Canvas` | `ARMED_DOCUMENT` | Switch armed tool to `Document` ($2 \times 2$) |
 | `ARMED_*` | `Key_Escape` | Always | `IDLE` | Deactivate ghost renderer, clear armed state, restore default grid cursor |
-| `ARMED_*` | `Pointer_LeftClick` | `IsRegionFree == true` | `PLACED` | Append Memory to ledger, insert spatial anchor into R-Tree, auto-focus text box if `ARMED_QUICKNOTE` |
+| `ARMED_*` | `Pointer_LeftClick` | `IsRegionFree == true` | `PLACED` | Create or reuse a Memory, create Content with its `MemoryId`, commit Placement, index Content spatial state, and auto-focus text box if `ARMED_QUICKNOTE` |
 | `ARMED_*` | `Pointer_LeftClick` | `IsRegionFree == false` | `ARMED_*` (Unchanged) | Refuse placement, trigger 200ms visual error shake/red flash on ghost boundary |
 | `ARMED_*` | `Pointer_RightClick` | Always | `IDLE` | Cancel arming state, return to `IDLE` |
 | `PLACED` | `Internal_CommitDone` | Always | `IDLE` | Reset arming state to `IDLE`, clear transient parameters |
@@ -201,7 +207,7 @@ public readonly record struct GhostPlacementDescriptor(
 /// </summary>
 public sealed record PlacementCommitResult(
     bool IsSuccess,
-    Guid PlacedMemoryId,
+    Guid MemoryId,
     CellCoordinate OriginCell,
     FootprintBounds Footprint,
     bool AutoFocusRequested,
@@ -444,7 +450,7 @@ public sealed class ToolArmingStateMachine : IToolArmingService
 
         result = new PlacementCommitResult(
             IsSuccess: true,
-            PlacedMemoryId: newMemoryId,
+            MemoryId: newMemoryId,
             OriginCell: _activeGhost.OriginCell,
             Footprint: _activeGhost.Footprint,
             AutoFocusRequested: isQuickNote,

@@ -23,6 +23,7 @@ namespace GroveApp.Models
         /// placement remains mutable; the memory ledger owns immutable revisions.
         /// </summary>
         public Guid? MemoryId { get; set; }
+        public Guid? AnchorId { get; set; }
         public int CellX { get; set; }
         public int CellY { get; set; }
         public int CellWidth { get; set; } = 1;

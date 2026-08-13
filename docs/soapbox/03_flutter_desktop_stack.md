@@ -433,7 +433,7 @@ class GroveDatabase extends _$GroveDatabase {
   static LazyDatabase _openConnection() {
     return LazyDatabase(() async {
       final dbFolder = await getApplicationDocumentsDirectory();
-      final file = File(p.join(dbFolder.path, 'grove_v9_workspace.sqlite'));
+      final file = File(p.join(dbFolder.path, 'grove_v9_spatial.sqlite'));
 
       return NativeDatabase.createInBackground(
         file,

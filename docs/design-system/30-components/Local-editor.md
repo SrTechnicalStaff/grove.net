@@ -343,7 +343,7 @@ being written, so `Write a thought…` is a string with no job.
 - Catalogue deck: `docs/design_catalogue/src/information-plane/01-local-editors.html` — the contract for this component.
 - Catalogue deck: `docs/design_catalogue/src/01-menus.html` — the same frame rendered beside a Note, and the `Edit` row that opens it.
 - Catalogue deck: `docs/design_catalogue/src/information-plane/02-image-viewer.html` — the View-bordered sibling that fixes the one-variable rule.
-- Source note: `docs/raw/original-notes/Grove - information layer.txt` — the local layer sits above the Grid and the Grid does not know it exists.
+- Source note: `docs/raw/original-notes/Grove - information layer.txt` — the local Information Plane surface sits above the Grid and the Grid does not know it exists.
 - Decision: `docs/decisions/Slates and local editors.md` — local editors are content-attached, do not subscribe to the camera, and return focus on one dismissal.
 - Wireframe: `docs/ux/wireframes/text-editor/Text editor.md` — the order a person moves through opening, drafting, saving, refusing, and escalating.
 - Reference: `docs/reference/Keybind map.md` — `Ctrl/Cmd+Enter`, `Escape`, `Tab` and `Shift+Tab` on a local surface.
