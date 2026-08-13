@@ -69,7 +69,7 @@ public partial class MemorySlateControl : UserControl
         }
 
         IsVisible = false;
-        MemoryWall.Children.Clear();
+        GalleryTimelineContainer.Children.Clear();
         FilmstripStack.Children.Clear();
         LightboxContainer.Child = null;
         DisposeBitmaps();
@@ -137,14 +137,51 @@ public partial class MemorySlateControl : UserControl
     private void RefreshGallery()
     {
         DisposeBitmaps();
-        MemoryWall.Children.Clear();
+        GalleryTimelineContainer.Children.Clear();
 
         List<MemoryRecord> filtered = GetFilteredMemories().ToList();
         MemoryCountBadge.Text = $"{filtered.Count} item{(filtered.Count == 1 ? "" : "s")}";
 
-        foreach (MemoryRecord memory in filtered)
+        if (filtered.Count == 0)
         {
-            MemoryWall.Children.Add(CreateMemoryCard(memory));
+            return;
+        }
+
+        // Timeline Date Section Grouping (WinUI 3 Photos Experience)
+        var groups = filtered
+            .GroupBy(m => new DateTime(m.CreatedAtTicks, DateTimeKind.Utc).ToLocalTime().ToString("MMMM yyyy"))
+            .ToList();
+
+        foreach (var group in groups)
+        {
+            var section = new StackPanel
+            {
+                Spacing = 10
+            };
+
+            var headerText = new TextBlock
+            {
+                Text = group.Key,
+                FontSize = 14,
+                FontWeight = FontWeight.SemiBold,
+                Foreground = Colors.TextSecondaryBrush,
+                Margin = new Thickness(6, 0, 0, 0)
+            };
+            section.Children.Add(headerText);
+
+            var wrapPanel = new WrapPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Left
+            };
+
+            foreach (MemoryRecord memory in group)
+            {
+                wrapPanel.Children.Add(CreateMemoryCard(memory));
+            }
+
+            section.Children.Add(wrapPanel);
+            GalleryTimelineContainer.Children.Add(section);
         }
 
         if (LightboxOverlay.IsVisible && _activeMemory != null)
@@ -159,60 +196,35 @@ public partial class MemorySlateControl : UserControl
 
         var card = new Border
         {
-            Classes = { "MemoryCard" }
+            Classes = { "FluentMediaCard" }
         };
 
-        var mainLayout = new Grid
-        {
-            RowDefinitions = new RowDefinitions("*,Auto")
-        };
+        var mainLayout = new Grid();
 
+        // 1. Full-bleed preview content (NO black footer box!)
         Control previewContent = CreateMemoryPreview(memory, thumbnailMode: true);
-        Grid.SetRow(previewContent, 0);
         mainLayout.Children.Add(previewContent);
 
-        var footer = new Border
-        {
-            Background = Colors.SurfaceChromeBrush,
-            Padding = new Thickness(12, 8),
-            BorderBrush = Colors.EdgeHairlineBrush,
-            BorderThickness = new Thickness(0, 1, 0, 0)
-        };
-        Grid.SetRow(footer, 1);
-
-        var footerLayout = new Grid
-        {
-            ColumnDefinitions = new ColumnDefinitions("*,Auto")
-        };
-
-        var titleBlock = new TextBlock
-        {
-            Text = string.IsNullOrWhiteSpace(memory.Title) ? GetDefaultTitle(memory) : memory.Title,
-            FontWeight = FontWeight.SemiBold,
-            FontSize = 13,
-            Foreground = Colors.TextPrimaryBrush,
-            TextTrimming = TextTrimming.CharacterEllipsis,
-            VerticalAlignment = VerticalAlignment.Center
-        };
-        Grid.SetColumn(titleBlock, 0);
-        footerLayout.Children.Add(titleBlock);
-
+        // 2. Top-Right Corner Favorite Heart/Bookmark Badge
         if (isFav)
         {
-            var favIcon = new SymbolIcon
+            var badgeBorder = new Border
+            {
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Top,
+                Margin = new Thickness(8),
+                Padding = new Thickness(6),
+                CornerRadius = new CornerRadius(12),
+                Background = new SolidColorBrush(Color.Parse("#CC0E0E10"))
+            };
+            badgeBorder.Child = new SymbolIcon
             {
                 Symbol = Symbol.Bookmark,
                 FontSize = 12,
-                Foreground = Colors.SignalInteractionBrush,
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(6, 0, 0, 0)
+                Foreground = Colors.SignalInteractionBrush
             };
-            Grid.SetColumn(favIcon, 1);
-            footerLayout.Children.Add(favIcon);
+            mainLayout.Children.Add(badgeBorder);
         }
-
-        footer.Child = footerLayout;
-        mainLayout.Children.Add(footer);
 
         card.Child = mainLayout;
 
@@ -254,43 +266,65 @@ public partial class MemorySlateControl : UserControl
         {
             Trace.TraceError($"Memory {memory.MemoryId} thumbnail render failed: {exception}");
             MemoryRenderFailed?.Invoke(memory, exception);
-            return CreateTextSurface(memory.Title, Colors.SurfaceNestedBrush, Colors.TextPrimaryBrush);
+            return CreateTextCardSurface(memory.Title, "Corrupted image payload", Colors.SurfaceNestedBrush, Colors.TextPrimaryBrush);
         }
     }
 
     private static Control CreateDocumentPreview(MemoryRecord memory)
     {
         string content = memory.GetUtf8Payload();
-        if (string.IsNullOrWhiteSpace(content))
-        {
-            content = memory.Title;
-        }
-
-        return CreateTextSurface(content, Colors.SurfacePageBrush, Colors.PaperInkBrush);
+        string displayTitle = string.IsNullOrWhiteSpace(memory.Title) ? "PDF Document" : memory.Title;
+        return CreateTextCardSurface(displayTitle, content, Colors.SurfacePageBrush, Colors.PaperInkBrush);
     }
 
-    private static Control CreateTextPreview(MemoryRecord memory) => CreateTextSurface(
-        memory.GetUtf8Payload(),
-        ResolveTextSurface(memory.MemoryId),
-        Colors.NoteTextBrush);
-
-    private static Control CreateTextSurface(string content, IBrush background, IBrush foreground) => new Border
+    private static Control CreateTextPreview(MemoryRecord memory)
     {
-        Background = background,
-        Padding = new Thickness(14),
-        HorizontalAlignment = HorizontalAlignment.Stretch,
-        VerticalAlignment = VerticalAlignment.Stretch,
-        Child = new TextBlock
+        string content = memory.GetUtf8Payload();
+        string displayTitle = string.IsNullOrWhiteSpace(memory.Title) ? "Text Note" : memory.Title;
+        return CreateTextCardSurface(displayTitle, content, ResolveTextSurface(memory.MemoryId), Colors.NoteTextBrush);
+    }
+
+    private static Control CreateTextCardSurface(string title, string bodyText, IBrush background, IBrush foreground)
+    {
+        var container = new Border
         {
-            Text = content,
+            Background = background,
+            Padding = new Thickness(16),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Stretch
+        };
+
+        var stack = new StackPanel
+        {
+            Spacing = 8
+        };
+
+        var titleBlock = new TextBlock
+        {
+            Text = title,
+            FontWeight = FontWeight.Bold,
+            FontSize = 14,
+            Foreground = foreground,
+            TextTrimming = TextTrimming.CharacterEllipsis
+        };
+        stack.Children.Add(titleBlock);
+
+        var bodyBlock = new TextBlock
+        {
+            Text = bodyText,
             Foreground = foreground,
             FontFamily = Typography.UiFamily,
-            FontSize = 13,
-            LineHeight = 13 * Typography.LineHeightSnug,
+            FontSize = 12,
+            LineHeight = 12 * Typography.LineHeightSnug,
             TextWrapping = TextWrapping.Wrap,
-            TextTrimming = TextTrimming.WordEllipsis
-        }
-    };
+            TextTrimming = TextTrimming.WordEllipsis,
+            Opacity = 0.9
+        };
+        stack.Children.Add(bodyBlock);
+
+        container.Child = stack;
+        return container;
+    }
 
     private void OpenLightbox(MemoryRecord memory)
     {
@@ -330,8 +364,8 @@ public partial class MemorySlateControl : UserControl
 
             var thumb = new Border
             {
-                Width = 70,
-                Height = 70,
+                Width = 72,
+                Height = 72,
                 CornerRadius = new CornerRadius(6),
                 ClipToBounds = true,
                 BorderBrush = isActive ? Colors.SignalInteractionBrush : Colors.EdgeQuietBrush,
