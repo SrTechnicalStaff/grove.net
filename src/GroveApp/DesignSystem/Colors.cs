@@ -122,6 +122,7 @@ namespace GroveApp.DesignSystem
         public static IBrush SurfaceGridBrush => new SolidColorBrush(SurfaceGrid);
         public static IBrush SurfaceChromeBrush => new SolidColorBrush(SurfaceChrome);
         public static IBrush SurfaceNestedBrush => new SolidColorBrush(SurfaceNested);
+        public static IBrush SurfaceInteractiveBrush => new SolidColorBrush(SurfaceInteractive);
         public static IBrush SurfacePageBrush => new SolidColorBrush(SurfacePage);
         public static IBrush PaperInkBrush => new SolidColorBrush(Color.Parse(PaperInkHex));
 
