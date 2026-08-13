@@ -63,7 +63,7 @@ tags: [grove, product-definition, grid, spacetime, cell-continuum]
 
 - **Cursor Armed States (`1` key cycle)**:
   - Cursor interaction with Grid cells relies on clear accents, border highlights, and color coding (Trace, Resize, Copy, Cut, Duplicate) without cluttered text badges.
-  - Marquee selection requires covering all cells occupied by Content to register selection.
+  - Marquee selection requires covering every cell occupied by Content to register selection.
 - **Camera Viewport & Zoom**:
   - The camera acts as a lens moving over the 2D Grid plane.
   - Panning across the Grid is fluid and frictionless.

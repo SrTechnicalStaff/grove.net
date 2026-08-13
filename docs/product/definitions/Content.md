@@ -57,7 +57,7 @@ tags: [grove, product-definition, content, media-primitives, no-overflow]
 | **Memory** | Content references Memory through `MemoryId`. Editing Content creates a new immutable Memory version for that Content; tracing creates additional Content referencing the selected Memory. |
 | **Content** | *Self-Intersection*: Content objects enforce collision and proximity rules; placing Content near other Content forms dense spatial clusters and merges local Aura fields. |
 | **Aura** | Content is the sole source generator of Aura. Content size, type, and media ratio determine the hue, intensity, and cell radius of its emitted Aura field. |
-| **Layer** | Content resides natively on one specific Layer, but can be Traced across multiple Layers while preserving spatial cell coordinates. |
+| **Grid Layer** | Content resides natively on one specific Grid Layer, but can be traced across multiple Grid Layers while preserving spatial cell coordinates. |
 | **Annotation** | Annotations extract and organize Content from saturated Aura fields, reflowing Content into broadsheet print media templates (brochure, pamphlet, magazine). |
 | **Blip** | Hovering over or interacting with cells occupied by Content activates the local Blip on the Information Plane, displaying escalator lines and title previews. |
 | **Slate** | Double-clicking or selecting Content opens it in Slate (Writing Slate for text, Gallery Slate for media) for full-screen, un-truncated editing and inspection. |
@@ -72,7 +72,7 @@ tags: [grove, product-definition, content, media-primitives, no-overflow]
   - *Copy / Cut / Duplicate*: Perform cell-level spatial clipboard operations with Microsoft Excel-inspired cell accents and color highlights.
 - **Camera Zoom / Level-of-Detail (LOD) Behavior**:
   - *Zoomed In*: Content renders legible text, full image fidelity, and interactive controls.
-  - *Zoomed Out*: Content legibility drops naturally as camera retreats. At extreme distance, Content fades into representative LOD cards and Aura glowing points.
+  - *Zoomed Out*: Content legibility drops naturally as camera retreats. Grid tiers and cell-bounded Aura evidence remain available without a glow or halo representation.
 - **Creation Controls**:
   - Quick Note creates a Memory without requiring a Grid Placement.
   - A Grid placement action creates Content at target cursor coordinates and assigns its `MemoryId` to an existing Memory, or creates the Memory first when the source is unbound.

@@ -22,8 +22,8 @@ public readonly record struct GridCanvasRenderFrame(
     bool GridLinesVisible,
     FieldLedgerEngine FieldEngine,
     IReadOnlyList<GridContentItem> VisibleItems,
-    IReadOnlyList<GridContentItem> ActiveItems,
-    IReadOnlyList<GridContentItem> InactiveItems,
+    IReadOnlyList<GridContentItem> RenderItems,
+    IReadOnlyList<SelectedFieldCell> SelectedFieldCells,
     GridContentItem? SelectedItem,
     GridContentItem? HoveredItem,
     Func<Point, Point> WorldToScreen);
@@ -49,6 +49,13 @@ public sealed class GridCanvasRenderPipeline
             frame.MaxCellY,
             frame.FieldEngine,
             frame.VisibleItems);
+
+        _fieldLedgerRenderer.RenderSelectedAura(
+            context,
+            frame.CameraTransform,
+            frame.CellSize,
+            frame.Zoom,
+            frame.SelectedFieldCells);
 
         IReadOnlyList<PerimeterContourEdge> contourEdges = _fieldLedgerRenderer.GetPerimeterEdges(
             frame.FieldEngine,
@@ -92,24 +99,8 @@ public sealed class GridCanvasRenderPipeline
             frame.MaxCellX,
             frame.MinCellY,
             frame.MaxCellY,
-            frame.ActiveItems,
+            frame.RenderItems,
             frame.SelectedItem,
             frame.HoveredItem);
-
-        foreach (GridContentItem item in frame.InactiveItems)
-        {
-            _contentRenderer.RenderGhostOutline(
-                context,
-                frame.WorldToScreen,
-                frame.CellSize,
-                frame.Zoom,
-                frame.MinCellX,
-                frame.MaxCellX,
-                frame.MinCellY,
-                frame.MaxCellY,
-                item,
-                Tokens.InactiveGhostOpacity);
-        }
-
     }
 }

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -81,6 +80,7 @@ public sealed class MemoryRecordFileStore : IMemoryRecordStore
         builder.AppendLine($"memory_id: \"{record.MemoryId:D}\"");
         builder.AppendLine($"content_hash: \"{record.Hash}\"");
         builder.AppendLine($"payload_kind: \"{record.PayloadKind}\"");
+        builder.AppendLine($"title: {Quote(record.Title)}");
         builder.AppendLine($"created_at_iso: \"{new DateTime(record.CreatedAtTicks, DateTimeKind.Utc):O}\"");
         builder.AppendLine($"parent_memory_id: {(record.ParentMemoryId is Guid parent ? $"\"{parent:D}\"" : "null")}");
         builder.AppendLine($"root_memory_id: \"{record.RootMemoryId:D}\"");
@@ -88,21 +88,6 @@ public sealed class MemoryRecordFileStore : IMemoryRecordStore
         if (payloadReference.Length > 0)
         {
             builder.AppendLine($"payload_file: \"{payloadReference}\"");
-        }
-
-        builder.AppendLine("anchors:");
-        foreach (MemoryAnchor anchor in record.Anchors.OrderBy(item => item.CreatedAtTicks))
-        {
-            builder.AppendLine($"  - anchor_id: \"{anchor.AnchorId:D}\"");
-            builder.AppendLine($"    layer_id: \"{anchor.LayerId:D}\"");
-            builder.AppendLine($"    cell_x: {anchor.CellX}");
-            builder.AppendLine($"    cell_y: {anchor.CellY}");
-            builder.AppendLine($"    cell_width: {anchor.CellWidth}");
-            builder.AppendLine($"    cell_height: {anchor.CellHeight}");
-            builder.AppendLine($"    content_id: {Quote(anchor.ContentId)}");
-            builder.AppendLine($"    content_type: {Quote(anchor.ContentType)}");
-            builder.AppendLine($"    label: {Quote(anchor.ContextLabel)}");
-            builder.AppendLine($"    created_at_iso: \"{new DateTime(anchor.CreatedAtTicks, DateTimeKind.Utc):O}\"");
         }
 
         builder.AppendLine("---");
@@ -187,11 +172,11 @@ public sealed class MemoryRecordFileStore : IMemoryRecordStore
             MemoryId = memoryId,
             Hash = hash,
             PayloadKind = payloadKind,
+            Title = fields.GetValueOrDefault("title", string.Empty),
             RawPayload = payload,
             ParentMemoryId = parentMemoryId,
             RootMemoryId = rootMemoryId,
             Generation = generation,
-            Anchors = ParseAnchors(header, memoryId).ToImmutableList(),
             CreatedAtTicks = createdAt.ToUniversalTime().Ticks,
             UpdatedAtTicks = createdAt.ToUniversalTime().Ticks
         };
@@ -218,105 +203,6 @@ public sealed class MemoryRecordFileStore : IMemoryRecordStore
         }
 
         return fields;
-    }
-
-    private static List<MemoryAnchor> ParseAnchors(string header, Guid memoryId)
-    {
-        var anchors = new List<MemoryAnchor>();
-        Guid anchorId = Guid.Empty;
-        Guid layerId = Guid.Empty;
-        int cellX = 0;
-        int cellY = 0;
-        int cellWidth = 1;
-        int cellHeight = 1;
-        string contentId = string.Empty;
-        string contentType = string.Empty;
-        string label = string.Empty;
-        long createdAtTicks = DateTime.UtcNow.Ticks;
-
-        void Flush()
-        {
-            if (anchorId == Guid.Empty || layerId == Guid.Empty)
-            {
-                return;
-            }
-
-            anchors.Add(new MemoryAnchor
-            {
-                AnchorId = anchorId,
-                MemoryId = memoryId,
-                LayerId = layerId,
-                CellX = cellX,
-                CellY = cellY,
-                CellWidth = Math.Max(1, cellWidth),
-                CellHeight = Math.Max(1, cellHeight),
-                ContentId = contentId,
-                ContentType = contentType,
-                ContextLabel = label,
-                CreatedAtTicks = createdAtTicks
-            });
-
-            anchorId = Guid.Empty;
-            layerId = Guid.Empty;
-            cellX = 0;
-            cellY = 0;
-            cellWidth = 1;
-            cellHeight = 1;
-            contentId = string.Empty;
-            contentType = string.Empty;
-            label = string.Empty;
-            createdAtTicks = DateTime.UtcNow.Ticks;
-        }
-
-        foreach (string rawLine in header.Split('\n'))
-        {
-            string line = rawLine.Trim();
-            if (line.StartsWith("- anchor_id:", StringComparison.Ordinal))
-            {
-                Flush();
-                Guid.TryParse(Unquote(line[12..].Trim()), out anchorId);
-            }
-            else if (line.StartsWith("layer_id:", StringComparison.Ordinal))
-            {
-                Guid.TryParse(Unquote(line[9..].Trim()), out layerId);
-            }
-            else if (line.StartsWith("cell_x:", StringComparison.Ordinal))
-            {
-                int.TryParse(line[7..].Trim(), out cellX);
-            }
-            else if (line.StartsWith("cell_y:", StringComparison.Ordinal))
-            {
-                int.TryParse(line[7..].Trim(), out cellY);
-            }
-            else if (line.StartsWith("cell_width:", StringComparison.Ordinal))
-            {
-                int.TryParse(line[11..].Trim(), out cellWidth);
-            }
-            else if (line.StartsWith("cell_height:", StringComparison.Ordinal))
-            {
-                int.TryParse(line[12..].Trim(), out cellHeight);
-            }
-            else if (line.StartsWith("content_id:", StringComparison.Ordinal))
-            {
-                contentId = Unquote(line[11..].Trim());
-            }
-            else if (line.StartsWith("content_type:", StringComparison.Ordinal))
-            {
-                contentType = Unquote(line[13..].Trim());
-            }
-            else if (line.StartsWith("label:", StringComparison.Ordinal))
-            {
-                label = Unquote(line[6..].Trim());
-            }
-            else if (line.StartsWith("created_at_iso:", StringComparison.Ordinal) &&
-                     DateTime.TryParse(Unquote(line[15..].Trim()), out DateTime createdAt))
-            {
-                createdAtTicks = createdAt.ToUniversalTime().Ticks;
-            }
-        }
-
-        Flush();
-        return anchors;
     }
 
     private static string GetRequired(IReadOnlyDictionary<string, string> fields, string key) =>

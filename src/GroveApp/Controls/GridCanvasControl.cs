@@ -1,5 +1,4 @@
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -36,6 +35,7 @@ namespace GroveApp.Controls
         private readonly CameraAnimation _cameraAnimation = new();
         private readonly CanvasPanInteraction _panInteraction = new();
         private readonly SelectionService _selectionService = new(CellSize);
+        private readonly GroupTranslationEngine _groupTranslationEngine = new();
         public bool GridLinesVisible { get; private set; }
 
         private readonly CursorRenderModule _cursorRenderModule = new();
@@ -68,7 +68,6 @@ namespace GroveApp.Controls
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Grove",
             "grid-layers.json");
-        public LayerActivationManager LayerActivation { get; }
         public IToolArmingService Arming { get; }
         public LayerFeedbackAnimationController LayerFeedback { get; } = new();
 
@@ -229,28 +228,22 @@ namespace GroveApp.Controls
                 MemoryRecordDirectory);
             MemoryAnchors.PersistenceFailed += exception => MemoryAnchorPersistenceFailed?.Invoke(exception);
 
-            LayerActivation = new LayerActivationManager(LayerStack);
             _selectionService.SelectionChanged += OnSelectionChanged;
             _selectionService.MarqueeChanged += _ => InvalidateVisual();
-            LayerActivation.StateChanged += () =>
-            {
-                RefreshFieldLedger();
-                InvalidateVisual();
-            };
 
             Arming = new ToolArmingStateMachine(
                 (origin, width, height, layerId) => IsRegionFree(origin, width, height, ignoreItem: null, layerId: layerId));
             Arming.GhostPreviewUpdated += _ => InvalidateVisual();
             Arming.PlacementRejected += OnPlacementRejected;
             FieldEngine.LayerDeltaResolver = ResolveLayerDelta;
-            FieldEngine.ActiveLayerId = LayerStack.ActiveLayerId;
+            FieldEngine.ProjectionGridLayerId = LayerStack.SelectedGridLayerId;
             LayerStack.ItemCountProvider = layerId => Items.Count(item => item.LayerId == layerId);
             LayerStack.LayerMigrationValidator = CanMigrateLayerItems;
             _knownLayerCount = LayerStack.Layers.Count;
-            LayerStack.ActiveLayerChanged += _ =>
+            LayerStack.SelectedGridLayerChanged += _ =>
             {
                 DeselectAllItems();
-                FieldEngine.ActiveLayerId = LayerStack.ActiveLayerId;
+                FieldEngine.ProjectionGridLayerId = LayerStack.SelectedGridLayerId;
                 RefreshFieldLedger();
                 InvalidateVisual();
             };
@@ -273,7 +266,7 @@ namespace GroveApp.Controls
                 (origin, w, h) => IsRegionFree(origin, w, h),
                 async (newItem) =>
                 {
-                    newItem.LayerId = LayerStack.ActiveLayerId;
+                    newItem.LayerId = LayerStack.SelectedGridLayerId;
                     AddItem(newItem);
                     SelectOnly(newItem);
                     RefreshFieldLedger();
@@ -406,7 +399,6 @@ namespace GroveApp.Controls
                     Math.Clamp(anchor.CellHeight, 2, 8),
                     anchor.ContextLabel,
                     record.GetUtf8Payload(),
-                    isAnchored: true,
                     layerId);
             }
             else if (string.Equals(contentType, ContentKind.Image.ToString(), StringComparison.OrdinalIgnoreCase) ||
@@ -426,7 +418,6 @@ namespace GroveApp.Controls
                     payloadPath,
                     bitmap.PixelSize.Width,
                     bitmap.PixelSize.Height,
-                    isAnchored: true,
                     layerId);
                 image.LoadedBitmap = bitmap;
                 image.ResizeTo(new SpatialRegion(anchor.CellX, anchor.CellY, anchor.CellWidth, anchor.CellHeight));
@@ -439,7 +430,6 @@ namespace GroveApp.Controls
                     anchor.CellY,
                     record.GetUtf8Payload(),
                     NoteColor.Violet,
-                    isAnchored: true,
                     layerId);
                 note.ResizeTo(new SpatialRegion(anchor.CellX, anchor.CellY, anchor.CellWidth, anchor.CellHeight));
                 item = note;
@@ -555,7 +545,7 @@ namespace GroveApp.Controls
 
             if (Arming.IsArmed)
             {
-                Arming.UpdateCursorPosition(CursorDescriptor, LayerStack.ActiveLayerId);
+                Arming.UpdateCursorPosition(CursorDescriptor, LayerStack.SelectedGridLayerId);
             }
 
             return CursorDescriptor;
@@ -618,13 +608,15 @@ namespace GroveApp.Controls
                 return;
             }
 
-            FieldEngine.ActiveLayerId = LayerStack.ActiveLayerId;
+            FieldEngine.ProjectionGridLayerId = LayerStack.SelectedGridLayerId;
             var visibleBounds = Camera.GetFieldCellBounds(Bounds.Size, CellSize);
-            int minCellX = visibleBounds.minX, maxCellX = visibleBounds.maxX;
-            int minCellY = visibleBounds.minY, maxCellY = visibleBounds.maxY;
+            int cullRadius = Tokens.MaxCullingRadiusCells;
+            int minCellX = visibleBounds.minX - cullRadius;
+            int maxCellX = visibleBounds.maxX + cullRadius;
+            int minCellY = visibleBounds.minY - cullRadius;
+            int maxCellY = visibleBounds.maxY + cullRadius;
             var visibleItems = Items
-                .Where(item => LayerActivation.GetRenderMode(item.LayerId) != LayerRenderMode.Hidden)
-                .Where(item => !LayerActivation.IsIsolationModeEnabled || item.LayerId == LayerStack.ActiveLayerId)
+                .Where(item => LayerStack.GetLayer(item.LayerId).IsVisible)
                 .ToList();
 
             var activeAuraCells = FieldLedgerEngine.GetAuraCells(
@@ -643,9 +635,7 @@ namespace GroveApp.Controls
         public void FrameAllContent()
         {
             var frameItems = Items.Where(item =>
-                    LayerStack.GetLayer(item.LayerId).IsVisible &&
-                    LayerActivation.GetRenderMode(item.LayerId) != LayerRenderMode.Hidden &&
-                    (!LayerActivation.IsIsolationModeEnabled || item.LayerId == LayerStack.ActiveLayerId))
+                    LayerStack.GetLayer(item.LayerId).IsVisible)
                 .ToList();
 
             if (frameItems.Count == 0 || Bounds.Width <= 0 || Bounds.Height <= 0)
@@ -759,36 +749,6 @@ namespace GroveApp.Controls
             return true;
         }
 
-        private HashSet<Guid> QueryIndexedMemoryIds(int minCellX, int maxCellX, int minCellY, int maxCellY)
-        {
-            int capacity = Math.Max(1, MemorySpatialIndex.Count);
-            MemoryAnchor[] rented = ArrayPool<MemoryAnchor>.Shared.Rent(capacity);
-            try
-            {
-                var query = new SpatialBoundingBox(
-                    Math.Max(int.MinValue + 8, minCellX - 8),
-                    Math.Max(int.MinValue + 8, minCellY - 8),
-                    Math.Min(int.MaxValue - 8, maxCellX + 8),
-                    Math.Min(int.MaxValue - 8, maxCellY + 8),
-                    Guid.Empty);
-                int count = MemorySpatialIndex.QueryBoundingBox(query, rented.AsSpan());
-                var ids = new HashSet<Guid>();
-                for (int i = 0; i < count; i++)
-                {
-                    ids.Add(rented[i].MemoryId);
-                }
-
-                return ids;
-            }
-            finally
-            {
-                ArrayPool<MemoryAnchor>.Shared.Return(rented, clearArray: true);
-            }
-        }
-
-        private static bool IsIndexedForViewport(GridContentItem item, HashSet<Guid> indexedMemoryIds) =>
-            item.MemoryId is not Guid memoryId || indexedMemoryIds.Contains(memoryId);
-
         public Point CellToWorld(int cellX, int cellY) => Camera.CellToWorld(cellX, cellY, CellSize);
 
         public Rect GetNoteScreenBounds(GridNote note)
@@ -886,12 +846,12 @@ namespace GroveApp.Controls
             RefreshFieldLedger();
         }
 
-        public bool TryTraceToActiveLayer(GridContentItem source, out GridContentItem? tracedContent)
+        public bool TryTraceToSelectedGridLayer(GridContentItem source, out GridContentItem? tracedContent)
         {
             ArgumentNullException.ThrowIfNull(source);
             tracedContent = null;
 
-            if (!TryTraceSelectionToActiveLayer(new[] { source }, out IReadOnlyList<GridContentItem> tracedContents))
+            if (!TryTraceSelectionToSelectedGridLayer(new[] { source }, out IReadOnlyList<GridContentItem> tracedContents))
             {
                 return false;
             }
@@ -900,7 +860,7 @@ namespace GroveApp.Controls
             return true;
         }
 
-        public bool TryTraceSelectionToActiveLayer(
+        public bool TryTraceSelectionToSelectedGridLayer(
             IReadOnlyList<GridContentItem> sources,
             out IReadOnlyList<GridContentItem> tracedContents)
         {
@@ -917,7 +877,7 @@ namespace GroveApp.Controls
                 return false;
             }
 
-            int targetLayerId = LayerStack.ActiveLayerId;
+            int targetLayerId = LayerStack.SelectedGridLayerId;
             SpatialLayer targetLayer = LayerStack.GetLayer(targetLayerId);
             if (targetLayer.IsLocked || !targetLayer.IsVisible)
             {
@@ -941,7 +901,7 @@ namespace GroveApp.Controls
             {
                 int sourceZIndex = LayerStack.GetZIndexForLayerId(targetLayerId);
                 LayerStack.InsertLayerAbove(sourceZIndex);
-                targetLayerId = LayerStack.ActiveLayerId;
+                targetLayerId = LayerStack.SelectedGridLayerId;
             }
 
             if (!createdTargetLayer)
@@ -1005,8 +965,24 @@ namespace GroveApp.Controls
             }
             else
             {
+                MemoryAnchors.EnsureMemory(item);
+            }
+        }
+
+        public void SetContentAnchored(GridContentItem item, bool isAnchored)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+            if (isAnchored)
+            {
                 MemoryAnchors.Attach(item);
             }
+            else
+            {
+                MemoryAnchors.Detach(item);
+            }
+
+            RefreshFieldLedger();
+            InvalidateVisual();
         }
 
         private void RemoveMemoryAnchor(GridContentItem item)
@@ -1023,7 +999,7 @@ namespace GroveApp.Controls
             GridContentItem? ignoreItem,
             int? layerId)
         {
-            int targetLayerId = layerId ?? LayerStack.ActiveLayerId;
+            int targetLayerId = layerId ?? LayerStack.SelectedGridLayerId;
             foreach (var item in Items)
             {
                 if (item == ignoreItem) continue;
@@ -1113,7 +1089,9 @@ namespace GroveApp.Controls
 
                 _dragCandidateDeltaX = targetX - _dragInitialPositions[_draggedItem].cellX;
                 _dragCandidateDeltaY = targetY - _dragInitialPositions[_draggedItem].cellY;
-                _dragCandidateIsValid = IsClusterRegionFree(_dragCandidateDeltaX, _dragCandidateDeltaY);
+                _dragCandidateIsValid = EvaluateClusterTranslation(
+                    _dragCandidateDeltaX,
+                    _dragCandidateDeltaY).IsValid;
 
                 if (_dragCandidateIsValid)
                 {
@@ -1229,44 +1207,46 @@ namespace GroveApp.Controls
                 (int cx, int cy) = WorldToCell(clickWorld);
                 GridContentItem? hitItem = FindItemAtCell(cx, cy);
 
-            if (hitItem != null)
-            {
-                if (LayerStack.GetLayer(hitItem.LayerId).IsLocked)
+                if (hitItem != null)
                 {
-                    e.Handled = true;
-                    return;
-                }
+                    if (LayerStack.GetLayer(hitItem.LayerId).IsLocked)
+                    {
+                        e.Handled = true;
+                        return;
+                    }
 
-                _isDraggingItem = true;
-                _draggedItem = hitItem;
-                _dragOffsetCellX = cx - hitItem.CellX;
-                _dragOffsetCellY = cy - hitItem.CellY;
+                    _isDraggingItem = true;
+                    _draggedItem = hitItem;
+                    _dragOffsetCellX = cx - hitItem.CellX;
+                    _dragOffsetCellY = cy - hitItem.CellY;
 
-                if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
-                {
-                    _selectionService.SelectSingle(hitItem.Id, isShiftHeld: true);
-                    e.Handled = true;
-                    return;
-                }
+                    if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+                    {
+                        _isDraggingItem = false;
+                        _draggedItem = null;
+                        _selectionService.SelectSingle(hitItem.Id, isShiftHeld: true);
+                        e.Handled = true;
+                        return;
+                    }
 
-                bool preserveCluster = hitItem.IsSelected && GetSelectedItems().Count > 1;
-                if (preserveCluster)
-                {
-                    SelectedItem = hitItem;
-                }
-                else
-                {
-                    SelectItem(hitItem);
-                }
+                    bool preserveCluster = hitItem.IsSelected && GetSelectedItems().Count > 1;
+                    if (preserveCluster)
+                    {
+                        SelectedItem = hitItem;
+                    }
+                    else
+                    {
+                        SelectItem(hitItem);
+                    }
 
-                _dragCluster = GetSelectedItems();
-                _dragInitialPositions = _dragCluster.ToDictionary(
-                    item => item,
-                    item => (item.CellX, item.CellY));
-                _dragCandidateDeltaX = 0;
-                _dragCandidateDeltaY = 0;
-                _dragCandidateIsValid = true;
-            }
+                    _dragCluster = GetSelectedItems();
+                    _dragInitialPositions = _dragCluster.ToDictionary(
+                        item => item,
+                        item => (item.CellX, item.CellY));
+                    _dragCandidateDeltaX = 0;
+                    _dragCandidateDeltaY = 0;
+                    _dragCandidateIsValid = true;
+                }
                 else
                 {
                     _isMarqueeSelecting = true;
@@ -1361,7 +1341,7 @@ namespace GroveApp.Controls
             {
                 _isMarqueeSelecting = false;
                 _selectionService.CommitMarqueeSweep(
-                    Items.Where(item => item.LayerId == LayerStack.ActiveLayerId));
+                    Items.Where(item => item.LayerId == LayerStack.SelectedGridLayerId));
                 e.Handled = true;
             }
         }
@@ -1492,14 +1472,14 @@ namespace GroveApp.Controls
 
         public GridContentItem? FindItemAtCell(int cx, int cy)
         {
-            if (!LayerStack.GetLayer(LayerStack.ActiveLayerId).IsVisible)
+            if (!LayerStack.GetLayer(LayerStack.SelectedGridLayerId).IsVisible)
             {
                 return null;
             }
 
             foreach (var item in Items)
             {
-                if (item.LayerId != LayerStack.ActiveLayerId) continue;
+                if (item.LayerId != LayerStack.SelectedGridLayerId) continue;
                 if (item.ContainsCell(cx, cy))
                 {
                     return item;
@@ -1518,7 +1498,7 @@ namespace GroveApp.Controls
             var list = new List<GridContentItem>();
             foreach (var item in Items)
             {
-                if (item.LayerId != LayerStack.ActiveLayerId) continue;
+                if (item.LayerId != LayerStack.SelectedGridLayerId) continue;
                 if (item.IsSelected)
                 {
                     list.Add(item);
@@ -1531,20 +1511,14 @@ namespace GroveApp.Controls
             return list;
         }
 
-        public IReadOnlyList<GridContentItem> GetMemoryRepresentatives() =>
-            Items
-                .GroupBy(item => item.MemoryId ?? Guid.Empty)
-                .Select(group => group.First())
-                .ToArray();
-
         public bool IsToolArmed => Arming.IsArmed;
 
-        public string ActiveLayerLabel => LayerStack.ActiveLayer.StableLabel;
+        public string SelectedGridLayerLabel => LayerStack.SelectedGridLayer.StableLabel;
 
         public bool ArmTool(ArmableContentType contentType)
         {
-            SpatialLayer activeLayer = LayerStack.ActiveLayer;
-            if (activeLayer.IsLocked || !activeLayer.IsVisible)
+            SpatialLayer selectedGridLayer = LayerStack.SelectedGridLayer;
+            if (selectedGridLayer.IsLocked || !selectedGridLayer.IsVisible)
             {
                 return false;
             }
@@ -1556,7 +1530,7 @@ namespace GroveApp.Controls
                 targetItem: null,
                 armedToolFootprint: new CursorPlacementFootprint(toolWidth, toolWidth));
             ApplyCursorDescriptor(armedCursor);
-            Arming.ArmTool(contentType, armedCursor, LayerStack.ActiveLayerId);
+            Arming.ArmTool(contentType, armedCursor, LayerStack.SelectedGridLayerId);
             ActiveTool = contentType switch
             {
                 ArmableContentType.Note => CanvasToolMode.Note,
@@ -1583,7 +1557,7 @@ namespace GroveApp.Controls
             {
                 Arming.UpdateCursorPosition(
                     CursorDescriptor,
-                    LayerStack.ActiveLayerId);
+                    LayerStack.SelectedGridLayerId);
                 InvalidateVisual();
             }
             return changed;
@@ -1622,50 +1596,38 @@ namespace GroveApp.Controls
             _selectionService.ClearSelection();
         }
 
-        private bool IsClusterRegionFree(int deltaX, int deltaY)
+        private GroupTranslationResult EvaluateClusterTranslation(int deltaX, int deltaY)
         {
-            if (_dragCluster.Count <= 1)
+            if (_dragCluster.Count == 0)
             {
-                if (_draggedItem == null || !_dragInitialPositions.TryGetValue(_draggedItem, out var origin))
+                return new GroupTranslationResult(
+                    true,
+                    GroupTranslationFailureReason.None,
+                    new CellDelta(deltaX, deltaY),
+                    System.Collections.Immutable.ImmutableHashSet<(int X, int Y)>.Empty);
+            }
+
+            var cluster = _dragCluster
+                .Select(item =>
                 {
-                    return true;
-                }
+                    var origin = _dragInitialPositions[item];
+                    return new SpatialPlacementSnapshot(
+                        item.Id,
+                        item.LayerId,
+                        new SpatialRegion(origin.cellX, origin.cellY, item.CellWidth, item.CellHeight));
+                })
+                .ToArray();
+            var occupancy = Items
+                .Select(item => new SpatialPlacementSnapshot(
+                    item.Id,
+                    item.LayerId,
+                    new SpatialRegion(item.CellX, item.CellY, item.CellWidth, item.CellHeight)))
+                .ToArray();
 
-                return IsRegionFree(
-                    new CellCoordinate(origin.cellX + deltaX, origin.cellY + deltaY),
-                    _draggedItem.CellWidth,
-                    _draggedItem.CellHeight,
-                    _draggedItem,
-                    _draggedItem.LayerId);
-            }
-
-            if (_dragCluster.Any(item => item.IsAnchored))
-            {
-                return false;
-            }
-
-            var cluster = new HashSet<GridContentItem>(_dragCluster);
-            foreach (var movingItem in _dragCluster)
-            {
-                var origin = _dragInitialPositions[movingItem];
-                int targetX = origin.cellX + deltaX;
-                int targetY = origin.cellY + deltaY;
-
-                foreach (var candidate in Items)
-                {
-                    if (cluster.Contains(candidate) || candidate.LayerId != movingItem.LayerId)
-                    {
-                        continue;
-                    }
-
-                    if (candidate.Intersects(targetX, targetY, movingItem.CellWidth, movingItem.CellHeight))
-                    {
-                        return false;
-                    }
-                }
-            }
-
-            return true;
+            return _groupTranslationEngine.Preview(
+                cluster,
+                occupancy,
+                new CellDelta(deltaX, deltaY));
         }
 
         private void ApplyDragDelta(int deltaX, int deltaY)
@@ -1736,7 +1698,7 @@ namespace GroveApp.Controls
             _selectionService.UpdateMarqueeSweep(
                 new WorldPoint(_marqueeCurrentWorld.X, _marqueeCurrentWorld.Y));
             var previewIds = _selectionService.PreviewMarqueeSweep(
-                Items.Where(item => item.LayerId == LayerStack.ActiveLayerId)
+                Items.Where(item => item.LayerId == LayerStack.SelectedGridLayerId)
                     .Select(SpatialSelectionCandidate.From));
             GridContentItem? lastSelected = null;
             foreach (GridContentItem item in Items)
@@ -1756,7 +1718,7 @@ namespace GroveApp.Controls
             foreach (GridContentItem item in Items)
             {
                 item.IsSelected = selectedIds.Contains(item.Id) &&
-                    item.LayerId == LayerStack.ActiveLayerId;
+                    item.LayerId == LayerStack.SelectedGridLayerId;
             }
 
             GridContentItem? primary = snapshot.PrimarySelectionId is null
@@ -1792,17 +1754,17 @@ namespace GroveApp.Controls
             int minCellY = visibleBounds.minY, maxCellY = visibleBounds.maxY;
 
             var visibleItems = Items
-                .Where(item => LayerActivation.GetRenderMode(item.LayerId) != LayerRenderMode.Hidden)
-                .Where(item => !LayerActivation.IsIsolationModeEnabled || item.LayerId == LayerStack.ActiveLayerId)
+                .Where(item => LayerStack.GetLayer(item.LayerId).IsVisible)
                 .ToList();
-            HashSet<Guid> indexedMemoryIds = QueryIndexedMemoryIds(minCellX, maxCellX, minCellY, maxCellY);
-            var activeItems = Items.Where(item =>
-                IsIndexedForViewport(item, indexedMemoryIds) &&
-                item.LayerId == LayerStack.ActiveLayerId &&
-                LayerStack.GetLayer(item.LayerId).IsVisible).ToList();
-            var inactiveItems = Items.Where(item =>
-                IsIndexedForViewport(item, indexedMemoryIds) &&
-                LayerActivation.GetRenderMode(item.LayerId) == LayerRenderMode.InactivePresenceOnly).ToList();
+            IReadOnlySet<string> selectedIds = GetSelectedItems()
+                .Select(item => item.Id)
+                .ToHashSet(StringComparer.Ordinal);
+            IReadOnlyList<SelectedFieldCell> selectedFieldCells = FieldEngine.QuerySelectedField(
+                selectedIds,
+                minCellX,
+                maxCellX,
+                minCellY,
+                maxCellY);
             double renderScaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
             _renderPipeline.Render(context, new GridCanvasRenderFrame(
                 Bounds.Size,
@@ -1817,8 +1779,8 @@ namespace GroveApp.Controls
                 GridLinesVisible,
                 FieldEngine,
                 visibleItems,
-                activeItems,
-                inactiveItems,
+                visibleItems,
+                selectedFieldCells,
                 SelectedItem,
                 HoveredItem,
                 WorldToScreen));

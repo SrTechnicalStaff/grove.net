@@ -44,8 +44,8 @@ namespace GroveApp.Models
             }
         }
 
-        public GridImage(int cellX, int cellY, string filePath, int widthPx, int heightPx, bool isAnchored = false, int layerId = 0)
-            : base(cellX, cellY, 1, 1, isAnchored, layerId)
+        public GridImage(int cellX, int cellY, string filePath, int widthPx, int heightPx, int layerId = 0)
+            : base(cellX, cellY, 1, 1, layerId)
         {
             FilePath = filePath;
             IntrinsicWidthPx = widthPx;

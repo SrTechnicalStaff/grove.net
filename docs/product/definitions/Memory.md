@@ -36,7 +36,7 @@ tags: [grove, product-definition, memory, tracing, anchoring]
 ### Data & State Schema
 - **State Ownership**: Memory Store / Kernel Core (`MemoryRepository`).
 - **Memory Object Attributes**:
-  - `memory_id`: Globally unique identifier (UUIDv4).
+  - `memory_id`: Globally unique identifier (UUIDv7).
   - `raw_payload`: Primitive content payload (rich text markup, binary image reference, note string).
   - `content_relationships`: External Content records joined by `memory_id`; not stored on Memory.
   - `anchor_relationships`: External Content-side labels joined through Content; not stored on Memory.

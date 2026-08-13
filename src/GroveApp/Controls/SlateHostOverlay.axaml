@@ -8,7 +8,8 @@
              HorizontalAlignment="Stretch"
              VerticalAlignment="Stretch"
              Margin="16">
-    <Border Background="{x:Static ds:Colors.SurfaceChromeHex}"
+    <Border x:Name="SlateSurface"
+            Background="{x:Static ds:Colors.SurfaceChromeHex}"
             BorderBrush="{x:Static ds:Colors.HudSlateBorderHex}"
             BorderThickness="1"
             CornerRadius="{x:Static ds:Tokens.CornerRadiusNone}"

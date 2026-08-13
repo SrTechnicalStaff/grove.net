@@ -28,7 +28,7 @@ namespace GroveApp.Controls
             InitializeComponent();
 
             BtnClose.Click += (_, _) => Close();
-            BtnNewLayer.Click += (_, _) => InsertLayerAboveActive();
+            BtnNewLayer.Click += (_, _) => InsertGridLayerAboveSelection();
 
             TxtFilter.TextChanged += (_, _) =>
             {
@@ -69,14 +69,14 @@ namespace GroveApp.Controls
             }
         }
 
-        private void InsertLayerAboveActive()
+        private void InsertGridLayerAboveSelection()
         {
             if (_layerService == null)
             {
                 return;
             }
 
-            _layerService.InsertLayerAbove(_layerService.ActiveLayer.ZIndex);
+            _layerService.InsertLayerAbove(_layerService.SelectedGridLayer.ZIndex);
             RebuildList();
         }
 
@@ -85,7 +85,7 @@ namespace GroveApp.Controls
             if (_layerService != null)
             {
                 _layerService.LayerStackChanged -= OnLayerStackChanged;
-                _layerService.ActiveLayerChanged -= OnActiveLayerChanged;
+                _layerService.SelectedGridLayerChanged -= OnSelectedGridLayerChanged;
             }
 
             _layerService = layerService;
@@ -93,7 +93,7 @@ namespace GroveApp.Controls
             if (_layerService != null)
             {
                 _layerService.LayerStackChanged += OnLayerStackChanged;
-                _layerService.ActiveLayerChanged += OnActiveLayerChanged;
+                _layerService.SelectedGridLayerChanged += OnSelectedGridLayerChanged;
             }
 
             RebuildList();
@@ -104,7 +104,7 @@ namespace GroveApp.Controls
             Avalonia.Threading.Dispatcher.UIThread.Post(RebuildList);
         }
 
-        private void OnActiveLayerChanged(SpatialLayerModel model)
+        private void OnSelectedGridLayerChanged(SpatialLayerModel model)
         {
             Avalonia.Threading.Dispatcher.UIThread.Post(RebuildList);
         }
@@ -139,11 +139,11 @@ namespace GroveApp.Controls
 
             var rowBorder = new Border
             {
-                BorderThickness = layer.IsActive ? new Thickness(2) : new Thickness(1),
-                BorderBrush = layer.IsActive
+                BorderThickness = layer.IsSelected ? new Thickness(2) : new Thickness(1),
+                BorderBrush = layer.IsSelected
                     ? Colors.SignalInteractionBrush
                     : Colors.GridMajorInkBrush,
-                Background = layer.IsActive
+                Background = layer.IsSelected
                     ? new SolidColorBrush(Colors.SurfaceRaised)
                     : Colors.SurfaceChromeBrush,
                 CornerRadius = new CornerRadius(0),
@@ -164,7 +164,7 @@ namespace GroveApp.Controls
                 FontFamily = new FontFamily(Typography.FontFamilyMono),
                 FontSize = Typography.SizeLabel,
                 FontWeight = FontWeight.Bold,
-                Foreground = layer.IsActive
+                Foreground = layer.IsSelected
                     ? Colors.SignalInteractionBrush
                     : Colors.TextMetaBrush,
                 VerticalAlignment = VerticalAlignment.Center
@@ -279,7 +279,7 @@ namespace GroveApp.Controls
                     Text = layer.DisplayName,
                     FontFamily = new FontFamily(Typography.FontFamilyUi),
                     FontSize = 12,
-                    Foreground = layer.IsActive
+                    Foreground = layer.IsSelected
                         ? Colors.TextPrimaryBrush
                         : Colors.TextSecondaryBrush,
                     VerticalAlignment = VerticalAlignment.Center,
@@ -352,7 +352,7 @@ namespace GroveApp.Controls
             {
                 if (e.GetCurrentPoint(rowBorder).Properties.IsLeftButtonPressed)
                 {
-                    _layerService?.SetActiveLayer(layer.ZIndex);
+                    _layerService?.SelectGridLayer(layer.ZIndex);
                     e.Handled = true;
                 }
             };
@@ -401,7 +401,7 @@ namespace GroveApp.Controls
         {
             if (_layerService == null) return false;
 
-            var activeZ = _layerService.ActiveLayer.ZIndex;
+            var selectedZ = _layerService.SelectedGridLayer.ZIndex;
 
             // 1. Shift+[ / Shift+] (Create Bottom / Top)
             if (e.Key == Key.OemOpenBrackets && e.KeyModifiers == KeyModifiers.Shift)
@@ -420,39 +420,39 @@ namespace GroveApp.Controls
             // 2. [ / ] (Navigate Down / Up)
             if (e.Key == Key.OemOpenBrackets && e.KeyModifiers == KeyModifiers.None)
             {
-                _layerService.SetActiveLayer(activeZ - 1);
+                _layerService.SelectGridLayer(selectedZ - 1);
                 e.Handled = true;
                 return true;
             }
             if (e.Key == Key.OemCloseBrackets && e.KeyModifiers == KeyModifiers.None)
             {
-                _layerService.SetActiveLayer(activeZ + 1);
+                _layerService.SelectGridLayer(selectedZ + 1);
                 e.Handled = true;
                 return true;
             }
 
             if (e.Key == Key.OemOpenBrackets && e.KeyModifiers == KeyModifiers.Control)
             {
-                _layerService.InsertLayerBelow(activeZ);
+                _layerService.InsertLayerBelow(selectedZ);
                 e.Handled = true;
                 return true;
             }
             if (e.Key == Key.OemCloseBrackets && e.KeyModifiers == KeyModifiers.Control)
             {
-                _layerService.InsertLayerAbove(activeZ);
+                _layerService.InsertLayerAbove(selectedZ);
                 e.Handled = true;
                 return true;
             }
 
             if (e.Key == Key.OemOpenBrackets && e.KeyModifiers == KeyModifiers.Alt)
             {
-                _layerService.ReorderSwap(activeZ, activeZ - 1);
+                _layerService.ReorderSwap(selectedZ, selectedZ - 1);
                 e.Handled = true;
                 return true;
             }
             if (e.Key == Key.OemCloseBrackets && e.KeyModifiers == KeyModifiers.Alt)
             {
-                _layerService.ReorderSwap(activeZ, activeZ + 1);
+                _layerService.ReorderSwap(selectedZ, selectedZ + 1);
                 e.Handled = true;
                 return true;
             }
@@ -463,7 +463,7 @@ namespace GroveApp.Controls
                 e.KeyModifiers.HasFlag(KeyModifiers.Shift) &&
                 !e.KeyModifiers.HasFlag(KeyModifiers.Alt))
             {
-                _layerService.InsertLayerAbove(activeZ);
+                _layerService.InsertLayerAbove(selectedZ);
                 e.Handled = true;
                 return true;
             }
@@ -474,7 +474,7 @@ namespace GroveApp.Controls
                 e.KeyModifiers.HasFlag(KeyModifiers.Shift) &&
                 e.KeyModifiers.HasFlag(KeyModifiers.Alt))
             {
-                _layerService.InsertLayerBelow(activeZ);
+                _layerService.InsertLayerBelow(selectedZ);
                 e.Handled = true;
                 return true;
             }
@@ -482,13 +482,13 @@ namespace GroveApp.Controls
             // 5. Alt+Up / Alt+Down (Reorder Swap Up / Down)
             if (e.Key == Key.Up && e.KeyModifiers.HasFlag(KeyModifiers.Alt))
             {
-                _layerService.ReorderSwap(activeZ, activeZ + 1);
+                _layerService.ReorderSwap(selectedZ, selectedZ + 1);
                 e.Handled = true;
                 return true;
             }
             if (e.Key == Key.Down && e.KeyModifiers.HasFlag(KeyModifiers.Alt))
             {
-                _layerService.ReorderSwap(activeZ, activeZ - 1);
+                _layerService.ReorderSwap(selectedZ, selectedZ - 1);
                 e.Handled = true;
                 return true;
             }
@@ -496,7 +496,7 @@ namespace GroveApp.Controls
             // 6. F2 (Inline Rename)
             if (e.Key == Key.F2)
             {
-                _editingZIndex = activeZ;
+                _editingZIndex = selectedZ;
                 RebuildList();
                 e.Handled = true;
                 return true;
@@ -505,7 +505,7 @@ namespace GroveApp.Controls
             // 7. Del (Inline Remove Confirm)
             if (e.Key == Key.Delete)
             {
-                _confirmDeleteZIndex = activeZ;
+                _confirmDeleteZIndex = selectedZ;
                 RebuildList();
                 e.Handled = true;
                 return true;

@@ -22,11 +22,11 @@ public interface IHudSpatialWatermarkBinding
 {
     HudCameraState CameraState { get; }
 
-    HudLayerIdentity ActiveLayer { get; }
+    HudLayerIdentity SelectedGridLayer { get; }
 
     event Action<HudCameraState>? CameraStateChanged;
 
-    event Action<HudLayerIdentity>? ActiveLayerChanged;
+    event Action<HudLayerIdentity>? SelectedGridLayerChanged;
 
     ValueTask<HudLayerRenameValidation> CommitLayerRenameAsync(
         HudLayerRenameRequest request,
@@ -45,7 +45,7 @@ public readonly record struct HudCameraState(double ZoomScale)
 }
 
 /// <summary>
-/// Active layer identity required by the watermark.
+/// Selected Grid Layer identity required by the watermark.
 /// </summary>
 public readonly record struct HudLayerIdentity(
     string LayerId,
@@ -85,7 +85,7 @@ public sealed class HudSpatialWatermark : UserControl, IDisposable
 
     private IHudSpatialWatermarkBinding? _binding;
     private HudCameraState _cameraState = HudCameraState.Default;
-    private HudLayerIdentity _activeLayer = new("layer-01", "01", "Main Ground Layer");
+    private HudLayerIdentity _selectedGridLayer = new("grid-layer-01", "01", "Main Ground Layer");
     private bool _isRenaming;
     private bool _renameInFlight;
 
@@ -165,7 +165,7 @@ public sealed class HudSpatialWatermark : UserControl, IDisposable
 
         Content = root;
         UpdateCameraState(_cameraState);
-        UpdateActiveLayer(_activeLayer);
+        UpdateSelectedGridLayer(_selectedGridLayer);
     }
 
     public event Action<HudLayerRenameRequest>? RenameCommitted;
@@ -174,7 +174,7 @@ public sealed class HudSpatialWatermark : UserControl, IDisposable
 
     public HudCameraState CameraState => _cameraState;
 
-    public HudLayerIdentity ActiveLayer => _activeLayer;
+    public HudLayerIdentity SelectedGridLayer => _selectedGridLayer;
 
     public bool IsRenaming => _isRenaming;
 
@@ -189,7 +189,7 @@ public sealed class HudSpatialWatermark : UserControl, IDisposable
         if (_binding is not null)
         {
             _binding.CameraStateChanged -= OnBindingCameraStateChanged;
-            _binding.ActiveLayerChanged -= OnBindingActiveLayerChanged;
+            _binding.SelectedGridLayerChanged -= OnBindingSelectedGridLayerChanged;
         }
 
         _binding = binding;
@@ -199,9 +199,9 @@ public sealed class HudSpatialWatermark : UserControl, IDisposable
         }
 
         UpdateCameraState(_binding.CameraState);
-        UpdateActiveLayer(_binding.ActiveLayer);
+        UpdateSelectedGridLayer(_binding.SelectedGridLayer);
         _binding.CameraStateChanged += OnBindingCameraStateChanged;
-        _binding.ActiveLayerChanged += OnBindingActiveLayerChanged;
+        _binding.SelectedGridLayerChanged += OnBindingSelectedGridLayerChanged;
     }
 
     public void UpdateCameraState(HudCameraState state)
@@ -210,9 +210,9 @@ public sealed class HudSpatialWatermark : UserControl, IDisposable
         _zoomReadout.Text = state.FormattedZoomPercent;
     }
 
-    public void UpdateActiveLayer(HudLayerIdentity identity)
+    public void UpdateSelectedGridLayer(HudLayerIdentity identity)
     {
-        _activeLayer = identity;
+        _selectedGridLayer = identity;
         _layerLabel.Text = identity.LabelToken;
         _layerName.Text = identity.DisplayName;
 
@@ -224,14 +224,14 @@ public sealed class HudSpatialWatermark : UserControl, IDisposable
 
     public void BeginInlineRename()
     {
-        if (_isRenaming || _activeLayer.IsLocked)
+        if (_isRenaming || _selectedGridLayer.IsLocked)
         {
             return;
         }
 
         _isRenaming = true;
         RenameErrorMessage = null;
-        _renameField.Text = _activeLayer.DisplayName;
+        _renameField.Text = _selectedGridLayer.DisplayName;
         _renameField.BorderBrush = Colors.EdgeFoundBrush;
         _renameField.IsVisible = true;
         _layerLabel.IsVisible = false;
@@ -398,7 +398,7 @@ public sealed class HudSpatialWatermark : UserControl, IDisposable
         }
 
         _renameInFlight = true;
-        var request = new HudLayerRenameRequest(_activeLayer.LayerId, proposedName);
+        var request = new HudLayerRenameRequest(_selectedGridLayer.LayerId, proposedName);
         HudLayerRenameValidation result;
 
         try
@@ -423,7 +423,7 @@ public sealed class HudSpatialWatermark : UserControl, IDisposable
             ? proposedName
             : result.SanitizedName.Trim();
 
-        _activeLayer = _activeLayer with { DisplayName = committedName };
+        _selectedGridLayer = _selectedGridLayer with { DisplayName = committedName };
         _layerName.Text = committedName;
         RenameCommitted?.Invoke(request with { ProposedName = committedName });
         CancelInlineRename();
@@ -444,9 +444,9 @@ public sealed class HudSpatialWatermark : UserControl, IDisposable
         Dispatcher.UIThread.Post(() => UpdateCameraState(state));
     }
 
-    private void OnBindingActiveLayerChanged(HudLayerIdentity identity)
+    private void OnBindingSelectedGridLayerChanged(HudLayerIdentity identity)
     {
-        Dispatcher.UIThread.Post(() => UpdateActiveLayer(identity));
+        Dispatcher.UIThread.Post(() => UpdateSelectedGridLayer(identity));
     }
 
     private static IBrush LayerFillBrush =>

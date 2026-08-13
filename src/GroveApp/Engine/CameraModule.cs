@@ -147,12 +147,5 @@ namespace GroveApp.Engine
             SetState(new Point(newX, newY), newZoom);
         }
 
-        /// <summary>
-        /// Obtains the 2D affine transformation matrix T(x, y, s).
-        /// </summary>
-        public Matrix GetTransformMatrix()
-        {
-            return TransformMatrix;
-        }
     }
 }

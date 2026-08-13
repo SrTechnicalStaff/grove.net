@@ -136,13 +136,13 @@ highlighted.
   place — because that is the Placement the reading is actually pointing
   at; a Memory with no Placement on or near the target Layer cannot be a
   member of the group, so this case does not arise. Taking this route makes
-  the revealed Placement's Layer the active Layer, moves the Camera the
+  the revealed Content's Grid Layer the selected Grid Layer, moves the Camera the
   least distance needed to bring its whole footprint into view at the
   working form, and selects it — the same framing and the same selection
   the Grid already draws for any placement, not redrawn here. This is the
   one route allowed to move the Camera, and only because it was chosen by
   name; every other route leaves the Camera exactly where it was. Switching
-  the active Layer and selecting the placement are view state, never a
+  the selected Grid Layer and selecting the Content are view state, never a
   write: no Memory changes, no Placement moves, and nothing is created.
 
   Because the reading is a screen-fixed surface beside its source and the

@@ -12,7 +12,6 @@ namespace GroveApp.Controls
         public string Id { get; set; } = Guid.NewGuid().ToString();
         public string Text { get; set; } = string.Empty;
         public DateTime Timestamp { get; set; } = DateTime.Now;
-        public bool IsAnchored { get; set; }
         public string FormattedTime => Timestamp.ToString("HH:mm");
     }
 

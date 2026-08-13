@@ -300,7 +300,7 @@ public interface IInteractiveResizeEngine
     bool IsCurrentResizeValid { get; }
 
     void BeginResize(Guid placementId, ResizeHandleLocation handle, CellCoordinate startCell);
-    void UpdateResize(CellCoordinate currentCell, Guid activeLayerId);
+    void UpdateResize(CellCoordinate currentCell, Guid selectedGridLayerId);
     bool CommitResize();
     void CancelResize();
 }

@@ -82,6 +82,32 @@ public sealed class FieldLedgerRenderModule
         int maxCellY) =>
         fieldEngine.PerimeterSubscriber.GetBoundaryEdges(minCellX, maxCellX, minCellY, maxCellY);
 
+    public void RenderSelectedAura(
+        DrawingContext context,
+        Matrix cameraTransform,
+        double cellSize,
+        double zoom,
+        IReadOnlyList<SelectedFieldCell> selectedCells)
+    {
+        foreach (SelectedFieldCell selectedCell in selectedCells)
+        {
+            double alpha = Math.Clamp(
+                selectedCell.SelectedEnergy * Tokens.FieldGain,
+                Tokens.FieldAlphaMin,
+                Tokens.FieldAlphaMax);
+            Color color = Color.FromArgb(
+                ToByte(alpha * byte.MaxValue),
+                selectedCell.SelectedColor.R,
+                selectedCell.SelectedColor.G,
+                selectedCell.SelectedColor.B);
+            Point screenOrigin = cameraTransform.Transform(
+                new Point(selectedCell.Col * cellSize, selectedCell.Row * cellSize));
+            context.FillRectangle(
+                new SolidColorBrush(color),
+                new Rect(screenOrigin.X, screenOrigin.Y, cellSize * zoom, cellSize * zoom));
+        }
+    }
+
     public static Color ResolveContourHue(FieldLedgerEngine fieldEngine)
     {
         double totalEnergy = 0.0;
@@ -92,16 +118,16 @@ public sealed class FieldLedgerRenderModule
         foreach (var (col, row) in fieldEngine.PerimeterSubscriber.PerimeterCells)
         {
             CellLedgerEntry entry = fieldEngine.GetCellLedger(col, row);
-            double energy = Math.Max(0.0, entry.FieldEnergy - CellLedgerEntry.BaselineEnergy);
-            if (energy <= 0.0 || entry.CompositeColor.A == 0)
+            double energy = Math.Max(0.0, entry.SameLayerEnergy - CellLedgerEntry.BaselineEnergy);
+            if (energy <= 0.0 || entry.SameLayerColor.A == 0)
             {
                 continue;
             }
 
             totalEnergy += energy;
-            red += entry.CompositeColor.R * energy;
-            green += entry.CompositeColor.G * energy;
-            blue += entry.CompositeColor.B * energy;
+            red += entry.SameLayerColor.R * energy;
+            green += entry.SameLayerColor.G * energy;
+            blue += entry.SameLayerColor.B * energy;
         }
 
         if (totalEnergy <= 0.0)
@@ -109,13 +135,13 @@ public sealed class FieldLedgerRenderModule
             return Colors.SurfaceGrid;
         }
 
-        // Each cell color is already normalized by AuraHeatmapSubscriber. The
-        // contour uses the same field signal, weighted by boundary energy.
+        // Preserve the same-layer additive hue rule at the contour aggregate.
+        // A perimeter stroke must not calculate a midpoint color.
         return Color.FromArgb(
             byte.MaxValue,
-            ToByte(red / totalEnergy),
-            ToByte(green / totalEnergy),
-            ToByte(blue / totalEnergy));
+            ToByte(red),
+            ToByte(green),
+            ToByte(blue));
     }
 
     private static byte ToByte(double value) =>

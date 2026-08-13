@@ -33,8 +33,8 @@ namespace GroveApp.Engine
 
             foreach (var item in items)
             {
-                if (item.CellX + item.CellWidth < minCellX || item.CellX > maxCellX ||
-                    item.CellY + item.CellHeight < minCellY || item.CellY > maxCellY)
+                if (item.CellX + item.CellWidth <= minCellX || item.CellX > maxCellX ||
+                    item.CellY + item.CellHeight <= minCellY || item.CellY > maxCellY)
                 {
                     continue;
                 }
@@ -71,49 +71,6 @@ namespace GroveApp.Engine
             GridNote? hoveredNote)
         {
             RenderContentItems(context, worldToScreen, cellSize, zoom, minCellX, maxCellX, minCellY, maxCellY, notes, selectedNote, hoveredNote);
-        }
-
-        /// <summary>
-        /// Renders the inactive-layer presence as a discrete outline only. Inactive
-        /// content must remain discoverable without painting a second, interactive
-        /// copy of the content into the active plane.
-        /// </summary>
-        public void RenderGhostOutline(
-            DrawingContext context,
-            Func<Point, Point> worldToScreen,
-            double cellSize,
-            double zoom,
-            int minCellX,
-            int maxCellX,
-            int minCellY,
-            int maxCellY,
-            GridContentItem item,
-            double opacity)
-        {
-            if (item.CellX + item.CellWidth < minCellX || item.CellX > maxCellX ||
-                item.CellY + item.CellHeight < minCellY || item.CellY > maxCellY)
-            {
-                return;
-            }
-
-            Point startScreen = worldToScreen(new Point(item.CellX * cellSize, item.CellY * cellSize));
-            Point endScreen = worldToScreen(new Point(
-                (item.CellX + item.CellWidth) * cellSize,
-                (item.CellY + item.CellHeight) * cellSize));
-            var rect = new Rect(
-                startScreen.X,
-                startScreen.Y,
-                endScreen.X - startScreen.X,
-                endScreen.Y - startScreen.Y);
-
-            byte alpha = (byte)Math.Clamp((int)Math.Round(opacity * 255.0), 0, 255);
-            var outline = new SolidColorBrush(Color.FromArgb(
-                alpha,
-                Colors.SignalInteraction.R,
-                Colors.SignalInteraction.G,
-                Colors.SignalInteraction.B));
-            var pen = new Pen(outline, Math.Max(1.0, Tokens.StrokeHairline * Math.Max(0.75, zoom)));
-            context.DrawRectangle(null, pen, rect.Deflate(pen.Thickness / 2.0));
         }
 
         private void RenderNote(

@@ -68,7 +68,7 @@ $$R_{\text{candidate}} = \left[ C_{x, 0}, \, C_{y, 0}, \, W_{\text{target}}, \, 
 
 ### 2.3 Region Collision Checking (`IsRegionFree`)
 
-Let $\mathcal{O}_{\text{layer}}$ be the spatial R-Tree index containing all item footprints $I_i = [X_i, Y_i, W_i, H_i]$ on the active layer.
+Let $\mathcal{O}_{\text{grid}}$ be the spatial index containing all item footprints $I_i = [X_i, Y_i, W_i, H_i]$ on the selected Grid Layer.
 The region collision validation function $\text{IsRegionFree}(R_{\text{candidate}}, \text{ItemID}_{\text{active}})$ is defined as:
 
 $$\text{IsRegionFree}(R_{\text{candidate}}, \text{ID}_{\text{active}}) = \bigwedge_{I_i \in \mathcal{O}_{\text{layer}} \setminus \{\text{ID}_{\text{active}}\}} \left( R_{\text{candidate}} \cap I_i = \varnothing \right)$$

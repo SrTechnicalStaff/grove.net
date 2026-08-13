@@ -67,6 +67,8 @@ Memory field.
 - `MemoryRecord` must not expose an Anchor collection as ownership.
 - Anchor persistence must be Content-side or in a separate relation store
   keyed by Content identity and must retain `MemoryId` only as a join key.
+- `IMemoryLedger` stores semantic records only and must not expose Anchor
+  mutation methods.
 - Memory Slate must enumerate the Memory ledger directly, including records
   with no Content, and derive Content/Anchor context through indexes.
 - Search cannot be implemented as a Content representative list grouped by

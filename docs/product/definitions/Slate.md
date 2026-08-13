@@ -55,7 +55,7 @@ tags: [grove, product-definition, slate, viewport-overlay, writing-slate]
 | **Grid** | A Slate sits on the viewport above the Grid; opening one suspends active Grid panning while preserving underlying Grid cell positions. |
 | **Memory** | Memory Slate browses every Memory record and derives Content/Anchor counts and Grid Layer context through external relationships. A Memory does not have placement state. |
 | **Content** | Double-clicking Content opens it in Writing Slate for Markdown/notes or Gallery Slate for media, enabling in-depth editing without truncation. |
-| **Aura** | Writing Slate, Memory Slate, and Gallery Slate display Field Ledger metadata derived from Content Aura, but do not render continuous Aura field glows within their frames. |
+| **Aura** | Writing Slate, Memory Slate, and Gallery Slate may display Field Ledger metadata derived from Content Aura, but do not render Aura fields within their frames. |
 | **Grid Layer** | Opening Content in a Slate reveals its native Grid Layer attribution and permits shifting target Grid Layer drop-offs during composition. |
 | **Annotation** | Annotations can be sent to a Slate for focused reading and navigation without Information Plane spatial constraints. |
 | **Blip** | Interacting with a Blip allows users to send its aggregated Annotation directly to a Slate for uninterrupted reading. |

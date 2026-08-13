@@ -8,7 +8,7 @@ namespace GroveApp.Engine
         int ZIndex,
         string Label, // "01", "02", "B01", "B02"
         string DisplayName,
-        bool IsActive,
+        bool IsSelected,
         int ContentItemCount,
         bool IsVisible = true,
         bool IsLocked = false,
@@ -19,9 +19,9 @@ namespace GroveApp.Engine
     public interface ISpatialLayerStateService : ISpatialLayerPermeability
     {
         IReadOnlyList<SpatialLayerModel> Layers { get; }
-        SpatialLayerModel ActiveLayer { get; }
-        
-        void SetActiveLayer(int zIndex);
+        SpatialLayerModel SelectedGridLayer { get; }
+
+        void SelectGridLayer(int zIndex);
         SpatialLayerModel InsertLayerAbove(int currentZIndex);
         SpatialLayerModel InsertLayerBelow(int currentZIndex);
         SpatialLayerModel InsertLayerAtTop();
@@ -33,11 +33,11 @@ namespace GroveApp.Engine
         bool SetLayerLocked(int zIndex, bool isLocked);
         void JumpToTop();
         void JumpToBottom();
-        
+
         double CalculateAuraPermeability(int sourceZIndex, int targetZIndex);
         string FormatLayerLabel(int zIndex); // 01, 02, B01, B02
-        
-        event Action<SpatialLayerModel>? ActiveLayerChanged;
+
+        event Action<SpatialLayerModel>? SelectedGridLayerChanged;
         event Action? LayerStackChanged;
     }
 }

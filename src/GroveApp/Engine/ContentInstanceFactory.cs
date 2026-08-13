@@ -26,13 +26,13 @@ public static class ContentInstanceFactory
 
     private static GridNote CreateNoteTrace(GridNote source, int layerId)
     {
-        GridNote trace = new(source.CellX, source.CellY, source.Text, source.Color, source.IsAnchored, layerId);
+        GridNote trace = new(source.CellX, source.CellY, source.Text, source.Color, layerId);
         trace.ResizeTo(new SpatialRegion(source.CellX, source.CellY, source.CellWidth, source.CellHeight));
         return trace;
     }
 
     private static GridDocument CreateDocumentTrace(GridDocument source, int layerId) =>
-        new(source.CellX, source.CellY, source.CellWidth, source.CellHeight, source.Title, source.RawText, source.IsAnchored, layerId);
+        new(source.CellX, source.CellY, source.CellWidth, source.CellHeight, source.Title, source.RawText, layerId);
 
     private static GridImage CreateImageTrace(GridImage source, int layerId)
     {
@@ -42,7 +42,6 @@ public static class ContentInstanceFactory
             source.FilePath,
             source.IntrinsicWidthPx,
             source.IntrinsicHeightPx,
-            source.IsAnchored,
             layerId);
         trace.ResizeTo(new SpatialRegion(source.CellX, source.CellY, source.CellWidth, source.CellHeight));
 

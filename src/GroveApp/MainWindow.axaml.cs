@@ -14,6 +14,7 @@ using GroveApp.Controls;
 using GroveApp.DesignSystem;
 using GroveApp.Engine;
 using GroveApp.Engine.Interaction;
+using GroveApp.Engine.Memory;
 using GroveApp.Models;
 using GroveApp.Models.Interaction;
 using Colors = GroveApp.DesignSystem.Colors;
@@ -204,7 +205,7 @@ namespace GroveApp
             _contextMenuService.OpenContextMenuAt(
                 new ScreenPoint(screenPoint.X, screenPoint.Y),
                 new GroveApp.Models.Interaction.CellCoordinate(cell.X, cell.Y),
-                CanvasControl.LayerStack.ActiveLayerId,
+                CanvasControl.LayerStack.SelectedGridLayerId,
                 targetIds,
                 new ScreenSize(CanvasControl.Bounds.Width, CanvasControl.Bounds.Height));
         }
@@ -292,7 +293,7 @@ namespace GroveApp
         private void OnEmptyCellDoubleClicked(CursorDescriptor cursor)
         {
             EngineCellCoordinate placementOrigin = cursor.PlacementOriginCell;
-            var newNote = new GridNote(placementOrigin.X, placementOrigin.Y, "New Note", NoteColor.Violet, layerId: CanvasControl.LayerStack.ActiveLayerId);
+            var newNote = new GridNote(placementOrigin.X, placementOrigin.Y, "New Note", NoteColor.Violet, layerId: CanvasControl.LayerStack.SelectedGridLayerId);
             CanvasControl.AddItem(newNote);
             CanvasControl.SelectOnly(newNote);
             CanvasControl.InvalidateVisual();
@@ -330,11 +331,9 @@ namespace GroveApp
                 CanvasControl.CursorPlacementOrigin.Y,
                 item.Text,
                 NoteColor.Violet,
-                isAnchored: true,
-                layerId: CanvasControl.LayerStack.ActiveLayerId);
+                layerId: CanvasControl.LayerStack.SelectedGridLayerId);
             CanvasControl.AddItem(newNote);
             CanvasControl.SelectOnly(newNote);
-            item.IsAnchored = true;
             CanvasControl.InvalidateVisual();
             CanvasControl.Focus();
         }
@@ -403,10 +402,8 @@ namespace GroveApp
 
                     foreach (GridContentItem item in anchorTargets)
                     {
-                        item.IsAnchored = !item.IsAnchored;
+                        CanvasControl.SetContentAnchored(item, !item.IsAnchored);
                     }
-                    CanvasControl.RefreshFieldLedger();
-                    CanvasControl.InvalidateVisual();
                     break;
                 case "copy" or "copy-all":
                     if (target is GridContentItem copyTarget)
@@ -440,10 +437,8 @@ namespace GroveApp
                 case "group-anchor":
                     foreach (GridContentItem item in CanvasControl.GetSelectedItems())
                     {
-                        item.IsAnchored = !item.IsAnchored;
+                        CanvasControl.SetContentAnchored(item, !item.IsAnchored);
                     }
-                    CanvasControl.RefreshFieldLedger();
-                    CanvasControl.InvalidateVisual();
                     break;
                 case "trace-layer" when target is GridContentItem traceTarget:
                     IReadOnlyList<GridContentItem> traceTargets = CanvasControl.GetSelectedItems();
@@ -452,7 +447,7 @@ namespace GroveApp
                         traceTargets = new[] { traceTarget };
                     }
 
-                    CanvasControl.TryTraceSelectionToActiveLayer(traceTargets, out _);
+                    CanvasControl.TryTraceSelectionToSelectedGridLayer(traceTargets, out _);
                     break;
                 case "cut" when target is GridContentItem cutTarget:
                     _ = CutContextMenuItemAsync(cutTarget);
@@ -476,7 +471,7 @@ namespace GroveApp
                 CanvasControl.CursorPlacementOrigin);
             foreach (GridContentItem item in pasted)
             {
-                item.LayerId = CanvasControl.LayerStack.ActiveLayerId;
+                item.LayerId = CanvasControl.LayerStack.SelectedGridLayerId;
                 CanvasControl.AddItem(item);
             }
 
@@ -570,9 +565,15 @@ namespace GroveApp
             OpenContextMenuAt(screenPoint);
             Dispatcher.UIThread.Post(ContextMenuOverlay.FocusFirstCommand);
         }
-        void IKeybindHost.OpenMemorySlate() =>
-            SlateHost.OpenMemory(CanvasControl.GetMemoryRepresentatives());
-        void IKeybindHost.ToggleLayerIsolation() => CanvasControl.LayerActivation.ToggleIsolationMode();
+        void IKeybindHost.OpenMemorySlate()
+        {
+            var search = new MemorySearchService(
+                CanvasControl.MemoryLedger,
+                () => CanvasControl.MemoryAnchors.ActiveAnchors,
+                () => CanvasControl.Items.ToArray(),
+                CanvasControl.FieldEngine);
+            SlateHost.OpenMemory(search.Search);
+        }
         void IKeybindHost.ToggleGridLines() => CanvasControl.ToggleGridLines();
         void IKeybindHost.FrameAllContent() => CanvasControl.FrameAllContent();
         void IKeybindHost.BeginSpacePan() => CanvasControl.BeginSpacePan();
@@ -589,22 +590,22 @@ namespace GroveApp
         void IKeybindHost.CreateLayerAtBottom() => CanvasControl.LayerStack.InsertLayerAtBottom();
         void IKeybindHost.CreateLayerAtTop() => CanvasControl.LayerStack.InsertLayerAtTop();
 
-        void IKeybindHost.InsertLayerAboveActive()
+        void IKeybindHost.InsertGridLayerAboveSelection()
         {
-            int activeZ = CanvasControl.LayerStack.GetZIndexForLayerId(CanvasControl.LayerStack.ActiveLayerId);
-            CanvasControl.LayerStack.InsertLayerAbove(activeZ);
+            int selectedZ = CanvasControl.LayerStack.GetZIndexForLayerId(CanvasControl.LayerStack.SelectedGridLayerId);
+            CanvasControl.LayerStack.InsertLayerAbove(selectedZ);
         }
 
-        void IKeybindHost.InsertLayerBelowActive()
+        void IKeybindHost.InsertGridLayerBelowSelection()
         {
-            int activeZ = CanvasControl.LayerStack.GetZIndexForLayerId(CanvasControl.LayerStack.ActiveLayerId);
-            CanvasControl.LayerStack.InsertLayerBelow(activeZ);
+            int selectedZ = CanvasControl.LayerStack.GetZIndexForLayerId(CanvasControl.LayerStack.SelectedGridLayerId);
+            CanvasControl.LayerStack.InsertLayerBelow(selectedZ);
         }
 
-        void IKeybindHost.ReorderActiveLayer(int direction)
+        void IKeybindHost.ReorderSelectedGridLayer(int direction)
         {
-            int activeZ = CanvasControl.LayerStack.GetZIndexForLayerId(CanvasControl.LayerStack.ActiveLayerId);
-            CanvasControl.LayerStack.ReorderSwap(activeZ, activeZ + direction);
+            int selectedZ = CanvasControl.LayerStack.GetZIndexForLayerId(CanvasControl.LayerStack.SelectedGridLayerId);
+            CanvasControl.LayerStack.ReorderSwap(selectedZ, selectedZ + direction);
         }
 
         IReadOnlyList<GridContentItem> IKeybindHost.GetSelectedItems() => CanvasControl.GetSelectedItems();
@@ -621,15 +622,12 @@ namespace GroveApp
         {
             foreach (GridContentItem item in CanvasControl.GetSelectedItems())
             {
-                item.IsAnchored = !item.IsAnchored;
+                CanvasControl.SetContentAnchored(item, !item.IsAnchored);
             }
-
-            CanvasControl.RefreshFieldLedger();
-            CanvasControl.InvalidateVisual();
         }
 
-        void IKeybindHost.TraceSelectionToActiveLayer() =>
-            CanvasControl.TryTraceSelectionToActiveLayer(CanvasControl.GetSelectedItems(), out _);
+        void IKeybindHost.TraceSelectionToSelectedGridLayer() =>
+            CanvasControl.TryTraceSelectionToSelectedGridLayer(CanvasControl.GetSelectedItems(), out _);
 
         void IKeybindHost.DeleteSelectedItems()
         {
@@ -667,7 +665,7 @@ namespace GroveApp
 
             foreach (GridContentItem item in pasted)
             {
-                item.LayerId = CanvasControl.LayerStack.ActiveLayerId;
+                item.LayerId = CanvasControl.LayerStack.SelectedGridLayerId;
                 CanvasControl.AddItem(item);
             }
 
@@ -691,16 +689,16 @@ namespace GroveApp
                 _canvas = canvas;
                 _layers = layers;
                 _canvas.CameraChanged += OnCameraChanged;
-                _layers.ActiveLayerChanged += OnActiveLayerChanged;
+                _layers.SelectedGridLayerChanged += OnSelectedGridLayerChanged;
                 _layers.LayerStackChanged += OnLayerStackChanged;
             }
 
             public HudCameraState CameraState => new(_canvas.Zoom);
 
-            public HudLayerIdentity ActiveLayer => ToIdentity(_layers.ActiveLayer);
+            public HudLayerIdentity SelectedGridLayer => ToIdentity(_layers.SelectedGridLayer);
 
             public event Action<HudCameraState>? CameraStateChanged;
-            public event Action<HudLayerIdentity>? ActiveLayerChanged;
+            public event Action<HudLayerIdentity>? SelectedGridLayerChanged;
 
             public ValueTask<HudLayerRenameValidation> CommitLayerRenameAsync(
                 HudLayerRenameRequest request,
@@ -719,7 +717,7 @@ namespace GroveApp
 
                 if (layerZIndex is null)
                 {
-                    return ValueTask.FromResult(HudLayerRenameValidation.Refused("The active layer no longer exists."));
+                    return ValueTask.FromResult(HudLayerRenameValidation.Refused("The selected Grid Layer no longer exists."));
                 }
 
                 bool renamed = _layers.RenameLayer(layerZIndex.Value, request.ProposedName, out string error);
@@ -731,17 +729,17 @@ namespace GroveApp
             public void Dispose()
             {
                 _canvas.CameraChanged -= OnCameraChanged;
-                _layers.ActiveLayerChanged -= OnActiveLayerChanged;
+                _layers.SelectedGridLayerChanged -= OnSelectedGridLayerChanged;
                 _layers.LayerStackChanged -= OnLayerStackChanged;
             }
 
             private void OnCameraChanged() => CameraStateChanged?.Invoke(CameraState);
 
-            private void OnActiveLayerChanged(SpatialLayerModel model) =>
-                ActiveLayerChanged?.Invoke(ToIdentity(model));
+            private void OnSelectedGridLayerChanged(SpatialLayerModel model) =>
+                SelectedGridLayerChanged?.Invoke(ToIdentity(model));
 
             private void OnLayerStackChanged() =>
-                ActiveLayerChanged?.Invoke(ActiveLayer);
+                SelectedGridLayerChanged?.Invoke(SelectedGridLayer);
 
             private static HudLayerIdentity ToIdentity(SpatialLayerModel model) =>
                 new(model.Label, model.Label, model.DisplayName, model.IsLocked);

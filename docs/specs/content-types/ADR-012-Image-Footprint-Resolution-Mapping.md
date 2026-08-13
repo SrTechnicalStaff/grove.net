@@ -9,6 +9,11 @@ status: "PARTIAL — verified image footprint and ownership seam"
 - **Architectural Scope**: Spatial Content Primitives / Picture Component
 - **Target Runtime**: .NET 9.0 / Avalonia UI 11.2.5 / SkiaSharp 3.0
 
+> **Ownership correction:** Any `IsAnchored` wording retained in historical
+> snippets means `Content.AnchorId is not null`. Anchor state belongs to the
+> Content-side relation; it is not a Memory or Placement state, and content
+> constructors do not accept an anchoring flag.
+
 ---
 
 ## 1. Context & Architectural Principles
@@ -119,7 +124,7 @@ public sealed record ImagePlacementRecord
     public required string FilePath { get; init; }
     public required ImageFootprint Footprint { get; init; }
     public required bool IsAnimatedGif { get; init; }
-    public required bool IsAnchored { get; init; }
+    public Guid? AnchorId { get; init; }
     public required int LayerId { get; init; }
 }
 
@@ -239,7 +244,7 @@ public sealed class PicturePlacementControl : Control
         }
 
         // 4. Render Anchor Diamond if Anchored
-        if (Placement.IsAnchored)
+        if (Placement.AnchorId is not null)
         {
             RenderAnchorDiamond(context);
         }

@@ -77,7 +77,6 @@ namespace GroveApp.DesignSystem
         public const double FieldContourMinProjectedCellSize = 3.0;
         public const double GhostFillOpacity = 0.50; // --ghost-fill-opacity
         public const double GhostRingOpacity = 0.88; // --ghost-ring-opacity
-        public const double InactiveGhostOpacity = 0.15;
         public const double ResizeHandleTargetPixels = 12.0;
 
         // Distance Thresholds (Projected Cell Size in px)

@@ -24,7 +24,7 @@ A Grid Layer has:
 - a stable Grid Layer identity and relative depth;
 - optional user-facing name or label;
 - Content whose Placement belongs to that Grid Layer;
-- active/inactive viewing state controlled by the Grid navigation context.
+- explicit visibility and lock preferences, plus a selected Grid Layer command target.
 
 The ground Grid Layer is the base reference. Additional Grid Layers may be
 created above or below it. Their labels and ordering are presentation of depth,
@@ -38,13 +38,13 @@ the configured vertical decay. A cross-Grid-Layer field contribution does not
 move Content and does not create another Content instance.
 
 Perimeter contours are same-Grid-Layer geometry: a contour describes the
-boundary of Content on the active Grid Layer only. Field energy from other Grid
+boundary of Content on the projected Grid Layer only. Field energy from other Grid
 Layers may affect saturation, but it must not create a contour that persists
 through those Grid Layers.
 
 ## Navigation and mutation
 
-Changing the active Grid Layer changes the spatial viewing context. It does
+Changing the selected Grid Layer changes the command context. It does
 not change Memory identity, Content identity, or Placement state. Creating,
 deleting, reordering, or renaming a Grid Layer changes the Grid composition,
 not the semantic records.

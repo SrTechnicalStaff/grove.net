@@ -84,7 +84,7 @@ The following matrix defines the exact resolution of every keyboard shortcut acr
 | `N` | Inserts lowercase character `'n'` | Ignored / Search filter | Ignored | Arms **Note** tool (`ARMED_NOTE`) |
 | `Shift+N` | Inserts uppercase character `'N'` | Ignored / Search filter | Ignored | Arms **Quick Note** tool (`ARMED_QUICKNOTE`) |
 | `D` | Inserts lowercase character `'d'` | Ignored / Search filter | Ignored | Arms **Document** tool (`ARMED_DOCUMENT`) |
-| `A` | Inserts lowercase character `'a'` | Selects all in overlay search | Selects all in HUD container | Toggles `IsAnchored` pinning on selection |
+| `A` | Inserts lowercase character `'a'` | Selects all in overlay search | Selects all in HUD container | Creates or removes a Content-side Anchor relation on selection |
 | `Del` / `Backspace` | Deletes preceding / selected character | Deletes overlay item | Closed focused named Slate | Deletes selected spatial placements from grid |
 | `Esc` | Blurs text focus, cancels editing state | Closes active overlay window | Returns focus from HUD to Plane0Canvas | Disarms armed tool / clears active selection |
 | `Ctrl+C` | Copies highlighted text to OS clipboard | Copies selected overlay text | Copies HUD panel descriptor | Copies selected Memory references to spatial clipboard |
@@ -146,7 +146,7 @@ public sealed record FocusContextInfo(
     FocusPrecedenceLevel ActiveLevel,
     IInputElement? FocusedElement,
     bool IsTextEditingActive,
-    Guid? ActiveLayerId
+    Guid? SelectedGridLayerId
 );
 
 /// <summary>

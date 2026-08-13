@@ -30,7 +30,7 @@ namespace GroveApp.Models
         public int CellHeight { get; set; } = 1;
         public bool IsSelected { get; set; }
         public bool IsHovered { get; set; }
-        public bool IsAnchored { get; set; }
+        public bool IsAnchored => AnchorId.HasValue;
         public int LayerId { get; set; } = 0;
 
         public abstract ContentKind Kind { get; }
@@ -39,13 +39,12 @@ namespace GroveApp.Models
         public virtual int IntrinsicWidthPx { get; protected set; }
         public virtual int IntrinsicHeightPx { get; protected set; }
 
-        protected GridContentItem(int cellX, int cellY, int cellWidth = 1, int cellHeight = 1, bool isAnchored = false, int layerId = 0)
+        protected GridContentItem(int cellX, int cellY, int cellWidth = 1, int cellHeight = 1, int layerId = 0)
         {
             CellX = cellX;
             CellY = cellY;
             CellWidth = Math.Max(1, cellWidth);
             CellHeight = Math.Max(1, cellHeight);
-            IsAnchored = isAnchored;
             LayerId = layerId;
         }
 

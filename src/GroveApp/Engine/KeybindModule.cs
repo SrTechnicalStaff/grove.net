@@ -166,7 +166,7 @@ namespace GroveApp.Engine
                 }
             }
 
-            // L: Toggle the Layer Manager overlay.
+            // L: Toggle the Grid Layer Manager overlay.
             if (e.Key == Key.L &&
                 (e.KeyModifiers == KeyModifiers.None ||
                  (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.KeyModifiers.HasFlag(KeyModifiers.Shift))))
@@ -176,15 +176,7 @@ namespace GroveApp.Engine
                 return true;
             }
 
-            // Ctrl+I: isolate the active layer and suppress inactive presence.
-            if (e.Key == Key.I && e.KeyModifiers.HasFlag(KeyModifiers.Control))
-            {
-                host.ToggleLayerIsolation();
-                e.Handled = true;
-                return true;
-            }
-
-            // A: Toggle Anchor
+            // G: Toggle Grid Lines
             if (e.Key == Key.G && e.KeyModifiers == KeyModifiers.None)
             {
                 host.ToggleGridLines();
@@ -221,7 +213,7 @@ namespace GroveApp.Engine
             {
                 if (host.GetSelectedItems().Count > 0)
                 {
-                    host.TraceSelectionToActiveLayer();
+                    host.TraceSelectionToSelectedGridLayer();
                     e.Handled = true;
                     return true;
                 }
@@ -258,7 +250,7 @@ namespace GroveApp.Engine
                 }
             }
 
-            // Layer Management Keybindings:
+            // Grid Layer Management Keybindings:
             // Shift+[ / Shift+] (Create Bottom / Top)
             if (e.Key == Key.OemOpenBrackets &&
                 e.KeyModifiers == KeyModifiers.Shift)
@@ -291,26 +283,26 @@ namespace GroveApp.Engine
 
             if (e.Key == Key.OemOpenBrackets && e.KeyModifiers == KeyModifiers.Control)
             {
-                host.InsertLayerBelowActive();
+                host.InsertGridLayerBelowSelection();
                 e.Handled = true;
                 return true;
             }
             if (e.Key == Key.OemCloseBrackets && e.KeyModifiers == KeyModifiers.Control)
             {
-                host.InsertLayerAboveActive();
+                host.InsertGridLayerAboveSelection();
                 e.Handled = true;
                 return true;
             }
 
             if (e.Key == Key.OemOpenBrackets && e.KeyModifiers == KeyModifiers.Alt)
             {
-                host.ReorderActiveLayer(-1);
+                host.ReorderSelectedGridLayer(-1);
                 e.Handled = true;
                 return true;
             }
             if (e.Key == Key.OemCloseBrackets && e.KeyModifiers == KeyModifiers.Alt)
             {
-                host.ReorderActiveLayer(1);
+                host.ReorderSelectedGridLayer(1);
                 e.Handled = true;
                 return true;
             }
@@ -318,7 +310,7 @@ namespace GroveApp.Engine
             // Ctrl+Shift+N (Insert Layer Above)
             if (e.Key == Key.N && e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && !e.KeyModifiers.HasFlag(KeyModifiers.Alt))
             {
-                host.InsertLayerAboveActive();
+                host.InsertGridLayerAboveSelection();
                 e.Handled = true;
                 return true;
             }
@@ -326,7 +318,7 @@ namespace GroveApp.Engine
             // Ctrl+Alt+Shift+N (Insert Layer Below)
             if (e.Key == Key.N && e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.KeyModifiers.HasFlag(KeyModifiers.Alt))
             {
-                host.InsertLayerBelowActive();
+                host.InsertGridLayerBelowSelection();
                 e.Handled = true;
                 return true;
             }
@@ -334,18 +326,18 @@ namespace GroveApp.Engine
             // Alt+Up / Alt+Down (Reorder Swap Up / Down)
             if (e.Key == Key.Up && e.KeyModifiers.HasFlag(KeyModifiers.Alt))
             {
-                host.ReorderActiveLayer(1);
+                host.ReorderSelectedGridLayer(1);
                 e.Handled = true;
                 return true;
             }
             if (e.Key == Key.Down && e.KeyModifiers.HasFlag(KeyModifiers.Alt))
             {
-                host.ReorderActiveLayer(-1);
+                host.ReorderSelectedGridLayer(-1);
                 e.Handled = true;
                 return true;
             }
 
-            // Color Swatches: Keys 2, 3, 4
+            // Note Color Swatches: Keys 2, 3, 4
             if (e.Key == Key.D2 || e.Key == Key.NumPad2)
             {
                 host.SetSelectedColor(NoteColor.Violet);

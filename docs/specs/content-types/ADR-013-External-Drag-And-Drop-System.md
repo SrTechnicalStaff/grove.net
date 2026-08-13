@@ -17,7 +17,7 @@ Grove allows users to drag files directly from native operating system file expl
 
 ### 1.1 Invariant Design Laws
 1. **Zero-Modal Drop**: Dragging valid OS files onto the Grid immediately instantiates spatial content placements. No confirmation modals or configuration dialogs interrupt the drop flow.
-2. **Cell Quantization & Collision Refusal**: Placements must land cleanly on discrete integer grid cell coordinates $(C_x, C_y)$. If any target cell in the calculated footprint is occupied on the active Layer, the operation is **Refused** with a visual refusal hatch and plain-English notice.
+2. **Cell Quantization & Collision Refusal**: Placements must land cleanly on discrete integer grid cell coordinates $(C_x, C_y)$. If any target cell in the calculated footprint is occupied on the selected Grid Layer, the operation is **Refused** with a visual refusal hatch and plain-English notice.
 3. **Camera-Aware Coordinate Conversion**: Screen pixel coordinates from `DragEventArgs.GetPosition` must be transformed into spatial grid world coordinates accounting for camera scale $S$ and camera pan offset $(O_x, O_y)$.
 4. **Deterministic Extension Mapping**: File extensions deterministically select the instantiated content primitive:
    - Images (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`) $\to$ **Picture**

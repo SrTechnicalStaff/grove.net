@@ -83,7 +83,7 @@ public enum ContextMenuTargetType : byte
 public sealed record ContextMenuTargetContext(
     ContextMenuTargetType TargetType,
     CellCoordinate AddressedCell,
-    Guid ActiveLayerId,
+    Guid SelectedGridLayerId,
     IReadOnlyList<Guid> TargetPlacementIds
 );
 

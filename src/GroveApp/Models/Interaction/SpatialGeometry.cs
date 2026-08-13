@@ -29,6 +29,13 @@ public readonly record struct SpatialRegion(int X, int Y, int Width, int Height)
         X < other.Right && Right > other.X &&
         Y < other.Bottom && Bottom > other.Y;
 
+    public bool ContainsRegion(SpatialRegion other) =>
+        IsValid && other.IsValid &&
+        X <= other.X &&
+        Y <= other.Y &&
+        Right >= other.Right &&
+        Bottom >= other.Bottom;
+
     public SpatialRegion Translate(int deltaX, int deltaY) =>
         new(X + deltaX, Y + deltaY, Width, Height);
 
@@ -73,6 +80,22 @@ public readonly record struct WorldRectangle(double MinX, double MinY, double Ma
             Math.Min(first.Y, second.Y),
             Math.Max(first.X, second.X),
             Math.Max(first.Y, second.Y));
+
+    public SpatialRegion ToCoveredCellRegion(double cellPitchDips)
+    {
+        if (cellPitchDips <= 0 || double.IsNaN(cellPitchDips) || double.IsInfinity(cellPitchDips))
+        {
+            throw new ArgumentOutOfRangeException(nameof(cellPitchDips));
+        }
+
+        int minX = (int)Math.Floor(MinX / cellPitchDips);
+        int minY = (int)Math.Floor(MinY / cellPitchDips);
+        int maxX = (int)Math.Ceiling(MaxX / cellPitchDips) - 1;
+        int maxY = (int)Math.Ceiling(MaxY / cellPitchDips) - 1;
+        maxX = Math.Max(minX, maxX);
+        maxY = Math.Max(minY, maxY);
+        return new SpatialRegion(minX, minY, maxX - minX + 1, maxY - minY + 1);
+    }
 }
 
 public readonly record struct ScreenPoint(double X, double Y);

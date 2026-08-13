@@ -228,8 +228,8 @@ public interface IToolArmingService
 
     void ArmTool(ArmableContentType contentType);
     void Disarm();
-    void UpdateCursorPosition(Point worldPointerPosition, Guid activeLayerId);
-    bool CommitPlacement(Point worldPointerPosition, Guid activeLayerId, out PlacementCommitResult result);
+    void UpdateCursorPosition(Point worldPointerPosition, Guid selectedGridLayerId);
+    bool CommitPlacement(Point worldPointerPosition, Guid selectedGridLayerId, out PlacementCommitResult result);
 }
 ```
 
@@ -409,7 +409,7 @@ public sealed class ToolArmingStateMachine : IToolArmingService
         GhostPreviewUpdated?.Invoke(_activeGhost);
     }
 
-    public void UpdateCursorPosition(Point worldPointerPosition, Guid activeLayerId)
+    public void UpdateCursorPosition(Point worldPointerPosition, Guid selectedGridLayerId)
     {
         if (_currentState == ToolArmingState.Idle) return;
 
@@ -418,7 +418,7 @@ public sealed class ToolArmingStateMachine : IToolArmingService
         int cellY = (int)Math.Floor(worldPointerPosition.Y / cellSize);
 
         var targetCell = new CellCoordinate(cellX, cellY);
-        bool isValid = CheckRegionAvailability(targetCell, _activeGhost.WidthCells, _activeGhost.HeightCells, activeLayerId);
+        bool isValid = CheckRegionAvailability(targetCell, _activeGhost.WidthCells, _activeGhost.HeightCells, selectedGridLayerId);
 
         _activeGhost = _activeGhost with
         {
@@ -429,7 +429,7 @@ public sealed class ToolArmingStateMachine : IToolArmingService
         GhostPreviewUpdated?.Invoke(_activeGhost);
     }
 
-    public bool CommitPlacement(Point worldPointerPosition, Guid activeLayerId, out PlacementCommitResult result)
+    public bool CommitPlacement(Point worldPointerPosition, Guid selectedGridLayerId, out PlacementCommitResult result)
     {
         if (_currentState == ToolArmingState.Idle)
         {
@@ -437,7 +437,7 @@ public sealed class ToolArmingStateMachine : IToolArmingService
             return false;
         }
 
-        UpdateCursorPosition(worldPointerPosition, activeLayerId);
+        UpdateCursorPosition(worldPointerPosition, selectedGridLayerId);
 
         if (!_activeGhost.IsValidRegion)
         {
@@ -466,7 +466,7 @@ public sealed class ToolArmingStateMachine : IToolArmingService
         return true;
     }
 
-    private static bool CheckRegionAvailability(CellCoordinate origin, int width, int height, Guid activeLayerId)
+    private static bool CheckRegionAvailability(CellCoordinate origin, int width, int height, Guid selectedGridLayerId)
     {
         // Mock region availability check against spatial index / R-Tree
         return true;

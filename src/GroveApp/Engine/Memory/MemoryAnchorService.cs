@@ -12,6 +12,8 @@ public interface IMemoryAnchorService
 {
     IReadOnlyList<MemoryAnchor> ActiveAnchors { get; }
 
+    void EnsureMemory(GridContentItem content);
+
     void Attach(GridContentItem placement);
 
     void UpdatePayload(GridContentItem placement);
@@ -86,19 +88,7 @@ public sealed class MemoryAnchorService : IMemoryAnchorService
         }
 
         _spatialIndex.Clear();
-        var anchors = records
-            .SelectMany(record => record.Anchors.Select(anchor => (record, anchor)))
-            .GroupBy(entry => entry.anchor.AnchorId)
-            .Select(group => group
-                .OrderByDescending(entry => entry.record.Generation)
-                .ThenByDescending(entry => entry.record.CreatedAtTicks)
-                .First().anchor)
-            .ToArray();
-
-        if (anchors.Length == 0)
-        {
-            anchors = (await _anchorStore.LoadAsync(_anchorFilePath).ConfigureAwait(false)).ToArray();
-        }
+        MemoryAnchor[] anchors = (await _anchorStore.LoadAsync(_anchorFilePath).ConfigureAwait(false)).ToArray();
 
         foreach (MemoryAnchor anchor in anchors)
         {
@@ -115,13 +105,21 @@ public sealed class MemoryAnchorService : IMemoryAnchorService
     {
         ArgumentNullException.ThrowIfNull(placement);
 
-        if (!placement.MemoryId.HasValue || _ledger.GetMemory(placement.MemoryId.Value) is null)
-        {
-            MemoryRecord record = AppendMemory(placement, parentMemoryId: null);
-            placement.MemoryId = record.MemoryId;
-        }
+        EnsureMemory(placement);
 
         ReplaceAnchor(placement);
+    }
+
+    public void EnsureMemory(GridContentItem content)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+        if (content.MemoryId.HasValue && _ledger.GetMemory(content.MemoryId.Value) is not null)
+        {
+            return;
+        }
+
+        MemoryRecord record = AppendMemory(content, parentMemoryId: null);
+        content.MemoryId = record.MemoryId;
     }
 
     public void UpdatePayload(GridContentItem placement)
@@ -130,11 +128,19 @@ public sealed class MemoryAnchorService : IMemoryAnchorService
 
         Guid? anchorId = placement.AnchorId;
         Guid? parentMemoryId = placement.MemoryId;
-        RemoveAnchor(placement, clearPlacementIdentity: false, persist: false);
+        bool hasAnchor = anchorId.HasValue;
+        if (hasAnchor)
+        {
+            RemoveAnchor(placement, clearPlacementIdentity: false, persist: false);
+        }
+
         MemoryRecord record = AppendMemory(placement, parentMemoryId);
         placement.MemoryId = record.MemoryId;
         placement.AnchorId = anchorId;
-        AddAnchor(placement, anchorId);
+        if (hasAnchor)
+        {
+            AddAnchor(placement, anchorId);
+        }
         PersistSnapshot();
     }
 
@@ -143,7 +149,12 @@ public sealed class MemoryAnchorService : IMemoryAnchorService
         ArgumentNullException.ThrowIfNull(placement);
         if (!placement.MemoryId.HasValue)
         {
-            Attach(placement);
+            EnsureMemory(placement);
+            return;
+        }
+
+        if (!placement.AnchorId.HasValue)
+        {
             return;
         }
 
@@ -160,7 +171,13 @@ public sealed class MemoryAnchorService : IMemoryAnchorService
     {
         MemoryPayloadKind payloadKind = GridContentMemoryPayloadAdapter.GetKind(placement);
         byte[] payload = GridContentMemoryPayloadAdapter.ReadPayload(placement);
-        MemoryRecord record = _ledger.AppendMemory(payloadKind, payload, parentMemoryId);
+        string title = placement switch
+        {
+            GridDocument document => document.Title,
+            GridImage image => System.IO.Path.GetFileNameWithoutExtension(image.FilePath),
+            _ => string.Empty
+        };
+        MemoryRecord record = _ledger.AppendMemory(payloadKind, payload, parentMemoryId, title);
         _versionTree.AddVersionNode(record, _ledger);
         return record;
     }
@@ -201,7 +218,6 @@ public sealed class MemoryAnchorService : IMemoryAnchorService
             CreatedAtTicks = DateTime.UtcNow.Ticks
         };
 
-        _ledger.AddAnchor(anchor.MemoryId, anchor);
         _spatialIndex.Insert(anchor);
         placement.AnchorId = anchor.AnchorId;
     }
@@ -219,7 +235,6 @@ public sealed class MemoryAnchorService : IMemoryAnchorService
         }
 
         _spatialIndex.Remove(anchorId, out _);
-        _ledger.RemoveAnchor(memoryId, anchorId);
         if (clearPlacementIdentity)
         {
             placement.AnchorId = null;

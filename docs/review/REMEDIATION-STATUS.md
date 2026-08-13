@@ -44,6 +44,25 @@ partial after cross-referencing the ADRs.
   no longer reaches into concrete Note, Document, or Image dimension fields.
 - Resize handles now expose the matching native diagonal cursor while hovered
   and return to the hidden grid cursor everywhere else.
+- Marquee selection now requires complete Content footprint containment, and
+  selected Content projects its source Aura contribution as discrete colored
+  cell marks while unselected field contributions remain visible.
+- Group translation now uses a dedicated collision planner, moves anchored
+  Content without treating authored Anchor context as a movement lock, and
+  applies the same integer delta to every selected footprint.
+- Memory records no longer own Anchor collections. Memory Slate reads the
+  Memory ledger directly, including records without Content; Content-side
+  Anchor relations remain in the separate spatial relation store.
+- The semantic Memory ledger no longer exposes Anchor mutation methods. Anchor
+  creation, movement, and removal are owned by the Content-side Anchor service
+  and spatial relation index.
+- Plane 0 rendering no longer uses the optional Anchor index to cull Content;
+  unanchored Content remains renderable and Content geometry remains the
+  rendering boundary.
+- Aura preparation expands work around the viewport by the culling radius,
+  same-Grid-Layer contours use source energy and same-layer additive Aura color,
+  all source hues participate in composite cells, and no zoom value can make
+  semantic Aura evidence disappear.
 
 ## Deliberately partial or refused
 

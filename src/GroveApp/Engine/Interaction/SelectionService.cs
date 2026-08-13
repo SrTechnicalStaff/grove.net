@@ -28,13 +28,11 @@ public interface ISelectionService
 
 /// <summary>
 /// Deep in-process selection module. It owns ordering, primary reassignment,
-/// marquee lifetime, and the 50% area rule; input and drawing adapters only
+/// marquee lifetime, and full-footprint containment; input and drawing adapters only
 /// translate events and consume snapshots.
 /// </summary>
 public sealed class SelectionService : ISelectionService
 {
-    public const double MinimumMarqueeOverlapRatio = 0.50;
-
     private readonly double _cellPitchDips;
     private readonly List<string> _selectedIds = new();
     private readonly HashSet<string> _selectedSet = new(StringComparer.Ordinal);
@@ -88,7 +86,7 @@ public sealed class SelectionService : ISelectionService
         var preview = _activeMarquee.Value.IsAdditiveShift
             ? new HashSet<string>(_selectedSet, StringComparer.Ordinal)
             : new HashSet<string>(StringComparer.Ordinal);
-        WorldRectangle bounds = _activeMarquee.Value.Bounds;
+        SpatialRegion marquee = _activeMarquee.Value.Bounds.ToCoveredCellRegion(_cellPitchDips);
         foreach (SpatialSelectionCandidate candidate in candidates)
         {
             if (string.IsNullOrWhiteSpace(candidate.PlacementId) || !candidate.Footprint.IsValid)
@@ -96,13 +94,7 @@ public sealed class SelectionService : ISelectionService
                 continue;
             }
 
-            double ratio = candidate.Footprint.CalculateWorldAreaOverlapRatio(
-                bounds.MinX,
-                bounds.MinY,
-                bounds.MaxX,
-                bounds.MaxY,
-                _cellPitchDips);
-            if (ratio >= MinimumMarqueeOverlapRatio)
+            if (marquee.ContainsRegion(candidate.Footprint))
             {
                 preview.Add(candidate.PlacementId);
             }
@@ -126,7 +118,7 @@ public sealed class SelectionService : ISelectionService
             _selectedSet.Clear();
         }
 
-        WorldRectangle bounds = sweep.Bounds;
+        SpatialRegion marquee = sweep.Bounds.ToCoveredCellRegion(_cellPitchDips);
         bool changed = false;
         foreach (SpatialSelectionCandidate candidate in candidates)
         {
@@ -135,14 +127,7 @@ public sealed class SelectionService : ISelectionService
                 continue;
             }
 
-            double ratio = candidate.Footprint.CalculateWorldAreaOverlapRatio(
-                bounds.MinX,
-                bounds.MinY,
-                bounds.MaxX,
-                bounds.MaxY,
-                _cellPitchDips);
-
-            if (ratio >= MinimumMarqueeOverlapRatio)
+            if (marquee.ContainsRegion(candidate.Footprint))
             {
                 changed |= Add(candidate.PlacementId);
             }

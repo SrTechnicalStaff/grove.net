@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.IO;
 using GroveApp.Models.Memory;
 
@@ -8,8 +7,7 @@ namespace GroveApp.Engine.Memory;
 
 /// <summary>
 /// Thread-safe in-memory adapter for the memory ledger seam.
-/// Payload records are append-only; anchor changes replace an immutable snapshot
-/// under the same memory identity and never alter the payload or its hash.
+/// Payload records are append-only and never contain Content-side relations.
 /// </summary>
 public sealed class ImmutableMemoryLedger : IMemoryLedger
 {
@@ -21,7 +19,7 @@ public sealed class ImmutableMemoryLedger : IMemoryLedger
         MemoryPayloadKind kind,
         ReadOnlySpan<byte> payload,
         Guid? parentMemoryId = null,
-        ImmutableList<MemoryAnchor>? initialAnchors = null)
+        string? title = null)
     {
         byte[] payloadCopy = payload.ToArray();
         ContentHash hash = new(payloadCopy);
@@ -37,15 +35,13 @@ public sealed class ImmutableMemoryLedger : IMemoryLedger
             Guid memoryId = Guid.CreateVersion7();
             Guid rootId = parent?.RootMemoryId ?? memoryId;
             uint generation = parent is null ? 0u : checked(parent.Generation + 1u);
-            ImmutableList<MemoryAnchor> anchors = NormalizeAnchors(initialAnchors, memoryId);
-
             MemoryRecord record = MemoryRecord.Create(
                 kind,
                 payloadCopy,
                 parentMemoryId,
                 rootId,
                 generation,
-                anchors,
+                title,
                 memoryId);
 
             if (!_recordsById.TryAdd(record.MemoryId, record))
@@ -82,67 +78,6 @@ public sealed class ImmutableMemoryLedger : IMemoryLedger
         }
     }
 
-    public MemoryRecord AddAnchor(Guid memoryId, MemoryAnchor anchor)
-    {
-        lock (_writeGate)
-        {
-            MemoryRecord record = GetRequiredMemoryUnderLock(memoryId);
-            MemoryAnchor normalized = NormalizeAnchor(anchor, memoryId);
-
-            foreach (MemoryAnchor existing in record.Anchors)
-            {
-                if (existing.AnchorId == normalized.AnchorId)
-                {
-                    if (existing != normalized)
-                    {
-                        throw new InvalidOperationException(
-                            $"Anchor ID {normalized.AnchorId} is already assigned to different metadata.");
-                    }
-
-                    return record;
-                }
-            }
-
-            ImmutableList<MemoryAnchor> anchors = record.Anchors.Add(normalized);
-            MemoryRecord updated = record.WithAnchors(anchors, NextTimestamp(record.UpdatedAtTicks));
-            _recordsById[memoryId] = updated;
-            return updated;
-        }
-    }
-
-    public MemoryRecord RemoveAnchor(Guid memoryId, Guid anchorId)
-    {
-        if (anchorId == Guid.Empty)
-        {
-            throw new ArgumentException("An anchor ID is required.", nameof(anchorId));
-        }
-
-        lock (_writeGate)
-        {
-            MemoryRecord record = GetRequiredMemoryUnderLock(memoryId);
-            int index = -1;
-            for (int i = 0; i < record.Anchors.Count; i++)
-            {
-                if (record.Anchors[i].AnchorId == anchorId)
-                {
-                    index = i;
-                    break;
-                }
-            }
-
-            if (index < 0)
-            {
-                return record;
-            }
-
-            MemoryRecord updated = record.WithAnchors(
-                record.Anchors.RemoveAt(index),
-                NextTimestamp(record.UpdatedAtTicks));
-            _recordsById[memoryId] = updated;
-            return updated;
-        }
-    }
-
     public void Import(MemoryRecord record)
     {
         ArgumentNullException.ThrowIfNull(record);
@@ -163,10 +98,7 @@ public sealed class ImmutableMemoryLedger : IMemoryLedger
                 throw new KeyNotFoundException($"Parent memory {parentId} was not found while importing {record.MemoryId}.");
             }
 
-            MemoryRecord normalized = record with
-            {
-                Anchors = NormalizeAnchors(record.Anchors, record.MemoryId)
-            };
+            MemoryRecord normalized = record;
 
             if (_recordsById.TryGetValue(normalized.MemoryId, out MemoryRecord? existing))
             {
@@ -193,61 +125,6 @@ public sealed class ImmutableMemoryLedger : IMemoryLedger
             return snapshot;
         }
     }
-
-    private MemoryRecord GetRequiredMemoryUnderLock(Guid memoryId)
-    {
-        return _recordsById.TryGetValue(memoryId, out MemoryRecord? record)
-            ? record
-            : throw new KeyNotFoundException($"Memory {memoryId} was not found.");
-    }
-
-    private static ImmutableList<MemoryAnchor> NormalizeAnchors(
-        ImmutableList<MemoryAnchor>? anchors,
-        Guid memoryId)
-    {
-        if (anchors is null || anchors.Count == 0)
-        {
-            return ImmutableList<MemoryAnchor>.Empty;
-        }
-
-        ImmutableList<MemoryAnchor>.Builder normalized = ImmutableList.CreateBuilder<MemoryAnchor>();
-        HashSet<Guid> anchorIds = new();
-        foreach (MemoryAnchor anchor in anchors)
-        {
-            MemoryAnchor normalizedAnchor = NormalizeAnchor(anchor, memoryId);
-            if (!anchorIds.Add(normalizedAnchor.AnchorId))
-            {
-                throw new ArgumentException(
-                    $"Initial anchors contain duplicate ID {normalizedAnchor.AnchorId}.",
-                    nameof(anchors));
-            }
-
-            normalized.Add(normalizedAnchor);
-        }
-
-        return normalized.ToImmutable();
-    }
-
-    private static MemoryAnchor NormalizeAnchor(MemoryAnchor anchor, Guid memoryId)
-    {
-        if (anchor.MemoryId != Guid.Empty && anchor.MemoryId != memoryId)
-        {
-            throw new ArgumentException(
-                $"Anchor {anchor.AnchorId} belongs to memory {anchor.MemoryId}, not {memoryId}.",
-                nameof(anchor));
-        }
-
-        return anchor with
-        {
-            AnchorId = anchor.AnchorId == Guid.Empty ? Guid.CreateVersion7() : anchor.AnchorId,
-            MemoryId = memoryId,
-            CellWidth = Math.Max(1, anchor.CellWidth),
-            CellHeight = Math.Max(1, anchor.CellHeight),
-            CreatedAtTicks = anchor.CreatedAtTicks == 0 ? DateTime.UtcNow.Ticks : anchor.CreatedAtTicks
-        };
-    }
-
-    private static long NextTimestamp(long previous) => Math.Max(DateTime.UtcNow.Ticks, previous + 1);
 
     private static int CompareRecords(MemoryRecord left, MemoryRecord right)
     {

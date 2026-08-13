@@ -33,7 +33,7 @@ namespace GroveApp.Engine
 
     public sealed record SpatialLayerStackState(
         IReadOnlyList<SpatialLayerState> Layers,
-        int ActiveLayerId);
+        int SelectedGridLayerId);
 
     public sealed record SpatialLayer(
         int Id,
@@ -53,14 +53,13 @@ namespace GroveApp.Engine
     /// </summary>
     public interface ISpatialLayerPermeability
     {
-        int ActiveLayerId { get; }
         double GetPermeability(int sourceLayerId, int targetLayerId);
         double ApplyPermeability(double sourceEnergy, int sourceLayerId, int targetLayerId);
     }
 
     /// <summary>
-    /// Owns the ordered layer continuum, B-label stack rules (01, 02, B01, B02...),
-    /// vertical aura permeability physics, and layer navigation state.
+    /// Owns the ordered Grid Layer continuum, B-label stack rules (01, 02, B01, B02...),
+    /// vertical Aura permeability physics, and selected Grid Layer command target.
     /// Implements ISpatialLayerStateService and ISpatialLayerPermeability.
     /// </summary>
     public sealed class SpatialLayerStack : ISpatialLayerStateService
@@ -88,30 +87,27 @@ namespace GroveApp.Engine
         private int _nextId = 1;
         private int _nextUpperLabel = 2;
         private int _nextLowerLabel = 1;
-        private int _activeLayerId;
+        private int _selectedGridLayerId;
 
         public Func<int, int>? ItemCountProvider { get; set; }
         public Func<int, int, bool>? LayerMigrationValidator { get; set; }
 
-        public event Action<SpatialLayerModel>? ActiveLayerChanged;
+        public event Action<SpatialLayerModel>? SelectedGridLayerChanged;
         public event Action? LayerStackChanged;
         public event Action<int, int>? LayerItemsTransferRequested;
-
-        // Legacy event support
-        public event Action<SpatialLayer>? ActiveSpatialLayerChanged;
 
         public SpatialLayerStack()
         {
             _groundLayer = new InternalLayer(0, "01", "Main Ground Layer", Colors.LayerFillHex);
             _layers.Add(_groundLayer);
-            _activeLayerId = _groundLayer.Id;
+            _selectedGridLayerId = _groundLayer.Id;
         }
 
-        public int ActiveLayerId => _activeLayerId;
+        public int SelectedGridLayerId => _selectedGridLayerId;
 
-        public SpatialLayer ActiveLayer => GetLayer(_activeLayerId);
+        public SpatialLayer SelectedGridLayer => GetLayer(_selectedGridLayerId);
 
-        SpatialLayerModel ISpatialLayerStateService.ActiveLayer => GetModelForId(_activeLayerId);
+        SpatialLayerModel ISpatialLayerStateService.SelectedGridLayer => GetModelForId(_selectedGridLayerId);
 
         public IReadOnlyList<SpatialLayerModel> Layers => BuildModels();
 
@@ -123,7 +119,7 @@ namespace GroveApp.Engine
                 layer.IsVisible,
                 layer.IsLocked,
                 layer.ColorHex)).ToArray(),
-            _activeLayerId);
+            _selectedGridLayerId);
 
         public bool ImportState(SpatialLayerStackState state)
         {
@@ -171,9 +167,9 @@ namespace GroveApp.Engine
                 .Select(layer => int.Parse(layer.StableLabel[1..]))
                 .DefaultIfEmpty(0)
                 .Max() + 1;
-            _activeLayerId = GetStackIndex(state.ActiveLayerId) >= 0 ? state.ActiveLayerId : _groundLayer.Id;
+            _selectedGridLayerId = GetStackIndex(state.SelectedGridLayerId) >= 0 ? state.SelectedGridLayerId : _groundLayer.Id;
             LayerStackChanged?.Invoke();
-            ActiveLayerChanged?.Invoke(GetModelForId(_activeLayerId));
+            SelectedGridLayerChanged?.Invoke(GetModelForId(_selectedGridLayerId));
             return true;
         }
 
@@ -248,28 +244,26 @@ namespace GroveApp.Engine
             return _groundLayer.Id;
         }
 
-        public void SetActiveLayer(int zIndex)
+        public void SelectGridLayer(int zIndex)
         {
             int layerId = GetLayerIdForZIndex(zIndex);
-            if (layerId == _activeLayerId) return;
+            if (layerId == _selectedGridLayerId) return;
 
-            _activeLayerId = layerId;
-            var model = GetModelForId(_activeLayerId);
-            ActiveLayerChanged?.Invoke(model);
-            ActiveSpatialLayerChanged?.Invoke(GetLayer(_activeLayerId));
+            _selectedGridLayerId = layerId;
+            var model = GetModelForId(_selectedGridLayerId);
+            SelectedGridLayerChanged?.Invoke(model);
             LayerStackChanged?.Invoke();
         }
 
-        public bool SetActiveLayerId(int layerId)
+        public bool SelectGridLayerId(int layerId)
         {
-            if (GetStackIndex(layerId) < 0 || layerId == _activeLayerId)
+            if (GetStackIndex(layerId) < 0 || layerId == _selectedGridLayerId)
             {
                 return false;
             }
-            _activeLayerId = layerId;
-            var model = GetModelForId(_activeLayerId);
-            ActiveLayerChanged?.Invoke(model);
-            ActiveSpatialLayerChanged?.Invoke(GetLayer(_activeLayerId));
+            _selectedGridLayerId = layerId;
+            var model = GetModelForId(_selectedGridLayerId);
+            SelectedGridLayerChanged?.Invoke(model);
             LayerStackChanged?.Invoke();
             return true;
         }
@@ -284,10 +278,10 @@ namespace GroveApp.Engine
             // Insert above means inserting before stackIdx (towards top)
             _layers.Insert(stackIdx, newLayer);
 
-            _activeLayerId = newLayer.Id;
+            _selectedGridLayerId = newLayer.Id;
             LayerStackChanged?.Invoke();
             var model = GetModelForId(newLayer.Id);
-            ActiveLayerChanged?.Invoke(model);
+            SelectedGridLayerChanged?.Invoke(model);
             return model;
         }
 
@@ -301,10 +295,10 @@ namespace GroveApp.Engine
             // Insert below means inserting after stackIdx (towards bottom)
             _layers.Insert(stackIdx + 1, newLayer);
 
-            _activeLayerId = newLayer.Id;
+            _selectedGridLayerId = newLayer.Id;
             LayerStackChanged?.Invoke();
             var model = GetModelForId(newLayer.Id);
-            ActiveLayerChanged?.Invoke(model);
+            SelectedGridLayerChanged?.Invoke(model);
             return model;
         }
 
@@ -376,11 +370,11 @@ namespace GroveApp.Engine
 
             _layers.RemoveAt(removeIdx);
 
-            if (_activeLayerId == removeLayerId)
+            if (_selectedGridLayerId == removeLayerId)
             {
                 int newActiveIdx = Math.Clamp(removeIdx, 0, _layers.Count - 1);
-                _activeLayerId = _layers[newActiveIdx].Id;
-                ActiveLayerChanged?.Invoke(GetModelForId(_activeLayerId));
+                _selectedGridLayerId = _layers[newActiveIdx].Id;
+                SelectedGridLayerChanged?.Invoke(GetModelForId(_selectedGridLayerId));
             }
 
             LayerStackChanged?.Invoke();
@@ -416,7 +410,7 @@ namespace GroveApp.Engine
         {
             if (direction == 0 || _layers.Count == 0) return false;
 
-            int currentZ = GetZIndexForLayerId(_activeLayerId);
+            int currentZ = GetZIndexForLayerId(_selectedGridLayerId);
             // direction > 0 means navigate UP (+1 ZIndex)
             // direction < 0 means navigate DOWN (-1 ZIndex)
             int targetZ = currentZ + direction;
@@ -425,7 +419,7 @@ namespace GroveApp.Engine
 
             if (targetStackIdx < 0 || targetStackIdx >= _layers.Count) return false;
 
-            SetActiveLayer(targetZ);
+            SelectGridLayer(targetZ);
             return true;
         }
 
@@ -434,7 +428,7 @@ namespace GroveApp.Engine
             if (_layers.Count == 0) return;
             int topId = _layers[0].Id;
             int topZ = GetZIndexForLayerId(topId);
-            SetActiveLayer(topZ);
+            SelectGridLayer(topZ);
         }
 
         public void JumpToBottom()
@@ -442,7 +436,7 @@ namespace GroveApp.Engine
             if (_layers.Count == 0) return;
             int bottomId = _layers[^1].Id;
             int bottomZ = GetZIndexForLayerId(bottomId);
-            SetActiveLayer(bottomZ);
+            SelectGridLayer(bottomZ);
         }
 
         private int GetGroundIndex()
@@ -471,7 +465,7 @@ namespace GroveApp.Engine
             var l = GetInternalLayer(id);
             int z = GetZIndexForLayerId(id);
             int count = ItemCountProvider?.Invoke(id) ?? 0;
-            return new SpatialLayerModel(z, l.StableLabel, l.Name, id == _activeLayerId, count, l.IsVisible, l.IsLocked, id == _groundLayer.Id, l.ColorHex);
+            return new SpatialLayerModel(z, l.StableLabel, l.Name, id == _selectedGridLayerId, count, l.IsVisible, l.IsLocked, id == _groundLayer.Id, l.ColorHex);
         }
 
         private IReadOnlyList<SpatialLayerModel> BuildModels()
@@ -482,7 +476,7 @@ namespace GroveApp.Engine
                 var l = _layers[i];
                 int z = GetZIndexForLayerId(l.Id);
                 int count = ItemCountProvider?.Invoke(l.Id) ?? 0;
-                result.Add(new SpatialLayerModel(z, l.StableLabel, l.Name, l.Id == _activeLayerId, count, l.IsVisible, l.IsLocked, l.Id == _groundLayer.Id, l.ColorHex));
+                result.Add(new SpatialLayerModel(z, l.StableLabel, l.Name, l.Id == _selectedGridLayerId, count, l.IsVisible, l.IsLocked, l.Id == _groundLayer.Id, l.ColorHex));
             }
             return result;
         }

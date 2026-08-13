@@ -45,8 +45,8 @@ namespace GroveApp.Models
         public string Text { get; set; } = "";
         public NoteColor Color { get; set; } = NoteColor.Violet;
 
-        public GridNote(int cellX, int cellY, string text = "", NoteColor color = NoteColor.Violet, bool isAnchored = false, int layerId = 0)
-            : base(cellX, cellY, 1, 1, isAnchored, layerId)
+        public GridNote(int cellX, int cellY, string text = "", NoteColor color = NoteColor.Violet, int layerId = 0)
+            : base(cellX, cellY, 1, 1, layerId)
         {
             Text = text;
             Color = color;

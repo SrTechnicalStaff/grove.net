@@ -26,6 +26,12 @@ namespace GroveApp.Engine
         public Color SourceColor { get; set; } = Colors.NoteViolet;
     }
 
+    public readonly record struct SelectedFieldCell(
+        int Col,
+        int Row,
+        double SelectedEnergy,
+        Color SelectedColor);
+
     /// <summary>
     /// Packed coordinate used by the field-ledger value object.
     /// </summary>
@@ -64,7 +70,9 @@ namespace GroveApp.Engine
         public Guid LayerId { get; init; }
         public float TotalEnergy { get; init; }
         public float FieldEnergy => TotalEnergy;
+        public float SameLayerEnergy { get; init; }
         public Color CompositeColor { get; init; }
+        public Color SameLayerColor { get; init; }
         public Vector4 PrimaryHue { get; init; }
         public int SourceCount { get; init; }
 
@@ -82,7 +90,9 @@ namespace GroveApp.Engine
             Position = new GridCellPosition(col, row);
             LayerId = Guid.Empty;
             TotalEnergy = BaselineEnergy;
+            SameLayerEnergy = BaselineEnergy;
             CompositeColor = Colors.SurfaceGrid;
+            SameLayerColor = Colors.SurfaceGrid;
             PrimaryHue = ToNormalizedHue(Colors.SurfaceGrid);
             SourceCount = 0;
             InlineSource0 = default;
@@ -133,9 +143,9 @@ namespace GroveApp.Engine
         (int X, int Y) End);
 
     /// <summary>
-    /// Computes the energy-weighted composite hue for a cell and its render alpha.
-    /// The composite remains a discrete cell value; overlapping sources are
-    /// normalized by their total contribution rather than averaged by position.
+    /// Computes the additive hue for a cell and its render alpha.
+    /// The composite remains a discrete cell value; overlapping source channels
+    /// are summed and clamped without computing a midpoint hue.
     /// </summary>
     public sealed class AuraHeatmapSubscriber : IFieldSubscriber
     {
@@ -144,6 +154,27 @@ namespace GroveApp.Engine
         public CellLedgerEntry ApplyCompositeColor(in CellLedgerEntry entry)
         {
             return entry with { CompositeColor = CalculateCompositeColor(entry) };
+        }
+
+        public CellLedgerEntry ApplyCompositeColor(
+            in CellLedgerEntry entry,
+            IEnumerable<CellMetadataSource> sources)
+        {
+            ArgumentNullException.ThrowIfNull(sources);
+
+            double totalWeight = 0.0;
+            double red = 0.0;
+            double green = 0.0;
+            double blue = 0.0;
+            foreach (CellMetadataSource source in sources)
+            {
+                Accumulate(source, ref totalWeight, ref red, ref green, ref blue);
+            }
+
+            return entry with
+            {
+                CompositeColor = BuildCompositeColor(entry.FieldEnergy, totalWeight, red, green, blue)
+            };
         }
 
         public Color CalculateCompositeColor(in CellLedgerEntry entry)
@@ -168,16 +199,7 @@ namespace GroveApp.Engine
                 return Colors.SurfaceGrid;
             }
 
-            double alpha = Math.Clamp(
-                entry.FieldEnergy * Tokens.FieldGain,
-                Tokens.FieldAlphaMin,
-                Tokens.FieldAlphaMax);
-
-            return Color.FromArgb(
-                ToByte(alpha * byte.MaxValue),
-                ToByte(red / totalWeight),
-                ToByte(green / totalWeight),
-                ToByte(blue / totalWeight));
+            return BuildCompositeColor(entry.FieldEnergy, totalWeight, red, green, blue);
         }
 
         public void OnCellFieldUpdated(in CellLedgerEntry entry)
@@ -210,6 +232,49 @@ namespace GroveApp.Engine
             red += source.ColorHue.X * byte.MaxValue * weight;
             green += source.ColorHue.Y * byte.MaxValue * weight;
             blue += source.ColorHue.Z * byte.MaxValue * weight;
+        }
+
+        private static void Accumulate(
+            CellMetadataSource source,
+            ref double totalWeight,
+            ref double red,
+            ref double green,
+            ref double blue)
+        {
+            double weight = source.Weight;
+            if (weight <= 0.0)
+            {
+                return;
+            }
+
+            totalWeight += weight;
+            red += source.SourceColor.R * weight;
+            green += source.SourceColor.G * weight;
+            blue += source.SourceColor.B * weight;
+        }
+
+        private static Color BuildCompositeColor(
+            double fieldEnergy,
+            double totalWeight,
+            double red,
+            double green,
+            double blue)
+        {
+            if (totalWeight <= 0.0)
+            {
+                return Colors.SurfaceGrid;
+            }
+
+            double alpha = Math.Clamp(
+                fieldEnergy * Tokens.FieldGain,
+                Tokens.FieldAlphaMin,
+                Tokens.FieldAlphaMax);
+
+            return Color.FromArgb(
+                ToByte(alpha * byte.MaxValue),
+                ToByte(red),
+                ToByte(green),
+                ToByte(blue));
         }
     }
 
@@ -296,7 +361,10 @@ namespace GroveApp.Engine
         public void OnCellFieldUpdated(in CellLedgerEntry entry)
         {
             var key = (entry.Col, entry.Row);
-            if (entry.FieldEnergy >= PerimeterThresholdEnergy)
+            double sameLayerSourceEnergy = Math.Max(
+                0.0,
+                entry.SameLayerEnergy - CellLedgerEntry.BaselineEnergy);
+            if (sameLayerSourceEnergy >= PerimeterThresholdEnergy)
             {
                 SaturatedCells.Add(key);
             }
@@ -456,14 +524,15 @@ namespace GroveApp.Engine
     public sealed class FieldLedgerEngine
     {
         private readonly Dictionary<(int col, int row), CellLedgerEntry> _ledger = new();
+        private readonly Dictionary<(int col, int row), CellMetadataSource[]> _sourceContributions = new();
         private readonly List<IFieldSubscriber> _subscribers = new();
 
         public const double LayerPermeabilityDecay = 0.5;
 
         /// <summary>
-        /// Active layer used when computing the next field snapshot.
+        /// Grid Layer onto which the current Plane 0 field projection is sampled.
         /// </summary>
-        public int ActiveLayerId { get; set; }
+        public int ProjectionGridLayerId { get; set; }
 
         /// <summary>
         /// Resolves stack distance between source and target layers. The default
@@ -547,6 +616,7 @@ namespace GroveApp.Engine
         public void Clear()
         {
             _ledger.Clear();
+            _sourceContributions.Clear();
             CurrentAuraCells = new HashSet<(int col, int row)>();
             CurrentVisibleAuraCells = new HashSet<(int col, int row)>();
             PerimeterSubscriber.SaturatedCells.Clear();
@@ -630,6 +700,10 @@ namespace GroveApp.Engine
         {
             var sourceMetadata = new Dictionary<string, CellMetadataSource>();
             double accumulatedEnergy = CellLedgerEntry.BaselineEnergy;
+            double sameLayerEnergy = CellLedgerEntry.BaselineEnergy;
+            double sameLayerRed = 0.0;
+            double sameLayerGreen = 0.0;
+            double sameLayerBlue = 0.0;
 
             foreach (var item in items)
             {
@@ -659,7 +733,7 @@ namespace GroveApp.Engine
                     continue;
                 }
 
-                int layerDelta = Math.Abs(LayerDeltaResolver(item.LayerId, ActiveLayerId));
+                int layerDelta = Math.Abs(LayerDeltaResolver(item.LayerId, ProjectionGridLayerId));
 
                 double distSq = dx * dx + dy * dy;
                 if (distSq > Tokens.MaxCullingRadiusCells * Tokens.MaxCullingRadiusCells)
@@ -675,8 +749,15 @@ namespace GroveApp.Engine
                     continue;
                 }
 
-                accumulatedEnergy += weight;
                 Color hue = Color.Parse(item.FieldHueHex);
+                accumulatedEnergy += weight;
+                if (layerDelta == 0)
+                {
+                    sameLayerEnergy += weight;
+                    sameLayerRed += hue.R * weight;
+                    sameLayerGreen += hue.G * weight;
+                    sameLayerBlue += hue.B * weight;
+                }
                 string contentId = item.Id;
                 string snippet = item switch
                 {
@@ -699,11 +780,20 @@ namespace GroveApp.Engine
             }
 
             var firstSourceColor = sourceMetadata.Values.FirstOrDefault()?.SourceColor ?? Colors.SurfaceGrid;
+            _sourceContributions[(col, row)] = sourceMetadata.Values.ToArray();
             var entry = new CellLedgerEntry(col, row)
             {
-                LayerId = GetLayerGuid(ActiveLayerId),
+                LayerId = GetLayerGuid(ProjectionGridLayerId),
                 TotalEnergy = (float)accumulatedEnergy,
-                SourceCount = Math.Min(sourceMetadata.Count, 4),
+                SameLayerEnergy = (float)sameLayerEnergy,
+                SameLayerColor = sameLayerEnergy > CellLedgerEntry.BaselineEnergy
+                    ? Color.FromArgb(
+                        byte.MaxValue,
+                        ToByte(sameLayerRed),
+                        ToByte(sameLayerGreen),
+                        ToByte(sameLayerBlue))
+                    : Colors.SurfaceGrid,
+                SourceCount = sourceMetadata.Count,
                 PrimaryHue = sourceMetadata.Count == 0
                     ? ToNormalizedHue(Colors.SurfaceGrid)
                     : ToNormalizedHue(firstSourceColor)
@@ -718,7 +808,7 @@ namespace GroveApp.Engine
                 InlineSource3 = inlineSources.Length > 3 ? inlineSources[3] : default
             };
 
-            entry = HeatmapSubscriber.ApplyCompositeColor(entry);
+            entry = HeatmapSubscriber.ApplyCompositeColor(entry, sourceMetadata.Values);
             _ledger[(col, row)] = entry;
             return entry;
         }
@@ -730,6 +820,21 @@ namespace GroveApp.Engine
             ContentKind.Image => 4.0,
             _ => 1.0
         };
+
+        public double GetSourceEnergyAtCell(GridContentItem source, int col, int row, int targetLayerId)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            double distanceSquared = DistanceToFootprintSquared(source, col, row);
+            if (distanceSquared > Tokens.MaxCullingRadiusCells * Tokens.MaxCullingRadiusCells)
+            {
+                return 0.0;
+            }
+
+            int layerDelta = Math.Abs(LayerDeltaResolver(source.LayerId, targetLayerId));
+            return GetBaseMass(source) /
+                (1.0 + 0.4 * distanceSquared) *
+                Math.Pow(LayerPermeabilityDecay, layerDelta);
+        }
 
         private static double DistanceToFootprintSquared(GridContentItem item, int col, int row)
         {
@@ -817,5 +922,60 @@ namespace GroveApp.Engine
 
         public int GetTotalMetadataSourcesCount() =>
             AnnotationSubscriber.AggregatedMetadata.Values.Sum(list => list.Count);
+
+        public IReadOnlyList<SelectedFieldCell> QuerySelectedField(
+            IReadOnlySet<string> selectedContentIds,
+            int minCol,
+            int maxCol,
+            int minRow,
+            int maxRow)
+        {
+            ArgumentNullException.ThrowIfNull(selectedContentIds);
+            var results = new List<SelectedFieldCell>();
+
+            foreach (var (position, sources) in _sourceContributions)
+            {
+                if (position.col < minCol || position.col > maxCol ||
+                    position.row < minRow || position.row > maxRow)
+                {
+                    continue;
+                }
+
+                double energy = 0;
+                double red = 0;
+                double green = 0;
+                double blue = 0;
+                foreach (CellMetadataSource source in sources)
+                {
+                    if (!selectedContentIds.Contains(source.ContentId) || source.Weight <= 0)
+                    {
+                        continue;
+                    }
+
+                    energy += source.Weight;
+                    red += source.SourceColor.R * source.Weight;
+                    green += source.SourceColor.G * source.Weight;
+                    blue += source.SourceColor.B * source.Weight;
+                }
+
+                if (energy > 0)
+                {
+                    results.Add(new SelectedFieldCell(
+                        position.col,
+                        position.row,
+                        energy,
+                        Color.FromArgb(
+                            byte.MaxValue,
+                            ToByte(red),
+                            ToByte(green),
+                            ToByte(blue))));
+                }
+            }
+
+            return results;
+        }
+
+        private static byte ToByte(double value) =>
+            (byte)Math.Clamp(Math.Round(value), 0, byte.MaxValue);
     }
 }

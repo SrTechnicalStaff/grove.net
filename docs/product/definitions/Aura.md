@@ -11,27 +11,27 @@ tags: [grove, product-definition, aura, field-ledger, saturation]
 # Product Definition: Aura
 
 > **What is an aura?**
-> An **Aura** is the continuous spatial radiation field cast by Content onto surrounding Grid cells and across vertical Layer boundaries. It serves as the physical and visual manifestation of semantic energy, establishing spatial influence, passive association, and multi-layer metadata accumulation without requiring formal links or explicit hierarchy.
+> An **Aura** is the spatial field cast by Content onto discrete Grid cells and across vertical Grid-Layer boundaries. It is the physical and visual manifestation of Content presence, establishing spatial influence, passive association, and multi-Grid-Layer metadata accumulation without requiring formal links or explicit hierarchy.
 
 ---
 
 ## 1. Core Essence ("What is an aura?")
 
-- **Canonical Statement**: An Aura is a non-local spatial field emitted by Content on the Grid that saturates local cells and bleeds through vertical Layer bounds. It stores provenance and relational energy inside the Grid's cell metadata ledger.
+- **Canonical Statement**: An Aura is a non-local, cell-bounded field emitted by Content on the Grid that saturates local cells and passes through vertical Grid-Layer bounds. It stores provenance and relational energy inside the Grid's Field Ledger.
 - **Primary Function**: Aura provides passive context propagation, visual weight, field-based selection feedback, and multi-layer awareness. It enables the system to discover clusters of related work and generate Annotation overlays without explicit user classification.
 - **Mental / Physical Model**: 
   1. *Astrophysics / Gravity in Spacetime*: Content behaves like mass in spacetime; Aura is the gravitational field cast onto surrounding space. Dense clusters of content form galaxy-like field concentrations.
-  2. *Fluid Saturation on Stacked Paper Towels*: When liquid is poured on a stack of paper towels, it bleeds through multiple sheets. Similarly, an Aura field originating on one Layer saturates adjacent Layers above and below.
+2. *Saturation on Stacked Paper Towels*: When liquid is poured on a stack of paper towels, it passes through multiple sheets. Similarly, an Aura field originating on one Grid Layer saturates adjacent Grid Layers above and below.
 
 ---
 
 ## 2. Fundamental Invariants & System Properties
 
 1. **Innate Non-Zero Baseline**: Every cell on the Grid possesses a non-zero baseline information value simply by existing. Content emission adds field energy atop this baseline.
-2. **Multi-Layer Saturation & Bleed**: An Aura field is never restricted to its native Layer; it radiates vertically through adjacent stacked Layers, saturating corresponding `(x, y)` coordinates across the Z-axis.
-3. **Additive Hue Composition**: The visual color/hue of an Aura cell is the deterministic composite sum of its native Content hue plus all saturating field hues bleeding from Layers above and below.
+2. **Multi-Grid-Layer Saturation**: An Aura field is never restricted to its native Grid Layer; it contributes vertically through adjacent stacked Grid Layers, saturating corresponding `(x, y)` coordinates according to permeability.
+3. **Additive Hue Composition**: The visual color/hue of an Aura cell is the deterministic additive sum of source hues weighted by field contribution. No midpoint or blended third hue is calculated.
 4. **Field Ledger Provenance**: Every cell affected by an Aura field records metadata identifying every originating Content source contributing to that cell's brightness and saturation across all Layers.
-5. **Selection Field Integrity**: When multiple Content items are selected, their individual Auras aggregate into a unified selection field. Cursor accents and marquee highlights overlay the field without destroying the passive underlying system state (mirroring spreadsheet cell selection dynamics).
+5. **Selection Field Integrity**: When multiple Content items are selected, their individual source contributions are highlighted across their Aura cells. Unselected contributions remain in the passive field.
 
 ### Data & State Schema
 - **State Ownership**: Grid Field Ledger Subsystem (`GridFieldLedger`).
@@ -50,10 +50,10 @@ tags: [grove, product-definition, aura, field-ledger, saturation]
 | Primitive | Intersection & Relational Rules |
 | :--- | :--- |
 | **Grid** | Aura saturates Grid cells, populating cell metadata in the Field Ledger and establishing innate spatial relationships between adjacent grid coordinates. |
-| **Memory** | Aura reflects the semantic weight and contextual energy of underlying Memories; as Memories gain traces across layers, their composite Aura footprint expands. |
+| **Memory** | Memory supplies semantic identity and payload only. Content instances referencing a Memory emit Aura; additional Content instances expand the spatial evidence without changing the Memory. |
 | **Content** | Content is the physical emitter of Aura. Every placed Content item continuously casts an Aura field proportional to its media ratio, scale, and text volume. |
-| **Aura** | *Self-Intersection*: Neighboring Auras overlap and merge into continuous field concentrations (galaxies), altering local hue saturation and triggering cluster detection algorithms. |
-| **Layer** | Aura bleeds vertically across stacked Layers. Saturation penetrates Z-planes like liquid through paper towels, allowing users on one Layer to perceive work on adjacent Layers. |
+| **Aura** | *Self-Intersection*: Neighboring Auras contribute to the same discrete cells; their channel sums and saturation provide shared-context evidence without a smooth surface. |
+| **Grid Layer** | Aura passes vertically across stacked Grid Layers. Saturation penetrates the stack, allowing users on one Grid Layer to perceive work on adjacent Grid Layers. |
 | **Annotation** | Annotations query cell Field Ledger metadata within dense Aura concentrations across all stacked Layers to curate source content for broadsheet editorial overlays. |
 | **Blip** | A Blip manifests as a small pulsating indicator dot at the geometric center of highest Aura overlap within a dense Content cluster when viewed at scale or when unengaged. |
 | **Slates** | Writing Slate, Memory Slate, and Gallery Slate bypass Aura rendering; inspecting an Annotation or Memory there displays Field Ledger metadata derived from the originating Aura field. |
@@ -63,11 +63,11 @@ tags: [grove, product-definition, aura, field-ledger, saturation]
 ## 4. User Interaction & Camera Dynamics
 
 - **Cursor Armed States**:
-  - When the cursor is armed (`1` key cycle: Trace, Resize, Copy, Cut, Duplicate), hovering over Content highlights its native Aura.
-  - Bulk marquee selection requires enclosing all cells occupied by the Content; once selected, individual Auras aggregate into a combined selection field.
+  - When the cursor is armed, hovering over Content addresses its native footprint and Aura contribution.
+  - Bulk marquee selection requires enclosing every cell occupied by the Content; once selected, the selected source contribution is highlighted across its combined Aura field.
 - **Camera Zoom / Level-of-Detail (LOD) Behavior**:
-  - *Close Distance*: Content is fully legible; native Aura fields display subtle background glows around Content boundaries.
-  - *Extreme Distance*: Content legibility drops by design; Aura fields transition to LOD map representations (similar to Google Earth macro views). Dense clusters merge into glowing galactic field concentrations.
+  - *Close Distance*: Content is fully legible; native Aura fields display discrete cell marks and same-Grid-Layer contours.
+  - *Extreme Distance*: Content legibility drops by design; the single recursive Grid cursor and grid tiers remain readable while Aura evidence stays cell-bounded.
 - **Navigation & Hover Mechanics**:
   - Bringing the cursor close to an active Aura concentration or hovering over a cell within the field engages the local Blip, triggering the escalator guide line and annotation title preview.
 

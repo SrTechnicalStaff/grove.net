@@ -24,7 +24,7 @@ namespace GroveApp.Engine
         FocusPrecedenceLevel ActiveLevel,
         IInputElement? FocusedElement,
         bool IsTextEditingActive = false,
-        Guid? ActiveLayerId = null);
+        Guid? SelectedGridLayerId = null);
 
     public enum KeybindHandlingResult : byte
     {

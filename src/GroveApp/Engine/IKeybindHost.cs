@@ -30,7 +30,6 @@ public interface IKeybindHost
     void ToggleLayerManager();
     void OpenContextMenuAtCursor();
     void OpenMemorySlate();
-    void ToggleLayerIsolation();
     bool ProcessLayerKeyDown(KeyEventArgs args);
 
     bool ArmTool(ArmableContentType contentType);
@@ -40,9 +39,9 @@ public interface IKeybindHost
     void JumpToTopLayer();
     void CreateLayerAtBottom();
     void CreateLayerAtTop();
-    void InsertLayerAboveActive();
-    void InsertLayerBelowActive();
-    void ReorderActiveLayer(int direction);
+    void InsertGridLayerAboveSelection();
+    void InsertGridLayerBelowSelection();
+    void ReorderSelectedGridLayer(int direction);
 
     IReadOnlyList<GridContentItem> GetSelectedItems();
     IReadOnlyList<GridNote> GetSelectedNotes();
@@ -51,7 +50,7 @@ public interface IKeybindHost
     void SelectOnly(GridContentItem item);
     void DeselectAllItems();
     void ToggleAnchorOnSelection();
-    void TraceSelectionToActiveLayer();
+    void TraceSelectionToSelectedGridLayer();
     void DeleteSelectedItems();
     void SetSelectedColor(NoteColor color);
     Task CopyItemsAsync(IReadOnlyList<GridContentItem> items);

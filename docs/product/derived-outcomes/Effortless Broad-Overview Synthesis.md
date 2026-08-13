@@ -18,7 +18,7 @@ When trying to understand a large cluster of research notes, documents, and imag
 
 With effortless broad-overview synthesis:
 - Proximity to a dense work cluster presents a minimal blip marker anchored to the cluster center.
-- Selecting the marker opens a broadsheet annotation overlay (brochure, pamphlet, or magazine layout) that aggregates text and media from all active layers into a clean print layout.
+- Selecting the marker opens a broadsheet annotation overlay (brochure, pamphlet, or magazine layout) that aggregates text and media from all visible Grid Layers into a clean print layout.
 - The person gets a comprehensive, formatted overview without destroying spatial canvas context.
 
 ---

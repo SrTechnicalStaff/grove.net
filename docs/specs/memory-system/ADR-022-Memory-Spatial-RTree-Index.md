@@ -421,12 +421,12 @@ public static class ViewportCullingHelper
     public static SpatialBoundingBox ComputeWorldBoundingBox(
         SKRect viewportScreen, 
         SKMatrix cameraMatrix, 
-        Guid activeLayerId,
+        Guid selectedGridLayerId,
         float cellPitchWorld = 220.0f)
     {
         if (!cameraMatrix.TryInvert(out SKMatrix inverse))
         {
-            return new SpatialBoundingBox(0, 0, 0, 0, activeLayerId);
+            return new SpatialBoundingBox(0, 0, 0, 0, selectedGridLayerId);
         }
 
         SKRect worldRect = inverse.MapRect(viewportScreen);
@@ -436,7 +436,7 @@ public static class ViewportCullingHelper
         int minCellY = (int)MathF.Floor(worldRect.Top / cellPitchWorld);
         int maxCellY = (int)MathF.Ceiling(worldRect.Bottom / cellPitchWorld);
 
-        return new SpatialBoundingBox(minCellX, minCellY, maxCellX, maxCellY, activeLayerId);
+        return new SpatialBoundingBox(minCellX, minCellY, maxCellX, maxCellY, selectedGridLayerId);
     }
 }
 ```

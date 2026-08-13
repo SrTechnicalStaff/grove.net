@@ -4,7 +4,8 @@ using System.Collections.Immutable;
 namespace GroveApp.Models.Memory;
 
 /// <summary>
-/// Immutable spatial manifestation of a memory on one grid layer and footprint.
+/// Immutable authored context attached to Content at a Grid Layer footprint.
+/// The MemoryId is a relation key; the anchor is not Memory-owned state.
 /// </summary>
 public readonly record struct MemoryAnchor
 {

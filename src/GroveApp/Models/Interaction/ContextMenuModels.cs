@@ -16,19 +16,19 @@ public sealed record ContextMenuTargetContext
 {
     public ContextMenuTargetType TargetType { get; }
     public CellCoordinate AddressedCell { get; }
-    public int ActiveLayerId { get; }
+    public int SelectedGridLayerId { get; }
     public ImmutableArray<string> TargetPlacementIds { get; }
 
     public ContextMenuTargetContext(
         ContextMenuTargetType targetType,
         CellCoordinate addressedCell,
-        int activeLayerId,
+        int selectedGridLayerId,
         IEnumerable<string> targetPlacementIds)
     {
         ArgumentNullException.ThrowIfNull(targetPlacementIds);
         TargetType = targetType;
         AddressedCell = addressedCell;
-        ActiveLayerId = activeLayerId;
+        SelectedGridLayerId = selectedGridLayerId;
         TargetPlacementIds = targetPlacementIds.Where(id => !string.IsNullOrWhiteSpace(id)).ToImmutableArray();
     }
 }

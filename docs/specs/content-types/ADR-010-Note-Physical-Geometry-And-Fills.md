@@ -9,6 +9,11 @@ status: "PARTIAL — verified note geometry and rendering"
 - **Architectural Scope**: Spatial Content Primitives / Note Component
 - **Target Runtime**: .NET 9.0 / Avalonia UI 11.2.5 / SkiaSharp 3.0
 
+> **Ownership correction:** Any `IsAnchored` wording retained in historical
+> snippets means `Content.AnchorId is not null`. Anchor state belongs to the
+> Content-side relation; it is not a Memory or Placement state, and content
+> constructors do not accept an anchoring flag.
+
 ---
 
 ## 1. Context & Architectural Principles
@@ -144,7 +149,7 @@ public sealed record NotePlacementRecord
     public required int UserExtentN { get; init; }
     public required string TextContent { get; init; }
     public required NoteColorKind ColorKind { get; init; }
-    public required bool IsAnchored { get; init; }
+    public Guid? AnchorId { get; init; }
     public required int LayerId { get; init; }
 }
 
@@ -282,7 +287,7 @@ public sealed class NotePlacementControl : Control
         }
 
         // 5. Render Notched Anchor Ribbon if Anchored
-        if (Placement.IsAnchored)
+        if (Placement.AnchorId is not null)
         {
             RenderAnchorRibbon(context);
         }

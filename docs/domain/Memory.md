@@ -23,6 +23,7 @@ A Memory contains only semantic-record data:
 
 - a stable `MemoryId`;
 - its immutable payload and payload kind;
+- an optional semantic title;
 - content hash and integrity identity;
 - version lineage (`ParentMemoryId`, root identity, and generation);
 - creation and update timestamps.

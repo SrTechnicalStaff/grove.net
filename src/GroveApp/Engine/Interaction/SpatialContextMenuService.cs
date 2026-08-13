@@ -16,7 +16,7 @@ public interface ISpatialContextMenuService
     void OpenContextMenuAt(
         ScreenPoint clickPoint,
         InteractionCellCoordinate targetCell,
-        int activeLayerId,
+        int selectedGridLayerId,
         IEnumerable<string> targetPlacementIds,
         ScreenSize viewportSize,
         ScreenSize? menuSize = null);
@@ -43,7 +43,7 @@ public sealed class SpatialContextMenuService : ISpatialContextMenuService
     public void OpenContextMenuAt(
         ScreenPoint clickPoint,
         InteractionCellCoordinate targetCell,
-        int activeLayerId,
+        int selectedGridLayerId,
         IEnumerable<string> targetPlacementIds,
         ScreenSize viewportSize,
         ScreenSize? menuSize = null)
@@ -65,7 +65,7 @@ public sealed class SpatialContextMenuService : ISpatialContextMenuService
             _ => ContextMenuTargetType.MultiSelection
         };
 
-        var target = new ContextMenuTargetContext(targetType, targetCell, activeLayerId, ids);
+        var target = new ContextMenuTargetContext(targetType, targetCell, selectedGridLayerId, ids);
         ImmutableArray<ContextMenuCommand> commands = CreateCommands(target);
         ScreenSize requestedSize = menuSize.GetValueOrDefault();
         double width = requestedSize.Width > 0 ? requestedSize.Width : DefaultMenuWidth;

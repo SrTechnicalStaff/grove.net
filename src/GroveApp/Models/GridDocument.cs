@@ -28,8 +28,8 @@ namespace GroveApp.Models
         public DocumentAst AstDocument { get; set; }
         public int CurrentPage { get; set; } = 0;
 
-        public GridDocument(int cellX, int cellY, int cellWidth = 2, int cellHeight = 2, string title = "", string rawText = "", bool isAnchored = false, int layerId = 0)
-            : base(cellX, cellY, Math.Clamp(cellWidth, 2, 8), Math.Clamp(cellHeight, 2, 8), isAnchored, layerId)
+        public GridDocument(int cellX, int cellY, int cellWidth = 2, int cellHeight = 2, string title = "", string rawText = "", int layerId = 0)
+            : base(cellX, cellY, Math.Clamp(cellWidth, 2, 8), Math.Clamp(cellHeight, 2, 8), layerId)
         {
             Title = title;
             RawText = rawText;

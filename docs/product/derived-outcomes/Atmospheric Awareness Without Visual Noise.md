@@ -17,7 +17,7 @@ tags: [grove, derived-outcome, atmospheric-awareness, aura-bleed]
 Managing complex projects with multiple sub-tasks usually requires toggling back and forth between dozens of browser tabs or layer channels. Alternatively, turning on all layers at once results in an unreadable visual mess of overlapping text boxes and borders.
 
 With atmospheric awareness without visual noise:
-- The person works cleanly on one active layer where text and content are fully rendered.
+- The person can select one Grid Layer as the command target while all visible Grid Layers remain spatially real.
 - Other layers contribute presence only—radiating soft aura energy and hue saturation into the grid cells without drawing frames or text.
 - The person senses where surrounding work is happening across parallel planes without visual clutter.
 
@@ -26,7 +26,7 @@ With atmospheric awareness without visual noise:
 ## 2. Real-World Human Impact
 
 - **Before**: A designer working on UI copy turns on all project layers to see where developers placed technical notes, but the screen becomes so cluttered with overlapping boxes that neither layer can be read.
-- **After**: The designer views clean copy on the active layer while seeing warm aura field glows beneath cells occupied by developer notes on adjacent layers, providing immediate spatial awareness without clutter.
+- **After**: The designer sees Content across visible Grid Layers while Aura fields reveal nearby work across Grid-Layer depth without turning any Grid Layer into a ghost-only state.
 
 ---
 
@@ -35,5 +35,5 @@ With atmospheric awareness without visual noise:
 - **Core Primitives**: `Aura`, `Layer`, `Grid`.
 - **System Mechanics**:
   - **Vertical Saturation Bleed**: Aura fields penetrate stacked layers using liquid paper towel saturation physics.
-  - **Presence Only Rendering**: Non-active layers contribute cell energy and hue composition without drawing frames or text.
+  - **Discrete Cross-Grid-Layer Aura**: Every visible Grid Layer contributes Content and field energy; same-Grid-Layer contours remain local to the projected Grid Layer.
   - **Field Ledger Accumulation**: Multi-layer field intensity is recorded centrally in cell metadata tables.

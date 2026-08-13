@@ -41,7 +41,7 @@ tags: [grove, product-definition, grid-layer, spatial-frequency-band, z-stack]
 - **Grid-Layer Attributes**:
   - `layer_id`: Zero-indexed integer (`0, 1, 2...`).
   - `name`: Custom human-readable label (e.g., "Composition", "Reference Materials").
-  - `visibility`: Boolean active state.
+  - `visibility`: Explicit rendering preference; it is not an activation state.
   - `opacity`: Spatial opacity value for overlay rendering.
   - `content_ids`: List of native Content instances on this Grid Layer.
 - **Persistence Boundary**: Grid-Layer metadata stored in the Grove manifest (`.grove/grid-layers.json`).
@@ -66,10 +66,10 @@ tags: [grove, product-definition, grid-layer, spatial-frequency-band, z-stack]
 ## 4. User Interaction & Camera Dynamics
 
 - **Keyboard Navigation Controls**:
-  - `[` : Move active view down one Grid Layer.
-  - `]` : Move active view up one Grid Layer.
-  - `Shift+[` : Create a new Grid Layer below and shift focus down.
-  - `Shift+]` : Create a new Grid Layer above and shift focus up.
+  - `[` : Select the Grid Layer below as the command target.
+  - `]` : Select the Grid Layer above as the command target.
+  - `Shift+[` : Create and select a new Grid Layer below.
+  - `Shift+]` : Create and select a new Grid Layer above.
   - `Ctrl/Cmd + Insert` : Insert a Grid Layer at a boundary.
 - **Cursor Armed States (`1` key cycle)**:
   - In `Trace` mode, holding Content while navigating Grid Layers via bracket keys allows instant drop-off onto a target Grid Layer.
