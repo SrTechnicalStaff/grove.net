@@ -14,6 +14,10 @@ Memory Slate is the masonry-style gallery of Memory records on the HUD Plane.
 It is a full-viewport or half-viewport sub-application, never a floating card
 or a Grid placement.
 
+Its resting state is an edge-to-edge river of Memory content. It has no visible
+title, header, footer, permanent search field, filter row, outer padding, or
+application-authored introduction.
+
 ## Source and identity
 
 The gallery enumerates the Memory ledger directly. It renders one card per
@@ -36,6 +40,14 @@ Browsing is read-only. Editing belongs to Writing Slate and creates a Memory
 Version. Any authored context supplied during placement creates an Anchor on
 the new Content.
 
+Memory Search is invoked only from inside Memory Slate. It is not a Grid
+overlay and cannot be opened, seeded, or scoped by a Grid cell, selection,
+camera location, or Grid Layer. A Grid-facing lookup searches Content instead.
+
+The resting Memory Slate does not display a query field. Any invoked lookup
+state is a separate interaction state and may not be approximated by permanent
+search chrome.
+
 ## Boundary decisions
 
 | Tension | Decision |
@@ -44,4 +56,5 @@ the new Content.
 | Memory Slate vs Content | Content is derived context, never the gallery's identity source. |
 | Memory Slate vs Anchor | Anchors explain a card through Content; they are not Memory fields. |
 | Memory Slate vs Grid | Place is an explicit action that creates Content on the Grid. |
+| Memory lookup vs Grid lookup | Memory lookup is exclusive to Memory Slate; Grid lookup returns Content. |
 | Memory Slate vs Writing Slate | Gallery browsing and rich authoring are separate responsibilities. |

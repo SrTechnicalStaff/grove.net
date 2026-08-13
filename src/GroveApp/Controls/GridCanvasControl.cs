@@ -48,19 +48,17 @@ namespace GroveApp.Controls
         private static readonly Cursor ResizeSouthEastCursor = new(StandardCursorType.BottomRightCorner);
         private static readonly Cursor ResizeSouthWestCursor = new(StandardCursorType.BottomLeftCorner);
         public FieldLedgerEngine FieldEngine { get; } = new FieldLedgerEngine();
-        public IMemoryLedger MemoryLedger { get; } = new ImmutableMemoryLedger();
-        public IMemoryVersionTree MemoryVersionTree { get; } = new MemoryVersionTree();
+        private readonly MemoryRepository _memoryRepository;
+        public IMemoryLedger MemoryLedger => _memoryRepository.Ledger;
+        public IMemoryVersionTree MemoryVersionTree => _memoryRepository.Versions;
         public MemorySpatialIndex MemorySpatialIndex { get; } = new();
         public IMemoryAnchorStore MemoryAnchorStore { get; } = new MemoryAnchorFileStore();
-        public IMemoryRecordStore MemoryRecordStore { get; } = new MemoryRecordFileStore();
+        public IMemoryRecordStore MemoryRecordStore => _memoryRepository.Store;
         public string MemoryAnchorFilePath { get; } = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Grove",
             "anchors.yml");
-        public string MemoryRecordDirectory { get; } = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Grove",
-            "memories");
+        public string MemoryRecordDirectory => _memoryRepository.Directory;
         public MemoryAnchorService MemoryAnchors { get; }
         public SpatialLayerStack LayerStack { get; } = new SpatialLayerStack();
         public ISpatialLayerFileStore LayerStore { get; } = new SpatialLayerFileStore();
@@ -206,8 +204,9 @@ namespace GroveApp.Controls
         public event Action<Exception>? LayerPersistenceFailed;
         public event Action<Exception>? PreferencePersistenceFailed;
 
-        public GridCanvasControl()
+        public GridCanvasControl(MemoryRepository memoryRepository)
         {
+            _memoryRepository = memoryRepository ?? throw new ArgumentNullException(nameof(memoryRepository));
             _cursorModel = new CanonicalCursorTrailModel(_cursorRenderModule);
             _renderPipeline = new GridCanvasRenderPipeline();
             _feedbackRenderer = new GridCanvasFeedbackRenderer(_cursorRenderModule);

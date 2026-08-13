@@ -1,15 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using GroveApp.DesignSystem;
-using GroveApp.Engine.Memory;
 using GroveApp.Models;
-using GroveApp.Models.Memory;
 using Colors = GroveApp.DesignSystem.Colors;
 
 namespace GroveApp.Controls;
@@ -17,7 +14,6 @@ namespace GroveApp.Controls;
 public enum SlateKind : byte
 {
     Writing,
-    Memory,
     Gallery
 }
 
@@ -25,8 +21,6 @@ public partial class SlateHostOverlay : UserControl
 {
     private GridDocument? _document;
     private GridContentItem[] _archiveItems = Array.Empty<GridContentItem>();
-    private Func<string, IReadOnlyList<MemorySearchResult>>? _memorySearchProvider;
-    private readonly List<Bitmap> _memoryBitmaps = new();
     private ContentKind? _archiveFilter;
     private SlateKind _mode;
 
@@ -34,14 +28,7 @@ public partial class SlateHostOverlay : UserControl
     {
         InitializeComponent();
         CloseButton.Click += (_, _) => Close();
-        SearchBox.TextChanged += (_, _) =>
-        {
-            if (_mode == SlateKind.Memory && _memorySearchProvider is not null)
-            {
-                BuildMemoryCards(_memorySearchProvider(SearchBox.Text ?? string.Empty));
-            }
-            else ApplyArchiveFilter();
-        };
+        SearchBox.TextChanged += (_, _) => ApplyArchiveFilter();
         AllFilterButton.Click += (_, _) => SetArchiveFilter(null);
         NotesFilterButton.Click += (_, _) => SetArchiveFilter(ContentKind.Note);
         DocumentsFilterButton.Click += (_, _) => SetArchiveFilter(ContentKind.Document);
@@ -76,33 +63,6 @@ public partial class SlateHostOverlay : UserControl
         ArchivePanel.IsVisible = false;
         IsVisible = true;
         WritingEditor.Focus();
-    }
-
-    public void OpenMemory(Func<string, IReadOnlyList<MemorySearchResult>> searchProvider)
-    {
-        ArgumentNullException.ThrowIfNull(searchProvider);
-        _document = null;
-        _mode = SlateKind.Memory;
-        Margin = new Avalonia.Thickness(0);
-        SlateSurface.Padding = new Avalonia.Thickness(0);
-        SlateSurface.Background = Brushes.Transparent;
-        SlateSurface.BorderThickness = new Avalonia.Thickness(0);
-        IdentityText.IsVisible = false;
-        CloseButton.IsVisible = false;
-        AllFilterButton.IsVisible = false;
-        NotesFilterButton.IsVisible = false;
-        DocumentsFilterButton.IsVisible = false;
-        ImagesFilterButton.IsVisible = false;
-        ArchiveControls.Margin = new Avalonia.Thickness(0);
-        _archiveFilter = null;
-        IdentityText.Text = "MEMORIES";
-        ArchiveControls.IsVisible = true;
-        WritingPanel.IsVisible = false;
-        ArchivePanel.IsVisible = true;
-        _memorySearchProvider = searchProvider;
-        BuildMemoryCards(searchProvider(string.Empty));
-        IsVisible = true;
-        SearchBox.Focus();
     }
 
     public void OpenGallery(IEnumerable<GridImage> images)
@@ -140,9 +100,7 @@ public partial class SlateHostOverlay : UserControl
 
         _document = null;
         _archiveItems = Array.Empty<GridContentItem>();
-        _memorySearchProvider = null;
         _archiveFilter = null;
-        DisposeMemoryBitmaps();
         WritingEditor.Text = string.Empty;
         SearchBox.Text = string.Empty;
         ArchivePanel.Children.Clear();
@@ -165,53 +123,6 @@ public partial class SlateHostOverlay : UserControl
         }
 
         ApplyArchiveFilter();
-    }
-
-    private void BuildMemoryCards(IEnumerable<MemorySearchResult> results)
-    {
-        DisposeMemoryBitmaps();
-        ArchivePanel.Children.Clear();
-        foreach (MemorySearchResult result in results)
-        {
-            ArchivePanel.Children.Add(CreateMemoryCard(result));
-        }
-    }
-
-    private Control CreateMemoryCard(MemorySearchResult result)
-    {
-        MemoryRecord record = result.Memory;
-        var content = new StackPanel { Width = 280 };
-        if (record.PayloadKind == MemoryPayloadKind.BinaryImage)
-        {
-            try
-            {
-                var bitmap = new Bitmap(new MemoryStream(record.GetPayloadCopy()));
-                _memoryBitmaps.Add(bitmap);
-                content.Children.Add(new Image { Source = bitmap, Stretch = Stretch.Uniform });
-            }
-            catch (Exception)
-            {
-                content.Children.Add(new TextBlock
-                {
-                    Text = record.Title,
-                    Foreground = Colors.TextPrimaryBrush,
-                    TextWrapping = TextWrapping.Wrap
-                });
-            }
-        }
-        else
-        {
-            content.Children.Add(new TextBlock
-            {
-                Text = record.GetUtf8Payload(),
-                Foreground = Colors.TextPrimaryBrush,
-                TextWrapping = TextWrapping.Wrap,
-                FontFamily = Typography.FontFamilyUi,
-                FontSize = Typography.SizeBody
-            });
-        }
-
-        return content;
     }
 
     private Control CreateCard(GridContentItem item)
@@ -256,13 +167,4 @@ public partial class SlateHostOverlay : UserControl
         BuildArchiveCards(_archiveItems);
     }
 
-    private void DisposeMemoryBitmaps()
-    {
-        foreach (Bitmap bitmap in _memoryBitmaps)
-        {
-            bitmap.Dispose();
-        }
-
-        _memoryBitmaps.Clear();
-    }
 }

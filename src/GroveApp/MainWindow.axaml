@@ -11,7 +11,7 @@
 
     <controls:ThreePlaneVisualCompositorContainer x:Name="PlaneCompositor">
         <!-- PLANE 0: Infinite Spatial Grid Canvas -->
-        <controls:GridCanvasControl x:Name="CanvasControl" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+        <ContentControl x:Name="CanvasHost" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
 
         <!-- PLANE 1: Information Plane Overlays -->
         <!-- Headerless Fluent Notepad Editor (Plane 1 Information Plane) -->
@@ -40,5 +40,7 @@
 
         <!-- Viewport-fixed host for Writing, Memory, or Gallery. -->
         <controls:SlateHostOverlay x:Name="SlateHost" />
+
+        <controls:MemorySlateControl x:Name="MemorySlate" />
     </controls:ThreePlaneVisualCompositorContainer>
 </fa:AppWindow>

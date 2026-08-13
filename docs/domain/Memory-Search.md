@@ -17,6 +17,11 @@ evidence to improve recall.
 It searches Memories. It does not search a gallery of Content representatives
 and it does not require a Memory to have Content.
 
+Memory Search exists only within Memory Slate. Search initiated from the Grid
+is Content Search and returns Content. It must not expose a fixed Memory query
+surface over the Grid or use the current cell, camera, selection, or Grid Layer
+as an opening prerequisite.
+
 ## Query example
 
 For a query such as “Greg's retirement,” Grove may match:
@@ -90,6 +95,7 @@ separate action that creates Content referencing the selected Memory.
 | Tension | Decision |
 | --- | --- |
 | Search vs Memory Slate | Memory Slate consumes Memory Search results; its cards are Memory records. |
+| Search vs Grid | Grid-facing search returns Content and is a different product behavior. |
 | Search vs Content | Content supplies context and spatial evidence, not the returned identity. |
 | Search vs Anchor | Anchor is the highest-priority contextual match and remains Content-side. |
 | Search vs Field Ledger | Field Ledger supplies derived ranking evidence only. |

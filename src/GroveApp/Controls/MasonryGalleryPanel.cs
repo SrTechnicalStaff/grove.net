@@ -9,10 +9,10 @@ namespace GroveApp.Controls;
 public sealed class MasonryGalleryPanel : Panel
 {
     public static readonly StyledProperty<double> ColumnMinWidthProperty =
-        AvaloniaProperty.Register<MasonryGalleryPanel, double>(nameof(ColumnMinWidth), Tokens.WallColumnMin);
+        AvaloniaProperty.Register<MasonryGalleryPanel, double>(nameof(ColumnMinWidth), Tokens.MasonryColumnMin);
 
     public static readonly StyledProperty<double> GutterSpacingProperty =
-        AvaloniaProperty.Register<MasonryGalleryPanel, double>(nameof(GutterSpacing), Tokens.WallGutter);
+        AvaloniaProperty.Register<MasonryGalleryPanel, double>(nameof(GutterSpacing), Tokens.MasonryGutter);
 
     public double ColumnMinWidth
     {

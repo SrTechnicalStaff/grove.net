@@ -24,6 +24,7 @@ namespace GroveApp
 {
     public partial class MainWindow : AppWindow, IKeybindHost
     {
+        private readonly MemoryRepository _memoryRepository;
         private readonly KeybindModule _keybindModule = new();
         private readonly GlobalFocusPrecedenceRouter _focusRouter;
         private readonly SpatialContextMenuService _contextMenuService = new();
@@ -34,8 +35,16 @@ namespace GroveApp
         private HudBindingAdapter? _watermarkBinding;
 
         public MainWindow()
+            : this(new MemoryRepository())
         {
+        }
+
+        public MainWindow(MemoryRepository memoryRepository)
+        {
+            _memoryRepository = memoryRepository ?? throw new ArgumentNullException(nameof(memoryRepository));
             InitializeComponent();
+            CanvasControl = new GridCanvasControl(_memoryRepository);
+            CanvasHost.Content = CanvasControl;
             PlaneCompositor.RegisterPlaneView(new ThreePlaneVisualCompositorContainer.ControlPlaneView(
                 CanvasControl, VisualPlaneType.Plane0_SpatialGrid, ThreePlaneVisualCompositorContainer.Plane0ZIndex));
             foreach (Control view in new Control[] { NotepadEditor, QuickNote, DocumentEditor, ImageProperties })
@@ -43,12 +52,23 @@ namespace GroveApp
                 PlaneCompositor.RegisterPlaneView(new ThreePlaneVisualCompositorContainer.ControlPlaneView(
                     view, VisualPlaneType.Plane1_InformationPlane, ThreePlaneVisualCompositorContainer.Plane1ZIndex));
             }
-            foreach (Control view in new Control[] { LayerManagerOverlay, ContextMenuOverlay, SpatialWatermark, PerformanceTracker, SlateHost })
+            foreach (Control view in new Control[] { LayerManagerOverlay, ContextMenuOverlay, SpatialWatermark, PerformanceTracker, SlateHost, MemorySlate })
             {
                 PlaneCompositor.RegisterPlaneView(new ThreePlaneVisualCompositorContainer.ControlPlaneView(
                     view, VisualPlaneType.Plane2_HUDPlane, ThreePlaneVisualCompositorContainer.Plane2ZIndex));
             }
-            Opened += (_, _) => _backdropManager.Apply(this);
+            Opened += (_, _) =>
+            {
+                _backdropManager.Apply(this);
+                CanvasControl.Focus();
+            };
+            Activated += (_, _) =>
+            {
+                if (!IsAnyOverlayVisible)
+                {
+                    CanvasControl.Focus();
+                }
+            };
 
             LayerManagerOverlay.BindLayerService(CanvasControl.LayerStack);
             ContextMenuOverlay.BindService(_contextMenuService);
@@ -59,12 +79,13 @@ namespace GroveApp
 
             _focusRouter = new GlobalFocusPrecedenceRouter(
                 this,
-                () => NotepadEditor.IsVisible || QuickNote.IsVisible || DocumentEditor.IsVisible || ImageProperties.IsVisible || LayerManagerOverlay.IsVisible || ContextMenuOverlay.IsVisible || SlateHost.IsVisible,
-                () => !NotepadEditor.IsVisible && !QuickNote.IsVisible && !DocumentEditor.IsVisible && !ImageProperties.IsVisible && !LayerManagerOverlay.IsVisible && !ContextMenuOverlay.IsVisible && !SlateHost.IsVisible,
+                () => IsAnyOverlayVisible,
+                () => !IsAnyOverlayVisible,
                 combination => _keybindModule.ProcessRoutedCombination(combination, this));
             Closed += async (_, _) =>
             {
                 _focusRouter.Dispose();
+                MemorySlate.Close();
                 SpatialWatermark.Dispose();
                 _watermarkBinding?.Dispose();
                 await CanvasControl.FlushLayerStateAsync().ConfigureAwait(true);
@@ -123,6 +144,7 @@ namespace GroveApp
             LayerManagerOverlay.Closed += OnOverlayClosed;
             SlateHost.Closed += OnOverlayClosed;
             SlateHost.DocumentSaveRequested += OnSlateDocumentSaveRequested;
+            MemorySlate.Closed += OnOverlayClosed;
 
             SizeChanged += (s, e) => UpdateNotepadEditorPosition();
 
@@ -130,6 +152,13 @@ namespace GroveApp
             KeyUp += OnWindowKeyUp;
 
         }
+
+        public GridCanvasControl CanvasControl { get; }
+
+        private bool IsAnyOverlayVisible =>
+            NotepadEditor.IsVisible || QuickNote.IsVisible || DocumentEditor.IsVisible ||
+            ImageProperties.IsVisible || LayerManagerOverlay.IsVisible ||
+            ContextMenuOverlay.IsVisible || SlateHost.IsVisible || MemorySlate.IsVisible;
 
         private void OnCanvasPointerPressed(object? sender, PointerPressedEventArgs e)
         {
@@ -516,6 +545,16 @@ namespace GroveApp
                 return;
             }
 
+            if (MemorySlate.IsVisible)
+            {
+                if (e.Key == Key.Escape)
+                {
+                    MemorySlate.Close();
+                    e.Handled = true;
+                }
+                return;
+            }
+
             if (_contextMenuService.ActiveMenu != null && e.Key != Key.Escape)
             {
                 return;
@@ -567,12 +606,7 @@ namespace GroveApp
         }
         void IKeybindHost.OpenMemorySlate()
         {
-            var search = new MemorySearchService(
-                CanvasControl.MemoryLedger,
-                () => CanvasControl.MemoryAnchors.ActiveAnchors,
-                () => CanvasControl.Items.ToArray(),
-                CanvasControl.FieldEngine);
-            SlateHost.OpenMemory(search.Search);
+            MemorySlate.Open(_memoryRepository.Ledger);
         }
         void IKeybindHost.ToggleGridLines() => CanvasControl.ToggleGridLines();
         void IKeybindHost.FrameAllContent() => CanvasControl.FrameAllContent();

@@ -52,9 +52,9 @@ namespace GroveApp.Engine
     public sealed class GlobalFocusPrecedenceRouter : IFocusPrecedenceRouter
     {
         private readonly TopLevel _rootWindow;
-        private readonly Func<bool> _isInformationOverlayVisible;
+        private readonly Func<bool> _isOverlayVisible;
         private readonly Func<bool> _isPlane0Context;
-        private readonly Func<KeyCombination, bool> _routeSpatialKey;
+        private readonly Func<KeyCombination, bool> _routeKeybind;
         private FocusContextInfo _currentContext = new(FocusPrecedenceLevel.HudPlane, null);
 
         public FocusContextInfo CurrentContext => _currentContext;
@@ -64,14 +64,14 @@ namespace GroveApp.Engine
 
         public GlobalFocusPrecedenceRouter(
             TopLevel rootWindow,
-            Func<bool> isInformationOverlayVisible,
+            Func<bool> isOverlayVisible,
             Func<bool> isPlane0Context,
             Func<KeyCombination, bool> routeSpatialKey)
         {
             _rootWindow = rootWindow ?? throw new ArgumentNullException(nameof(rootWindow));
-            _isInformationOverlayVisible = isInformationOverlayVisible ?? throw new ArgumentNullException(nameof(isInformationOverlayVisible));
+            _isOverlayVisible = isOverlayVisible ?? throw new ArgumentNullException(nameof(isOverlayVisible));
             _isPlane0Context = isPlane0Context ?? throw new ArgumentNullException(nameof(isPlane0Context));
-            _routeSpatialKey = routeSpatialKey ?? throw new ArgumentNullException(nameof(routeSpatialKey));
+            _routeKeybind = routeSpatialKey ?? throw new ArgumentNullException(nameof(routeSpatialKey));
 
             _rootWindow.AddHandler(InputElement.KeyDownEvent, OnWindowKeyDownTunnel, RoutingStrategies.Tunnel);
         }
@@ -91,6 +91,23 @@ namespace GroveApp.Engine
             }
 
             var combination = KeyCombination.From(args);
+            if (context.ActiveLevel == FocusPrecedenceLevel.FocusedTextBox)
+            {
+                return false;
+            }
+
+            if (IsGlobalHudCombination(combination) &&
+                context.ActiveLevel is FocusPrecedenceLevel.Plane0Canvas or FocusPrecedenceLevel.HudPlane)
+            {
+                bool routed = _routeKeybind(combination);
+                if (routed)
+                {
+                    KeybindRouted?.Invoke(combination, KeybindHandlingResult.DispatchedToHud);
+                }
+
+                return routed;
+            }
+
             if (context.ActiveLevel != FocusPrecedenceLevel.Plane0Canvas)
             {
                 return false;
@@ -98,7 +115,7 @@ namespace GroveApp.Engine
 
             if (IsGlobalSpatialCombination(combination))
             {
-                bool routed = _routeSpatialKey(combination);
+                bool routed = _routeKeybind(combination);
                 if (routed)
                 {
                     KeybindRouted?.Invoke(combination, KeybindHandlingResult.DispatchedToSpatialGrid);
@@ -138,7 +155,7 @@ namespace GroveApp.Engine
                 return new FocusContextInfo(FocusPrecedenceLevel.FocusedTextBox, focusedElement, true);
             }
 
-            if (_isInformationOverlayVisible())
+            if (_isOverlayVisible())
             {
                 return new FocusContextInfo(FocusPrecedenceLevel.InformationOverlay, focusedElement);
             }
@@ -162,5 +179,8 @@ namespace GroveApp.Engine
             return combination.Key is Key.C or Key.V or Key.E
                 && combination.Modifiers.HasFlag(KeyModifiers.Control);
         }
+
+        private static bool IsGlobalHudCombination(KeyCombination combination) =>
+            combination.Key == Key.M && combination.Modifiers == KeyModifiers.None;
     }
 }

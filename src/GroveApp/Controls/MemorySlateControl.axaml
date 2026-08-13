@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:GroveApp.Controls"
+             xmlns:ds="clr-namespace:GroveApp.DesignSystem"
+             x:Class="GroveApp.Controls.MemorySlateControl"
+             AutomationProperties.AutomationId="MemorySlate"
+             AutomationProperties.Name="Memories"
+             IsVisible="False"
+             IsHitTestVisible="True"
+             Focusable="True"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch"
+             Background="{x:Static ds:Colors.SurfaceGridHex}">
+    <ScrollViewer x:Name="MemoryRiver"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+        <controls:MasonryGalleryPanel x:Name="MemoryWall" />
+    </ScrollViewer>
+</UserControl>
